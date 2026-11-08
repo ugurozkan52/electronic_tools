@@ -57,6 +57,25 @@
   html[data-theme] .tb-esc{border-color:var(--ac)!important}
   html[data-theme] .topButton{border-color:var(--ac)!important}
   html[data-theme="dark"] .menuDropdown{background:#14221b!important}
+  /* selection / hover colours (were light blue) */
+  html[data-theme] .hasSubmenu:hover,html[data-theme] .hasSubmenu.open{background:var(--ac-hv)!important}
+  html[data-theme] .tb-mode.tb-mode-active,html[data-theme] .tb-variant.tb-active,html[data-theme] .palette-container .tb-variant.tb-active{background:var(--ac)!important;border-color:var(--ac)!important;color:#fff!important}
+  html[data-theme] .palette-container .tb-variant:hover,html[data-theme] .tb-variant:hover{background:var(--ac-hv)!important}
+  /* variant palette (opens from the small triangle of a toolbar button) */
+  html[data-theme="dark"] .palette-container{background:#14221b!important;border-color:#3a424d!important}
+  html[data-theme="dark"] .palette-container .tb-variant{color:#e7ebf0}
+  html[data-theme="dark"] .tb-btn.tb-pressed{background:#2a4a38!important}
+  html[data-theme="dark"] .tb-del:hover{background:#3a1f1f!important}
+  html[data-theme="dark"] .tb-del.tb-pressed{background:#4a2626!important}
+  /* right-click (context) menu and command palette */
+  html[data-theme="dark"] .elmContextMenu{background:#14221b!important;color:#e7ebf0!important;border-color:#3a424d!important;box-shadow:2px 2px 8px #0008!important}
+  html[data-theme="dark"] .elmContextMenu .menuItem{color:#e7ebf0}
+  html[data-theme="dark"] .elmContextMenu .menuDropdown{background:#1b2b22!important}
+  html[data-theme="dark"] .command-palette{background:#14221b!important;color:#e7ebf0!important;border-color:#3a424d!important}
+  html[data-theme="dark"] .command-palette input{background:#0f1914;color:#e7ebf0;border-color:#3a424d}
+  html[data-theme] .command-palette-item-selected{background:var(--ac)!important;color:#fff!important}
+  /* slider canvases on the right: invert (hue kept) so the white tracks become dark */
+  html[data-theme="dark"] #painel canvas{filter:invert(1) hue-rotate(180deg) saturate(2.2) brightness(.85)}
   html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:var(--sb,#000)}</style>
   <link rel="stylesheet" href="circuitjs/font/fontello.css">
   <script type="module" crossorigin src="./circuitjs/circuitjs-CSQhaj88.js"></script>

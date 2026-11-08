@@ -3,7 +3,7 @@
 // version gets its own cache name and file list (old versions' caches are
 // cleaned up in the 'activate' handler below).
 
-const CACHE_NAME = 'circuitjs-cache-ipad-202611081900';
+const CACHE_NAME = 'circuitjs-cache-ipad-202611082010';
 
 const urlsToCache = [
   'circuitjs.html',
