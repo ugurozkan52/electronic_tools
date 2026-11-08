@@ -7,7 +7,7 @@ Lisans: GPLv2 (LICENSE.txt). Bu klasör olduğu gibi bir web sunucusuna konur.
 - iOS tam ekran meta etiketleri, ana ekran ikonu (180 px, opak), göreli manifest.
 - Service worker 416 dosyanın tamamını ilk açılışta önbelleğe alır (~4 MB).
 - Çevrimdışıyken `?ctz=...` gibi parametreli adresler de açılır.
-- Dropbox betiği çıkarıldı (çevrimdışı çalışmaz). Dosya içe/dışa aktarma yerel dosyalarla çalışır.
+- Dropbox içe aktarma (menü, komut paleti, `startCircuitLink` adres parametresi) kaldırıldı; CircuitJS dışarıdan veri çekmez. Dosya içe/dışa aktarma yerel dosyalarla çalışır.
 
 ## Kalem için araç çubuğu (Rev. B)
 - Butonlar 48×48 px (Apple'ın 44 pt minimum dokunma alanının üstünde), ikonlar 30–36 px.

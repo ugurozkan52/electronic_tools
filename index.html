@@ -21,11 +21,11 @@ window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'
 <style>
 :root{
   --bg:#0f1216; --bg2:#151a20; --card:#181d24; --line:#262d37; --ink:#e7ebf0; --mute:#8b94a1; --dot:#1f252e;
-  --sim:#46c37b; --pcb:#3d7dff; --asm:#f2a33a;
+  --sim:#46c37b; --pcb:#3d7dff; --asm:#f2a33a; --flt:#a98bff;
 }
 :root[data-theme="light"]{
   --bg:#f3f4f6; --bg2:#ffffff; --card:#ffffff; --line:#dfe3e8; --ink:#161a20; --mute:#56606c; --dot:#dde1e7;
-  --sim:#1f8f4f; --pcb:#2457d6; --asm:#b86b00;
+  --sim:#1f8f4f; --pcb:#2457d6; --asm:#b86b00; --flt:#6a45d6;
 }
 .theme-toggle{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
@@ -44,7 +44,7 @@ header{padding:56px 24px 8px;text-align:center}
 .mark{width:52px;height:52px;margin:0 auto 18px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center}
 h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.02em}
 header p{margin:8px auto 0;max-width:520px;color:var(--mute)}
-main{flex:1;width:100%;max-width:1040px;margin:0 auto;padding:36px 24px 48px;
+main{flex:1;width:100%;max-width:1280px;margin:0 auto;padding:36px 24px 48px;
   display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;align-content:start}
 a.app{
   --c:var(--sim);
@@ -55,7 +55,7 @@ a.app{
 }
 a.app::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
 a.app:hover,a.app:focus-visible{transform:translateY(-3px);border-color:var(--c);box-shadow:0 10px 30px -12px var(--c);outline:none}
-a.app.pcb{--c:var(--pcb)} a.app.asm{--c:var(--asm)}
+a.app.pcb{--c:var(--pcb)} a.app.asm{--c:var(--asm)} a.app.flt{--c:var(--flt)}
 .icon{width:56px;height:56px;border-radius:12px;display:grid;place-items:center;
   background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
 .icon svg{width:30px;height:30px}
@@ -98,6 +98,16 @@ footer a{color:var(--mute)}
     <h2>PCB Order</h2>
     <p class="sub">PCB sipariş hazırlayıcı</p>
     <p class="desc">Gerber/Excellon görüntüleyici, 3D önizleme, üretim seçenekleri ve PDF sipariş raporu.</p>
+    <span class="go">Aç <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </a>
+
+  <a class="app flt" href="filters/index.html">
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h9c3 0 3 10 9 10"/><path d="M3 20h18" opacity=".5"/></svg>
+    </div>
+    <h2>Filters</h2>
+    <p class="sub">Filtre hesaplayıcı</p>
+    <p class="desc">RC, RL, LC, Pi/T ve aktif (Sallen-Key, MFB) filtreler: bileşen değerlerinden kesim frekansı ve Bode grafiği, kesim frekansından bileşen önerisi.</p>
     <span class="go">Aç <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
   </a>
 
