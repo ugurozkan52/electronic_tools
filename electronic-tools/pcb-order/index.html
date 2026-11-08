@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PCB Sipariş Hazırlayıcı</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Crect width=%2724%27 height=%2724%27 rx=%275%27 fill=%27%231f6b3a%27/%3E%3Cpath d=%27M7 8h4l2 2h4M7 16h3l3-3h4%27 stroke=%27%23e9f5ec%27 stroke-width=%271.6%27 fill=%27none%27/%3E%3C/svg%3E">
+<meta name="description" content="PCB sipariş hazırlayıcı: Gerber görüntüleyici, 3D önizleme, üretim seçenekleri ve PDF sipariş raporu / PCB order builder with Gerber viewer, 3D preview and PDF report.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f4f6; --card:#fff; --line:#e2e5ea; --line2:#eef0f3; --ink:#161a20; --mute:#646c78; --accent:#2457d6; --accent-bg:#edf2ff;
+  --warn:#9a5b00; --warn-bg:#fff6e5; --dark:#14171c; --dark2:#1b1f26; --dark3:#262b34; --dink:#d6dbe2; --dmute:#8b939f;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--mute);font-size:13px}
+.logo{width:36px;height:36px;border-radius:8px;background:#1f6b3a;display:grid;place-items:center}
+main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:#c4cad3}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#1d49b8}
+.btn.ghost{background:transparent}
+
+/* viewer */
+.viewer{display:grid;grid-template-columns:290px 1fr;height:clamp(440px,64vh,700px);overflow:hidden;background:var(--dark);border-color:#0e1014}
+.vside{background:var(--dark2);color:var(--dink);display:flex;flex-direction:column;min-height:0;border-right:1px solid #0e1014}
+.vhead{display:flex;gap:8px;padding:12px}
+.vhead .btn{background:var(--dark3);border-color:#343a45;color:var(--dink)}
+.vhead .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.fileinfo{padding:0 12px 8px;font-size:12px;color:var(--dmute);word-break:break-all}
+.detect{margin:0 12px 10px;background:#11151b;border:1px solid #2b313b;border-radius:8px;padding:10px;font-size:12px}
+.detect .dt{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#fff;font-weight:600}
+.detect .ok{color:#5fd38d;font-weight:500;font-size:11px}
+.detect dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
+.detect dt{color:var(--dmute)} .detect dd{margin:0;text-align:right;font-family:"IBM Plex Mono",monospace;color:#e9edf2}
+.lhead{padding:6px 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dmute);border-top:1px solid #2b313b}
+.layerlist{overflow:auto;flex:1;padding:0 6px 10px}
+.layerlist .empty{padding:10px 8px;color:var(--dmute);font-size:12px}
+.lyr{display:grid;grid-template-columns:18px 18px 1fr;gap:2px 8px;align-items:center;padding:6px;border-radius:6px}
+.lyr:hover{background:#222731}
+.lyr.ign{opacity:.5}
+.lyr input[type=checkbox]{margin:0;accent-color:var(--accent)}
+.lyr input[type=color]{width:18px;height:18px;border:0;padding:0;background:none;cursor:pointer}
+.lyr input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.lyr input[type=color]::-webkit-color-swatch{border:1px solid #0006;border-radius:4px}
+.lname{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lerr{margin-left:6px;color:#ff8a7a;font-size:11px}
+.lyr select{grid-column:3;background:#11151b;border:1px solid #2b313b;border-radius:5px;color:var(--dink);font-size:11.5px;padding:2px 4px}
+.vmain{display:flex;flex-direction:column;min-width:0;min-height:0}
+.vtool{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--dark2);border-bottom:1px solid #0e1014}
+.vtool .sp{flex:1}
+.seg{display:inline-flex;background:#11151b;border:1px solid #2b313b;border-radius:7px;padding:2px}
+.seg button{border:0;background:transparent;color:var(--dmute);padding:4px 11px;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:500}
+.seg button.on{background:#2f3642;color:#fff}
+.tbtn{background:#11151b;border:1px solid #2b313b;color:var(--dink);border-radius:7px;padding:5px 11px;cursor:pointer;font-size:12.5px}
+.tbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cwrap{position:relative;flex:1;min-height:0;overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+#cv.meas{cursor:crosshair}
+.drop{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:var(--dmute);text-align:center}
+.drop .box{border:1.5px dashed #3a414d;border-radius:12px;padding:28px 36px;max-width:420px}
+.drop b{display:block;color:#e9edf2;font-size:15px;margin-bottom:4px}
+.viewer.over .drop{display:grid!important;background:rgba(36,87,214,.12)}
+.viewer.over .drop .box{border-color:var(--accent);color:#fff}
+.readout{position:absolute;left:10px;bottom:8px;font:12px "IBM Plex Mono",monospace;color:var(--dmute);background:rgba(20,23,28,.8);padding:3px 7px;border-radius:5px;pointer-events:none}
+.hintbar{position:absolute;right:10px;bottom:8px;font-size:11.5px;color:var(--dmute);background:rgba(20,23,28,.8);padding:3px 7px;border-radius:5px;pointer-events:none}
+
+/* columns */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:16px;margin-top:16px;align-items:start}
+.form{padding:4px 20px 12px}
+.fsec{padding:14px 0 6px;border-bottom:1px solid var(--line)}
+.fsec:last-child{border-bottom:0}
+.fsec h3{margin:0 0 6px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.fsec h3 span{margin-left:8px;color:var(--mute);font-weight:400;letter-spacing:0;text-transform:none}
+.frow{display:grid;grid-template-columns:200px 1fr;gap:14px;padding:9px 0;border-top:1px dashed var(--line2)}
+.fsec h3+.frow{border-top:0}
+.flab{font-weight:500;padding-top:5px}
+.flab small{display:block;color:var(--mute);font-weight:400;font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px solid #d3d8df;background:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;line-height:1.3;overflow:hidden}
+.chip:hover:not(:disabled){border-color:#9fb1d6}
+.chip.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:600}
+.chip.on::after{content:"";position:absolute;right:0;bottom:0;border:6px solid transparent;border-right-color:var(--accent);border-bottom-color:var(--accent)}
+.chip:disabled{opacity:.35;cursor:not-allowed;background:#f6f7f9}
+.sw{width:13px;height:13px;border-radius:3px;border:1px solid #0003;display:inline-block}
+.unit{color:var(--mute);font-size:12.5px;margin-left:4px}
+.fctl input[type=text],.fctl input[type=number],.fctl select,.fctl textarea{border:1px solid #d3d8df;border-radius:6px;padding:6px 9px;background:#fff;outline:none}
+.fctl input:focus,.fctl select:focus,.fctl textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2457d61f}
+.fctl input[type=text]{width:min(100%,360px)}
+.fctl input[type=number]{width:96px}
+.fctl textarea{width:100%;min-height:76px;resize:vertical}
+.inl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hint{color:var(--mute);font-size:12px;margin-top:5px}
+
+/* summary */
+.summary{position:sticky;top:16px;display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
+.sumhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
+.sumhead h2{margin:0;font-size:16px}
+.summary .seg{background:#f1f3f6;border-color:var(--line)}
+.summary .seg button{color:var(--mute)}
+.summary .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px #0001}
+#warn{padding:0 16px}
+.w{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:6px 9px;font-size:12.5px;margin-bottom:6px}
+.w.info{background:#f1f4f9;color:var(--mute)}
+.sumscroll{overflow:auto;padding:0 16px;flex:1;min-height:120px}
+#sumTable{width:100%;border-collapse:collapse;font-size:13px}
+#sumTable td{padding:5px 6px;border-bottom:1px solid var(--line2);vertical-align:top}
+#sumTable td:first-child{color:var(--mute);width:46%}
+#sumTable td:last-child{font-weight:500}
+#sumTable tr.sh td{background:#f6f7f9;color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:8px}
+.sumact{display:flex;gap:8px;padding:12px 16px 4px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.fine{margin:4px 16px 14px;color:var(--mute);font-size:12px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#161a20;color:#fff;padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.modal{position:fixed;inset:0;background:#0007;display:none;place-items:center;z-index:40}
+.modal.show{display:grid}
+.modal .mbox{background:#fff;border-radius:10px;padding:16px;width:min(680px,92vw)}
+.modal textarea{width:100%;height:320px;font:12px "IBM Plex Mono",monospace;border:1px solid var(--line);border-radius:6px;padding:8px}
+.modal .mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* GerbView tarzı paneller */
+.detect summary{list-style:none;cursor:pointer}
+.detect summary::-webkit-details-marker{display:none}
+.detect[open] .dt{margin-bottom:6px}
+.detect .dt{margin-bottom:0}
+.tabs{display:flex;border-top:1px solid #2b313b;border-bottom:1px solid #2b313b}
+.tabs button{flex:1;border:0;background:transparent;color:var(--dmute);padding:7px 4px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:#fff;border-bottom-color:var(--accent)}
+.tabpane{display:none;flex:1;min-height:0;flex-direction:column}
+.tabpane.on{display:flex}
+.ltool{display:flex;gap:4px;padding:6px 8px}
+.ltool button{flex:1;background:#11151b;border:1px solid #2b313b;color:var(--dink);border-radius:5px;font-size:11.5px;padding:3px 4px;cursor:pointer}
+.lyr .lname{cursor:pointer}
+.lyr.act{background:#24304a}
+.lyr.act .lname::before{content:"▶ ";color:#7aa2ff;font-size:10px}
+.pane{padding:10px 12px;overflow:auto;font-size:12.5px}
+.pane label{display:block;color:var(--dmute);font-size:11.5px;margin:8px 0 3px}
+.pane input,.pane select{width:100%;background:#11151b;border:1px solid #2b313b;border-radius:5px;color:var(--dink);padding:5px 7px;font-size:12.5px}
+.pane .row2{display:flex;gap:6px;margin-top:6px}
+.pane .row2 button,.ibtn{background:var(--dark3);border:1px solid #343a45;color:var(--dink);border-radius:5px;padding:4px 9px;font-size:12px;cursor:pointer}
+.pane .row2 button.primary,.ibtn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.hlstat{margin-top:10px;color:#9fe7f5;font-size:12px;min-height:16px}
+.pane .note{color:var(--dmute);font-size:11.5px;margin-top:10px;line-height:1.45}
+.dctab{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.dctab th{position:sticky;top:0;background:var(--dark2);text-align:left;color:var(--dmute);font-weight:500;padding:4px 5px;border-bottom:1px solid #2b313b}
+.dctab td{padding:4px 5px;border-bottom:1px solid #222731;font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.dctab tr{cursor:pointer}.dctab tbody tr:hover{background:#222731}.dctab tr.on{background:#173a44}
+.info{position:absolute;top:10px;right:10px;width:300px;background:rgba(17,21,27,.96);border:1px solid #2f3642;border-radius:9px;color:var(--dink);font-size:12.5px;padding:10px 12px;display:none;box-shadow:0 8px 24px #0006}
+.info.show{display:block}
+.info h4{margin:0 0 6px;font-size:13px;color:#fff;display:flex;justify-content:space-between;gap:8px}
+.info h4 button{background:none;border:0;color:var(--dmute);cursor:pointer;font-size:15px;line-height:1}
+.info dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0 0 8px}
+.info dt{color:var(--dmute)}.info dd{margin:0;font-family:"IBM Plex Mono",monospace;font-size:11.5px;word-break:break-all;color:#e9edf2}
+.info .acts{display:flex;flex-wrap:wrap;gap:5px}
+.pop{position:absolute;top:44px;right:10px;width:290px;background:#11151b;border:1px solid #2f3642;border-radius:9px;padding:10px 12px;color:var(--dink);font-size:12.5px;z-index:5;display:none;box-shadow:0 8px 24px #0006}
+.pop.show{display:block}
+.pop h5{margin:8px 0 4px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--dmute);font-weight:500}
+.pop h5:first-child{margin-top:0}
+.pop label{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer}
+.pop input[type=checkbox]{accent-color:var(--accent);margin:0}
+.pop .seg{margin-top:2px}
+.vmain{position:relative}
+.hlbadge{position:absolute;left:10px;top:10px;background:rgba(17,21,27,.92);border:1px solid #1f6f80;color:#9fe7f5;border-radius:7px;padding:4px 8px;font-size:12px;display:none;align-items:center;gap:8px}
+.hlbadge.show{display:flex}
+.hlbadge button{background:none;border:0;color:#9fe7f5;cursor:pointer;font-size:14px}
+
+/* dil, yardım ikonları */
+.hdr-r{display:flex;align-items:center;gap:10px}
+.seg.light{background:#f1f3f6;border-color:var(--line)}
+.seg.light button{color:var(--mute)}
+.seg.light button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px #0001}
+.flab .ltxt{display:inline}
+.help{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid #b9c1cc;background:#fff;color:#5b6573;font-size:10.5px;font-weight:700;line-height:1;margin-left:6px;cursor:help;padding:0;vertical-align:1px;font-family:inherit}
+.help:hover,.help.pinned{background:var(--accent);border-color:var(--accent);color:#fff}
+.tip{position:fixed;z-index:60;left:0;top:0;background:#161a20;color:#eef1f5;font-size:12.5px;line-height:1.5;padding:9px 11px;border-radius:8px;box-shadow:0 8px 24px #0004;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s}
+.tip.show{opacity:1;visibility:visible}
+.btn:disabled{opacity:.6;cursor:wait}
+.v3d{position:absolute;inset:0;display:none;cursor:grab}
+.v3d.on{display:block}
+.v3d canvas{display:block}
+.tbtn:disabled{opacity:.4;cursor:not-allowed}
+
+@media (max-width:1150px){.cols{grid-template-columns:1fr}.summary{position:static;max-height:none}}
+@media (max-width:760px){
+  main{padding:12px}
+  .viewer{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}
+  .vside{max-height:260px;border-right:0;border-bottom:1px solid #0e1014}
+  .vmain{height:420px}
+  .frow{grid-template-columns:1fr;gap:6px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e9f5ec" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h4l2 2h4M7 16h3l3-3h4"/><circle cx="7" cy="8" r="1.2" fill="#e9f5ec"/><circle cx="7" cy="16" r="1.2" fill="#e9f5ec"/><circle cx="17" cy="10" r="1.2" fill="#e9f5ec"/><circle cx="17" cy="13" r="1.2" fill="#e9f5ec"/></svg></div>
+    <div><h1 data-i18n="appTitle">PCB Sipariş Hazırlayıcı</h1><p data-i18n="appSub">Gerber'i incele, üretim seçeneklerini işaretle, özet tabloyu üreticiye gönder.</p></div>
+  </div>
+  <div class="hdr-r">
+    <div class="seg light" id="segLang" title="Dil / Language"><button data-v="tr" class="on" type="button">Türkçe</button><button data-v="en" type="button">English</button></div>
+    <button id="btnReset" class="btn ghost" type="button" data-i18n="reset">Formu sıfırla</button>
+  </div>
+</header>
+
+<main>
+  <section class="viewer card" id="viewer">
+    <div class="vside">
+      <div class="vhead">
+        <label class="btn primary"><span data-i18n="load">Gerber yükle</span><input type="file" id="fileIn" multiple hidden></label>
+        <button id="btnDemo" class="btn" type="button" data-i18n="demo">Örnek kart</button>
+      </div>
+      <div id="fileInfo" class="fileinfo" data-i18n="fileHint">.zip ya da tek tek Gerber/Excellon dosyaları</div>
+      <details id="detect" class="detect" hidden></details>
+      <div id="tabLayers" class="tabpane on" style="border-top:1px solid #2b313b">
+        <div class="ltool"><button id="lAll" type="button" data-i18n="lAll">Tümü</button><button id="lAct" type="button" data-i18n="lAct">Yalnız aktif</button><button id="lNone" type="button" data-i18n="lNone">Hiçbiri</button></div>
+        <div id="layerList" class="layerlist"></div>
+      </div>
+    </div>
+    <div class="vmain">
+      <div class="vtool">
+        <div class="seg" id="segSide"><button data-v="top" class="on" type="button" data-i18n="top">Üst</button><button data-v="bottom" type="button" data-i18n="bottom">Alt</button></div>
+        <div class="seg" id="segMode"><button data-v="real" class="on" type="button" data-i18n="real">Gerçekçi</button><button data-v="layers" type="button" data-i18n="tLayers">Katmanlar</button><button data-v="3d" type="button">3D</button></div>
+        <span class="sp"></span>
+        <button id="btnMeasure" class="tbtn" type="button" data-i18n="measure">Ölç</button>
+        <button id="btnFit" class="tbtn" type="button" data-i18n="fit">Sığdır</button>
+        <button id="btnView" class="tbtn" type="button" data-i18n="view">Görünüm ▾</button>
+      </div>
+      <div id="pop" class="pop">
+        <h5 data-i18n="drawMode">Çizim modu (Katmanlar görünümü)</h5>
+        <label><input type="checkbox" data-vo="sketchL"><span data-i18n="sketchL">Çizgileri çerçeve olarak göster</span></label>
+        <label><input type="checkbox" data-vo="sketchF"><span data-i18n="sketchF">Flash'ları (pad) çerçeve olarak göster</span></label>
+        <label><input type="checkbox" data-vo="sketchP"><span data-i18n="sketchP">Poligonları çerçeve olarak göster</span></label>
+        <label><input type="checkbox" data-vo="ghost"><span data-i18n="ghost">Negatif nesneleri gölge renkte göster</span></label>
+        <label><input type="checkbox" data-vo="xor"><span data-i18n="xor">XOR karşılaştırma modu</span></label>
+        <h5 data-i18n="inactL">Pasif katmanlar</h5>
+        <div class="seg" id="segInact"><button data-v="normal" type="button">Normal</button><button data-v="dim" type="button" data-i18n="dim">Soluk</button><button data-v="hide" type="button" data-i18n="hidden">Gizli</button></div>
+        <h5 data-i18n="unitL">Birim ve imleç</h5>
+        <div class="seg" id="segUnit"><button data-v="mm" type="button">mm</button><button data-v="mil" type="button">mil</button><button data-v="in" type="button" data-i18n="inch">inç</button></div>
+        <label style="margin-top:6px"><input type="checkbox" data-vo="cross"><span data-i18n="cross">Tam ekran artı imleç</span></label>
+      </div>
+      <div class="cwrap" id="cwrap">
+        <canvas id="cv"></canvas>
+        <div id="v3d" class="v3d"></div>
+        <div id="drop" class="drop"><div class="box"><b data-i18n="dropT">Gerber .zip dosyasını buraya bırakın</b><span data-i18n="dropS">KiCad, Altium ve Eagle çıktıları (RS-274X / X2 + Excellon) okunur. Dosyalar tarayıcıdan dışarı gönderilmez.</span></div></div>
+        <div id="readout" class="readout">—</div>
+        <div class="hintbar" data-i18n="hintbar">Tıkla: bilgi · Sürükle: kaydır · Tekerlek: yakınlaştır · F: sığdır · M: ölç · PgUp/PgDn: aktif katman · Esc: temizle</div>
+        <div id="hlBadge" class="hlbadge"><span id="hlBadgeT"></span><button id="hlBadgeX" type="button">×</button></div>
+        <div id="info" class="info"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cols">
+    <form id="form" class="form card" autocomplete="off"></form>
+    <aside class="summary card">
+      <div class="sumhead"><h2 data-i18n="sumT">Sipariş özeti</h2></div>
+      <div id="warn"></div>
+      <div class="sumscroll"><table id="sumTable"></table></div>
+      <div class="sumact">
+        <button id="cpPdf" class="btn primary" type="button" data-i18n="pdf">PDF rapor</button>
+        <button id="cpTable" class="btn" type="button" data-i18n="cpTable">Tabloyu kopyala</button>
+        <button id="cpText" class="btn" type="button" data-i18n="cpText">Düz metin</button>
+        <button id="cpMd" class="btn" type="button">Markdown</button>
+      </div>
+      <p class="fine" data-i18n="fine">PDF rapor kart görüntülerini, seçenek tablosunu ve uyarıları içerir. “Tabloyu kopyala” Excel, Word ve e-postaya tablo olarak yapıştırılır.</p>
+    </aside>
+  </div>
+</main>
+<div id="tip" class="tip" role="tooltip"></div>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal"><div class="mbox"><b data-i18n="mTitle">Panoya kopyalanamadı — metni seçip kopyalayın</b><textarea id="mtext" readonly></textarea><div class="mfoot"><button class="btn" id="mclose" type="button" data-i18n="close">Kapat</button></div></div></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const TAU=Math.PI*2;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS_KEY='pcbSiparis.v1';
+let LANG='tr';
+/* =====================================================================
+   DİL (TR / EN)
+   ===================================================================== */
+const T=(tr,en)=>LANG==='en'?en:tr;
+const I18N={
+  appTitle:['PCB Sipariş Hazırlayıcı','PCB Order Builder'],
+  appSub:["Gerber'i incele, üretim seçeneklerini işaretle, özet tabloyu üreticiye gönder.",'Inspect your Gerbers, pick the fabrication options and send the summary to your manufacturer.'],
+  reset:['Formu sıfırla','Reset form'], load:['Gerber yükle','Load Gerber'], demo:['Örnek kart','Sample board'],
+  fileHint:['.zip ya da tek tek Gerber/Excellon dosyaları','.zip or individual Gerber/Excellon files'],
+  tLayers:['Katmanlar','Layers'], tHL:['Vurgula','Highlight'], lAll:['Tümü','All'], lAct:['Yalnız aktif','Active only'], lNone:['Hiçbiri','None'],
+  hlNet:['Neti vurgula','Highlight net'], cmpLbl:['Bileşen','Component'], hlCmp:['Bileşeni vurgula','Highlight component'],
+  fnLbl:['Aperture işlevi','Aperture function'], hlFn:['İşlevi vurgula','Highlight function'], clear:['Temizle','Clear'],
+  hlNote:['Görüntüleyicide bir nesneye tıklayın: katman, D-code, aperture, net, bileşen ve pin bilgisi gösterilir. Bu bilgiler KiCad 6+ ve X2 destekli Altium çıktılarında bulunur.','Click an object in the viewer to see its layer, D-code, aperture, net, component and pin. This data is present in KiCad 6+ and X2-enabled Altium output.'],
+  layer:['Katman','Layer'], dcNote:['Satıra tıklayınca o D-code / takımla çizilen nesneler vurgulanır.','Click a row to highlight everything drawn with that D-code / tool.'],
+  top:['Üst','Top'], bottom:['Alt','Bottom'], real:['Gerçekçi','Realistic'], measure:['Ölç','Measure'], fit:['Sığdır','Fit'], view:['Görünüm ▾','View ▾'],
+  drawMode:['Çizim modu (Katmanlar görünümü)','Draw mode (Layers view)'], sketchL:['Çizgileri çerçeve olarak göster','Show lines as outlines'],
+  sketchF:["Flash'ları (pad) çerçeve olarak göster",'Show flashes (pads) as outlines'], sketchP:['Poligonları çerçeve olarak göster','Show polygons as outlines'],
+  ghost:['Negatif nesneleri gölge renkte göster','Show negative objects in ghost color'], xor:['XOR karşılaştırma modu','XOR compare mode'],
+  inactL:['Pasif katmanlar','Inactive layers'], dim:['Soluk','Dimmed'], hidden:['Gizli','Hidden'], unitL:['Birim ve imleç','Units & cursor'], inch:['inç','inch'],
+  cross:['Tam ekran artı imleç','Full-window crosshair'],
+  dropT:['Gerber .zip dosyasını buraya bırakın','Drop your Gerber .zip here'],
+  dropS:['KiCad, Altium ve Eagle çıktıları (RS-274X / X2 + Excellon) okunur. Dosyalar tarayıcıdan dışarı gönderilmez.','Reads KiCad, Altium and Eagle output (RS-274X / X2 + Excellon). Files never leave your browser.'],
+  hintbar:['Tıkla: bilgi · Sürükle: kaydır · Tekerlek: yakınlaştır · F: sığdır · M: ölç · PgUp/PgDn: aktif katman · Esc: temizle','Click: info · Drag: pan · Wheel: zoom · F: fit · M: measure · PgUp/PgDn: active layer · Esc: clear'],
+  sumT:['Sipariş özeti','Order summary'], pdf:['PDF rapor','PDF report'], cpTable:['Tabloyu kopyala','Copy table'], cpText:['Düz metin','Plain text'],
+  fine:['PDF rapor kart görüntülerini, seçenek tablosunu ve uyarıları içerir. “Tabloyu kopyala” Excel, Word ve e-postaya tablo olarak yapıştırılır.','The PDF report contains board images, the option table and warnings. “Copy table” pastes as a table into Excel, Word or e-mail.'],
+  mTitle:['Panoya kopyalanamadı — metni seçip kopyalayın','Could not copy to the clipboard — select and copy the text'], close:['Kapat','Close'],
+};
+/* Her maddenin “?” açıklaması: [Türkçe, English] */
+const HELP={
+  projName:['Siparişte ve rapor başlığında görünecek proje / kart adı. KiCad job dosyasından otomatik okunur.','Project or board name shown on the order and in the report header. Read from the KiCad job file when present.'],
+  partNo:['Şirket içi parça numarası. Üreticiye izlenebilirlik için iletilir.','Internal part number, passed to the manufacturer for traceability.'],
+  rev:['Kart revizyonu (Rev. A, B…). KiCad job dosyasından otomatik okunur.','Board revision (Rev. A, B…). Read from the KiCad job file when present.'],
+  material:['Taban malzeme. FR-4 standart cam-epoksi rijit karttır; Flex poliimid tabanlı, bükülebilir devredir.','Base material. FR-4 is the standard rigid glass-epoxy board; Flex is a bendable polyimide circuit.'],
+  layers:["Bakır katman sayısı. Gerber'deki bakır katmanlarından otomatik algılanır. Seçilen malzemede yapılamayan sayılar kapalıdır.",'Number of copper layers. Detected from the copper Gerbers; counts not available for the selected material are disabled.'],
+  dims:['Kartın dış hat ölçüsü (genişlik × uzunluk). Panel siparişinde tek kartın ölçüsünü girin. Gerber dış hattından otomatik okunur.','Board outline size (width × length). For panels enter the single-board size. Read from the outline Gerber.'],
+  qty:['Sipariş adedi. Kaçlı panel 1’den büyükse burada panel sayısı girilir; toplam kart adedi özet tabloda hesaplanır.','Order quantity. When boards per panel is above 1 this is the number of panels; total boards are calculated in the summary.'],
+  panelQty:['Bir paneldeki kart sayısı. 1 = tek kart, panelsiz teslim. 1’den büyük girilince panel seçenekleri açılır ve toplam kart adedi = panel adedi × bu sayı olur.','Boards per panel. 1 = single boards, no panel. Above 1 the panel options appear and total boards = number of panels × this value.'],
+  panel:['İsteğe bağlı: kartların panel üzerindeki dizilimi (sütun × satır). Girilirse panel ölçüsü hesaplanır; çarpım kaçlı panel sayısıyla eşleşmelidir.','Optional: board arrangement on the panel (columns × rows). When given, the panel size is calculated; the product should match boards per panel.'],
+  rails:['Montaj hattında taşıma için panel kenarına eklenen boş şeritler. SMT dizgi için genellikle en az iki kenar istenir.','Breakaway strips on the panel edges for conveyor handling. SMT assembly usually needs at least two sides.'],
+  railW:['Kenar rayı genişliği. 5 mm yaygındır; montajcınızın konveyör gereksinimini kontrol edin.',"Edge rail width. 5 mm is common; check your assembler's conveyor requirement."],
+  panelMethod:['V-Cut: düz hatlar boyunca V oluk; yalnız düz kenarlarda. Tab-route (mouse bites): dış hat frezelenir, delikli köprülerle tutulur; eğri kenarlara uygun. İkisi birlikte de kullanılabilir.','V-Cut: V-groove along straight lines only. Tab-route (mouse bites): routed outline held by perforated tabs, suits curved edges. The two can be combined.'],
+  panelFid:['Dizgi makinesinin paneli hizalaması için kenar rayına eklenen referans işaretleri.','Reference marks on the rails used by the pick-and-place machine to align the panel.'],
+  thickness:['Bitmiş kart kalınlığı. 1.6 mm standarttır. Katman sayısı arttıkça minimum kalınlık büyür; job dosyasındaki stackup kalınlığına en yakın değer otomatik seçilir.','Finished board thickness. 1.6 mm is standard; the minimum grows with layer count. The value closest to the job-file stack-up is selected automatically.'],
+  tg:['Camsı geçiş sıcaklığı (Tg). Yüksek Tg (155/170 °C) kurşunsuz lehim, çok katman ve yüksek çalışma sıcaklığında daha iyi boyutsal kararlılık sağlar.','Glass-transition temperature (Tg). Higher Tg (155/170 °C) gives better dimensional stability with lead-free reflow, multilayer builds and high operating temperature.'],
+  color:['Solder mask rengi. Yeşil en iyi çözünürlüğü (ince mask köprüsü) ve en kısa süreyi verir; beyaz/siyah AOI muayenesini zorlaştırabilir.','Solder mask color. Green gives the best resolution (thin mask dams) and fastest turnaround; white/black can make AOI inspection harder.'],
+  silk:['Bileşen yazıları ve işaretlerin rengi. Beyaz mask üzerinde siyah, diğerlerinde beyaz kullanılır.','Color of reference designators and markings: black on white mask, white on the others.'],
+  finish:['Pad yüzey kaplaması. HASL ucuz ama düz değildir; ince aralıklı (BGA, QFN) parçalar için ENIG önerilir. Kurşunlu HASL RoHS uyumlu değildir; OSP raf ömrü kısadır.','Pad surface finish. HASL is cheap but not flat; ENIG is recommended for fine pitch (BGA, QFN). Leaded HASL is not RoHS-compliant; OSP has a short shelf life.'],
+  enig:['ENIG altın kalınlığı (mikro inç). 1 µ" standarttır; tel bağlama veya çok sayıda takıp çıkarma için daha kalını seçilir.','ENIG gold thickness in micro-inches. 1 µ" is standard; go thicker for wire bonding or many insertion cycles.'],
+  outerCu:['Dış katman bitmiş bakır kalınlığı. 1 oz ≈ 35 µm. Yüksek akım için 2 oz; minimum iz/aralık büyür.','Finished outer copper weight. 1 oz ≈ 35 µm. 2 oz for high current; minimum track/space grows.'],
+  innerCu:['İç katman bakır kalınlığı. 0.5 oz ≈ 17.5 µm; güç düzlemleri ve ısı için 1–2 oz seçilebilir.','Inner layer copper weight. 0.5 oz ≈ 17.5 µm; choose 1–2 oz for power planes and heat.'],
+  impedance:['Kontrollü empedans: üretici stackup ve iz genişliklerini hedef empedansa (ör. 50 Ω tek uçlu, 90/100 Ω diferansiyel) göre ayarlar ve test kuponuyla ölçer.','Controlled impedance: the fab tunes stack-up and trace widths to the target impedance (e.g. 50 Ω single-ended, 90/100 Ω differential) and verifies it on test coupons.'],
+  stackup:['Kullanılacak stackup ve empedans hedefleri. KiCad job dosyası varsa dielektrik kalınlıkları ve εr otomatik yazılır.','Stack-up and impedance targets. Filled automatically with dielectric thickness and εr when a KiCad job file is present.'],
+  viaCover:['Tented: via üstü mask ile kapanır. Untented: açık kalır. Plugged: reçineyle tıkanır. Filled & Capped: doldurulup üstü kaplanır; pad içi via (via-in-pad) için gerekir.','Tented: via covered by mask. Untented: left open. Plugged: filled with resin. Filled & Capped: filled and plated over; required for via-in-pad.'],
+  minVia:["En küçük via deliği / bitmiş pad çapı. Küçük via fiyatı artırır. Gerber'deki en küçük kaplamalı deliğe göre otomatik önerilir.",'Smallest via drill / pad diameter. Smaller vias cost more. Suggested from the smallest plated hole in the drill file.'],
+  castellated:['Kart kenarında yarıya kesilmiş kaplamalı delikler; modülün başka bir karta lehimlenmesi için.','Plated holes cut in half at the board edge, for soldering a module onto another board.'],
+  edgePlating:['Kart kenarlarının bakırla kaplanması; EMI kalkanı veya şase teması için.','Copper plating on the board edges, for EMI shielding or chassis contact.'],
+  pressFit:['Lehimsiz press-fit konnektör delikleri; dar delik toleransı (genellikle ±0.05 mm) gerektirir.','Holes for solderless press-fit connectors; need a tight hole tolerance (typically ±0.05 mm).'],
+  countersink:['Havşa veya düz başlı vida yuvası (counterbore). Ölçü ve derinlik mekanik çizimde belirtilmelidir.','Countersunk or counterbored holes for screw heads. Give size and depth in the mechanical drawing.'],
+  goldFingers:['Kenar konnektörü kontakları için sert altın kaplama (ör. PCIe kart kenarı).','Hard gold plating for edge-connector contacts (e.g. a PCIe card edge).'],
+  chamfer:['Konnektöre kolay giriş için altın parmakların bulunduğu kenara açılan pah.','Bevel on the gold-finger edge for easier insertion.'],
+  outlineTol:['Dış hat freze toleransı. Kutuya sıkı geçen kartlarda ±0.1 mm seçin.','Outline routing tolerance. Choose ±0.1 mm for boards with a tight fit in an enclosure.'],
+  eTest:['Elektriksel test. Flying probe düşük-orta adette fikstürsüz test eder; E-test fixture yüksek adette hızlıdır ama fikstür ücreti vardır.','Electrical test. Flying probe needs no fixture and suits low/medium volume; an E-test fixture is faster at high volume but has a tooling cost.'],
+  ipcClass:['IPC-6012 performans sınıfı. Class 2: genel endüstriyel. Class 3: kesintisiz çalışması gereken askerî, havacılık ve tıbbi ürünler; kaplama ve halka kriterleri daha sıkıdır.','IPC-6012 performance class. Class 2: general industrial. Class 3: high-reliability military, aerospace and medical products, with stricter plating and annular-ring criteria.'],
+  ul:['Kart üzerine UL tanınırlık işareti ve yanıcılık sınıfı (94V-0) basılması.','UL recognition mark and flammability rating (94V-0) printed on the board.'],
+  mark:['Üreticinin kart üzerine sipariş numarası, seri no veya 2D barkod basıp basmayacağı. Remove Mark: hiçbir şey basılmaz.','Whether the fab prints an order number, serial number or 2D barcode on the board. Remove Mark: nothing is printed.'],
+  confirmFile:['Üretici, üretimden önce hazırladığı CAM verisini onayınıza sunar. Kritik kartlarda önerilir.','The fab sends its CAM data for your approval before production. Recommended for critical boards.'],
+  stencil:['Lehim pastası basmak için lazerle kesilmiş SMT şablonu.','Laser-cut SMT stencil for printing solder paste.'],
+  stFrame:['Framework: alüminyum çerçeveli, otomatik pasta yazıcısı için. Non-framework: çerçevesiz, elle baskı veya prototip için.','Framework: mounted in an aluminium frame for automatic stencil printers. Non-framework: frameless, for manual printing or prototypes.'],
+  stSize:['Çerçeveli stencil’in standart dış ölçüsü; pasta yazıcınıza uygun olanı seçin.','Standard outer size of the framed stencil; pick the one that fits your printer.'],
+  stCustom:['Çerçevesiz stencil ölçüsü. Kart veya panelden her kenarda en az ~20 mm büyük seçin.','Frameless stencil size. Make it at least ~20 mm larger than the board or panel on each side.'],
+  stSide:['Stencil’in hangi yüz(ler) için kesileceği.','Which side(s) the stencil is cut for.'],
+  stThk:['Stencil sac kalınlığı. 0.12 mm yaygındır; ince aralıklı parçalarda 0.10 mm, büyük pedlerde 0.15 mm.','Stencil foil thickness. 0.12 mm is common; 0.10 mm for fine pitch, 0.15 mm for large pads.'],
+  stQty:['Sipariş edilecek stencil adedi.','Number of stencils to order.'],
+  stPolish:['Açıklık duvarlarını parlatarak pastanın daha iyi bırakılmasını sağlar; ince aralıklı parçalarda önerilir.','Polishes the aperture walls for better paste release; recommended for fine pitch.'],
+  stFid:['Stencil üzerindeki fiducial işaretleri (yarım kazıma veya tam kesim); otomatik yazıcı hizalaması için.','Fiducials on the stencil (half-etched or cut through), for automatic printer alignment.'],
+  notes:['Üreticiye iletilecek ek talepler: konformal kaplama, X-out kabulü, test kuponu, ambalaj vb.','Extra requirements for the fab: conformal coating, X-out acceptance, test coupons, packaging, etc.'],
+};
+function applyI18n(){
+  const k=LANG==='en'?1:0; document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(e=>{ const v=I18N[e.dataset.i18n]; if(v) e.textContent=v[k]; });
+  document.title=I18N.appTitle[k];
+  $('#btnMeasure').title=T('Ölçüm (M)','Measure (M)'); $('#btnFit').title=T('Sığdır (F)','Fit (F)'); $('#hlBadgeX').title=T('Vurgulamayı temizle','Clear highlight');
+}
+function setLang(l){
+  LANG=l==='en'?'en':'tr'; setSeg('#segLang',LANG); applyI18n(); hideTip();
+  renderForm(); updateSummary(); renderLayerList(); renderDetect(); buildHLLists(); renderDCTable(); if(SEL) showInfo(SEL);
+  if(layers.some(l=>l.data)) $('#fileInfo').textContent=fileInfoText(); save();
+}
+/* “?” açıklama balonu */
+const tipEl=()=>$('#tip');
+function showTip(btn){ const h=HELP[btn.dataset.help]; if(!h) return; const t=tipEl(); t.textContent=h[LANG==='en'?1:0]; t.classList.add('show');
+  const r=btn.getBoundingClientRect(), tw=Math.min(320,window.innerWidth-16); t.style.width=tw+'px';
+  let x=r.left+r.width/2-tw/2; x=Math.max(8,Math.min(x,window.innerWidth-tw-8));
+  const th=t.offsetHeight; let y=r.top-th-8; t.classList.toggle('below',y<8); if(y<8) y=r.bottom+8;
+  t.style.left=x+'px'; t.style.top=y+'px'; tipEl()._b=btn; }
+function hideTip(){ const t=tipEl(); if(t){ t.classList.remove('show'); t._b=null; } }
+document.addEventListener('mouseover',e=>{ const b=e.target.closest&&e.target.closest('.help'); if(b) showTip(b); });
+document.addEventListener('mouseout',e=>{ const b=e.target.closest&&e.target.closest('.help'); if(b&&!b.contains(e.relatedTarget)&&!b.classList.contains('pinned')) hideTip(); });
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.help'); document.querySelectorAll('.help.pinned').forEach(x=>{ if(x!==b) x.classList.remove('pinned'); });
+  if(b){ e.preventDefault(); e.stopPropagation(); b.classList.toggle('pinned'); b.classList.contains('pinned')?showTip(b):hideTip(); } else hideTip(); },true);
+window.addEventListener('scroll',hideTip,true);
+
+
+
+/* =====================================================================
+   FORM TANIMI
+   ===================================================================== */
+const YN=['No','Yes'];
+const ALL_LAYERS=[1,2,4,6,8,10,12,14,16,18,20];
+const LAYERS_BY_MAT={'FR-4':ALL_LAYERS,'Flex':[1,2,4],'Aluminum':[1,2],'Copper Core':[1,2],'Rogers':[2,4,6],'PTFE Teflon':[2,4]};
+const QTYS=[5,10,15,20,25,30,50,75,100,125,150,200,250,300,350,400,450,500,600,700,800,900,1000,1500,2000,2500,3000,4000,5000,6000,8000,10000];
+const MASKC={Green:'#1f6b3a',Purple:'#5b2a86',Red:'#a3201d',Yellow:'#d4ae0c',Blue:'#1d3f8f',White:'#ecece8',Black:'#161616',
+  'Yellow (coverlay)':'#c98a1e','Black (coverlay)':'#1b1b1b','White (coverlay)':'#e8e6df'};
+const FINC={'HASL (with lead)':'#cdd1d5','LeadFree HASL':'#d3d7da','ENIG':'#e2bc57','OSP':'#c98a5c','Immersion Silver':'#e1e4e6','Immersion Tin':'#d9dcdc'};
+const SUBC={'FR-4':'#cbb983','Flex':'#c98a1e','Aluminum':'#cfd2d4','Copper Core':'#b87333','Rogers':'#e6dfcb','PTFE Teflon':'#eee8da'};
+const isPanel=s=>+s.panelQty>1, isMfrPanel=isPanel, L=s=>+s.layers;
+
+function thkOpts(s){
+  if(s.material==='Flex') return ['0.07','0.11','0.12','0.2'];
+  if(s.material==='Aluminum'||s.material==='Copper Core') return ['0.8','1.0','1.2','1.5','1.6','2.0'];
+  const n=L(s), min=n<=2?0.4:n===4?0.6:n===6?0.8:n<=10?1.0:1.6, max=n<=2?2.0:n<=6?2.5:3.2;
+  return ['0.4','0.6','0.8','1.0','1.2','1.6','2.0','2.5','3.0','3.2'].map(v=>({v,dis:+v<min-1e-9||+v>max+1e-9}));
+}
+const SECS=[
+  ['proj','Proje bilgisi','Project'],
+  ['base','Temel seçenekler','Basic options'],
+  ['build','Malzeme ve yüzey','Material & finish'],
+  ['holes','Delik ve via','Holes & vias'],
+  ['adv','Özel işlemler ve kalite','Special options & quality'],
+  ['stencil','SMT stencil','SMT stencil'],
+  ['notes','Notlar','Notes'],
+];
+const FIELDS=[
+  {id:'projName',sec:'proj',tr:'Proje / kart adı',en:'Project / board name',type:'text',def:'',ph:['ör. PSU_28V_5V','e.g. PSU_28V_5V']},
+  {id:'partNo',sec:'proj',tr:'Parça no',en:'Part number',type:'text',def:'',ph:['ör. ANV-PCB-0012','e.g. ANV-PCB-0012']},
+  {id:'rev',sec:'proj',tr:'Revizyon',en:'Revision',type:'text',def:'A'},
+
+  {id:'material',sec:'base',tr:'Taban malzeme',en:'Base material',type:'chips',opts:['FR-4','Flex'],def:'FR-4'},
+  {id:'layers',sec:'base',tr:'Katman sayısı',en:'Layers',type:'chips',opts:s=>ALL_LAYERS.map(n=>({v:String(n),dis:!LAYERS_BY_MAT[s.material].includes(n)})),def:'2'},
+  {id:'dims',sec:'base',tr:'Boyut (G × U)',en:'Dimensions (W × L)',type:'dims',def:['',''],unit:'mm'},
+  {id:'qty',sec:'base',tr:'Adet',en:'Quantity',type:'qty',def:'5'},
+  {id:'panelQty',sec:'base',tr:'Kaçlı panel (kart / panel)',en:'Boards per panel',type:'number',def:'1',unit:['kart','pcs']},
+  {id:'panel',sec:'base',tr:'Dizilim (isteğe bağlı)',en:'Layout cols × rows (optional)',type:'pair',def:['',''],show:isMfrPanel},
+  {id:'rails',sec:'base',tr:'Kenar rayı',en:'Edge rails',type:'chips',opts:['None','2 sides (L/R)','2 sides (T/B)','4 sides'],def:'2 sides (T/B)',show:isMfrPanel},
+  {id:'railW',sec:'base',tr:'Ray genişliği',en:'Edge rail width',type:'number',def:'5',unit:'mm',show:s=>isMfrPanel(s)&&s.rails!=='None'},
+  {id:'panelMethod',sec:'base',tr:'Ayırma yöntemi',en:'Panel separation',type:'chips',opts:['V-Cut','Tab-route (mouse bites)','V-Cut + Tab-route'],def:'V-Cut',show:isMfrPanel},
+  {id:'panelFid',sec:'base',tr:'Panel fiducial',en:'Panel fiducials',type:'chips',opts:YN,def:'Yes',show:isMfrPanel},
+
+  {id:'thickness',sec:'build',tr:'Kart kalınlığı',en:'PCB thickness',type:'chips',opts:thkOpts,def:'1.6',unit:'mm'},
+  {id:'tg',sec:'build',tr:'Malzeme (Tg)',en:'Material type',type:'chips',opts:['FR4 TG135-140','FR4 TG155','FR4 TG170'],def:'FR4 TG155',show:s=>s.material==='FR-4'},
+  {id:'color',sec:'build',tr:'Solder mask rengi',en:'Solder mask color',type:'chips',
+    opts:s=>s.material==='Flex'?['Yellow (coverlay)','Black (coverlay)','White (coverlay)']:s.material==='Aluminum'?['White','Black','Green']:['Green','Purple','Red','Yellow','Blue','White','Black'],def:'Green',sw:MASKC},
+  {id:'silk',sec:'build',tr:'Silkscreen rengi',en:'Silkscreen',type:'chips',opts:['White','Black'],def:'White',sw:{White:'#f5f5f2',Black:'#151515'}},
+  {id:'finish',sec:'build',tr:'Yüzey kaplama',en:'Surface finish',type:'chips',
+    opts:s=>s.material==='Flex'?['ENIG']:s.material==='Aluminum'?['HASL (with lead)','LeadFree HASL','OSP','ENIG']:['HASL (with lead)','LeadFree HASL','ENIG','OSP','Immersion Silver','Immersion Tin'],def:'ENIG',sw:FINC},
+  {id:'enig',sec:'build',tr:'ENIG altın kalınlığı',en:'ENIG gold thickness',type:'chips',opts:['1 µ"','2 µ"','3 µ"'],def:'1 µ"',show:s=>s.finish==='ENIG'},
+  {id:'outerCu',sec:'build',tr:'Dış katman bakır',en:'Outer copper weight',type:'chips',opts:['1 oz','2 oz','3 oz'],def:'1 oz'},
+  {id:'innerCu',sec:'build',tr:'İç katman bakır',en:'Inner copper weight',type:'chips',opts:['0.5 oz','1 oz','2 oz'],def:'0.5 oz',show:s=>L(s)>=4},
+  {id:'impedance',sec:'build',tr:'Empedans kontrolü',en:'Impedance control',type:'chips',opts:YN,def:'No',show:s=>L(s)>=2},
+  {id:'stackup',sec:'build',tr:'Stackup / empedans hedefi',en:'Stack-up / impedance targets',type:'text',def:'',ph:['ör. JLC04161H-7628 · 50 Ω SE, 100 Ω diff','e.g. JLC04161H-7628 · 50 Ω SE, 100 Ω diff'],show:s=>L(s)>=2&&s.impedance==='Yes'},
+
+  {id:'viaCover',sec:'holes',tr:'Via kaplama',en:'Via covering',type:'chips',opts:['Tented','Untented','Plugged','Epoxy Filled & Capped','Copper Paste Filled & Capped'],def:'Tented',show:s=>L(s)>=2},
+  {id:'minVia',sec:'holes',tr:'Min via delik / çap',en:'Min via hole size / diameter',type:'chips',opts:['0.3mm/(0.4/0.45mm)','0.25mm/(0.35/0.40mm)','0.2mm/(0.3/0.35mm)','0.15mm/(0.25/0.3mm)'],def:'0.3mm/(0.4/0.45mm)'},
+  {id:'castellated',sec:'holes',tr:'Castellated (yarım) delik',en:'Castellated holes',type:'chips',opts:YN,def:'No'},
+  {id:'edgePlating',sec:'holes',tr:'Kenar kaplama',en:'Edge plating',type:'chips',opts:YN,def:'No'},
+  {id:'pressFit',sec:'holes',tr:'Press-fit delik',en:'Press-fit holes',type:'chips',opts:YN,def:'No'},
+  {id:'countersink',sec:'holes',tr:'Havşa / counterbore',en:'Countersink / counterbore',type:'chips',opts:YN,def:'No'},
+
+  {id:'goldFingers',sec:'adv',tr:'Altın parmak',en:'Gold fingers',type:'chips',opts:YN,def:'No'},
+  {id:'chamfer',sec:'adv',tr:'Parmak pahı',en:'Finger chamfer',type:'chips',opts:['No','30°','45°'],def:'30°',show:s=>s.goldFingers==='Yes'},
+  {id:'outlineTol',sec:'adv',tr:'Dış hat toleransı',en:'Board outline tolerance',type:'chips',opts:['±0.2mm (Regular)','±0.1mm (Precision)'],def:'±0.2mm (Regular)'},
+  {id:'eTest',sec:'adv',tr:'Elektriksel test',en:'Electrical test',type:'chips',opts:['Flying Probe Fully Test','E-test Fixture'],def:'Flying Probe Fully Test'},
+  {id:'ipcClass',sec:'adv',tr:'Kalite sınıfı (IPC-6012)',en:'Quality class (IPC-6012)',type:'chips',opts:['IPC Class 2','IPC Class 3'],def:'IPC Class 3'},
+  {id:'ul',sec:'adv',tr:'UL işareti',en:'UL marking',type:'chips',opts:YN,def:'No'},
+  {id:'mark',sec:'adv',tr:'Kart üzerine işaret',en:'Mark on PCB',type:'chips',opts:['Remove Mark','Order Number','Order Number (Specify Position)','2D Barcode','Serial Number'],def:'Remove Mark'},
+  {id:'confirmFile',sec:'adv',tr:'Üretim dosyası onayı',en:'Confirm production file',type:'chips',opts:YN,def:'Yes'},
+
+  {id:'stencil',sec:'stencil',tr:'Stencil siparişi',en:'Stencil order',type:'chips',opts:YN,def:'No'},
+  {id:'stFrame',sec:'stencil',tr:'Stencil tipi',en:'Stencil type',type:'chips',opts:['Framework','Non-framework'],def:'Non-framework',show:s=>s.stencil==='Yes'},
+  {id:'stSize',sec:'stencil',tr:'Çerçeve boyutu',en:'Frame size',type:'chips',opts:['380×280 mm','370×470 mm','420×520 mm','550×650 mm','736×736 mm'],def:'380×280 mm',show:s=>s.stencil==='Yes'&&s.stFrame==='Framework'},
+  {id:'stCustom',sec:'stencil',tr:'Stencil boyutu (G × U)',en:'Stencil size (W × L)',type:'dims',def:['100','100'],unit:'mm',show:s=>s.stencil==='Yes'&&s.stFrame==='Non-framework'},
+  {id:'stSide',sec:'stencil',tr:'Stencil katmanı',en:'Stencil side',type:'chips',opts:['Top','Bottom','Top & Bottom (single stencil)','Top & Bottom (separate)'],def:'Top',show:s=>s.stencil==='Yes'},
+  {id:'stThk',sec:'stencil',tr:'Stencil kalınlığı',en:'Stencil thickness',type:'chips',opts:['0.08','0.10','0.12','0.13','0.15','0.18','0.20'],def:'0.12',unit:'mm',show:s=>s.stencil==='Yes'},
+  {id:'stQty',sec:'stencil',tr:'Stencil adedi',en:'Stencil quantity',type:'number',def:'1',show:s=>s.stencil==='Yes'},
+  {id:'stPolish',sec:'stencil',tr:'Elektro-parlatma',en:'Electropolishing',type:'chips',opts:YN,def:'No',show:s=>s.stencil==='Yes'},
+  {id:'stFid',sec:'stencil',tr:'Fiducial',en:'Fiducials',type:'chips',opts:['None','Half Lasered','Lasered Through'],def:'None',show:s=>s.stencil==='Yes'},
+
+  {id:'notes',sec:'notes',tr:'Ek notlar',en:'Additional notes',type:'textarea',def:'',ph:['ör. Konformal kaplama sonrası montaj; empedans kuponu ekleyin; X-out kabul edilmez…','e.g. Assembly after conformal coating; add impedance coupons; no X-outs accepted…']},
+];
+const FBY=Object.fromEntries(FIELDS.map(f=>[f.id,f]));
+
+let S={};
+function defaults(){ const o={qtyCustom:false}; for(const f of FIELDS) o[f.id]=Array.isArray(f.def)?[...f.def]:f.def; return o; }
+function load(){ S=defaults(); try{ const j=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(j&&typeof j==='object'){ for(const k in j) if(k in S) S[k]=j[k]; if(j.delivery==='Single PCB'||(j.delivery&&!('panelQty' in j))) S.panelQty='1'; if(j._lang) LANG=j._lang; } }catch(e){} }
+function save(){ try{ localStorage.setItem(LS_KEY,JSON.stringify({...S,_lang:LANG})); }catch(e){} }
+function optList(f,s){ const o=typeof f.opts==='function'?f.opts(s):f.opts; return o.map(x=>typeof x==='string'?{v:x,dis:false}:x); }
+function shown(f){ return !f.show||f.show(S); }
+function normalize(){
+  for(const f of FIELDS){ if(f.type!=='chips') continue;
+    const ok=optList(f,S).filter(x=>!x.dis).map(x=>x.v);
+    if(!ok.includes(S[f.id])) S[f.id]=ok.includes(f.def)?f.def:ok[0]; }
+}
+
+const form=$('#form');
+const UN=f=>Array.isArray(f.unit)?T(f.unit[0],f.unit[1]):(f.unit||'');
+const PH=f=>Array.isArray(f.ph)?T(f.ph[0],f.ph[1]):(f.ph||'');
+function rowHtml(f){
+  let c='';
+  const v=S[f.id];
+  if(f.type==='chips'){
+    c='<div class="chips">'+optList(f,S).map(o=>`<button type="button" class="chip${v===o.v?' on':''}" data-f="${f.id}" data-v="${esc(o.v)}"${o.dis?' disabled':''}>${f.sw&&f.sw[o.v]?`<i class="sw" style="background:${f.sw[o.v]}"></i>`:''}${esc(o.v)}</button>`).join('')+(f.unit?`<span class="unit">${UN(f)}</span>`:'')+'</div>';
+  }else if(f.type==='text'){
+    c=`<input type="text" data-f="${f.id}" value="${esc(v)}" placeholder="${esc(PH(f))}">`;
+  }else if(f.type==='textarea'){
+    c=`<textarea data-f="${f.id}" placeholder="${esc(PH(f))}">${esc(v)}</textarea>`;
+  }else if(f.type==='dims'||f.type==='pair'){
+    c=`<div class="inl"><input type="number" min="0" step="any" data-f="${f.id}" data-i="0" value="${esc(v[0])}" placeholder="${f.type==='dims'?T('G','W'):T('sütun','cols')}"><span>×</span><input type="number" min="0" step="any" data-f="${f.id}" data-i="1" value="${esc(v[1])}" placeholder="${f.type==='dims'?T('U','L'):T('satır','rows')}">${f.unit?`<span class="unit">${UN(f)}</span>`:''}</div>`;
+  }else if(f.type==='number'){
+    c=`<div class="inl"><input type="number" min="0" step="any" data-f="${f.id}" value="${esc(v)}">${f.unit?`<span class="unit">${UN(f)}</span>`:''}</div>`;
+  }else if(f.type==='qty'){
+    const custom=S.qtyCustom||!QTYS.includes(+v);
+    c=`<div class="inl"><select id="qtySel">${QTYS.map(q=>`<option value="${q}"${!custom&&+v===q?' selected':''}>${q}</option>`).join('')}<option value="custom"${custom?' selected':''}>${T('Özel adet…','Custom qty…')}</option></select>${custom?`<input type="number" min="1" step="1" data-f="qty" value="${esc(v)}">`:''}<span class="unit">${isPanel(S)?T('panel','panels'):T('adet','pcs')}</span></div>`;
+  }
+  const en=LANG==='en';
+  return `<div class="frow"><div class="flab"><span class="ltxt">${en?f.en:f.tr}${HELP[f.id]?`<button type="button" class="help" data-help="${f.id}" aria-label="${T('Açıklama','Help')}">?</button>`:''}</span><small>${en?f.tr:f.en}</small></div><div class="fctl">${c}</div></div>`;
+}
+function renderForm(){
+  const h=[];
+  for(const [sid,tr,en] of SECS){
+    const fs=FIELDS.filter(f=>f.sec===sid&&shown(f)); if(!fs.length) continue;
+    h.push(`<section class="fsec"><h3>${LANG==='en'?en:tr}<span>${LANG==='en'?tr:en}</span></h3>`);
+    fs.forEach(f=>h.push(rowHtml(f)));
+    h.push('</section>');
+  }
+  form.innerHTML=h.join('');
+}
+form.addEventListener('submit',e=>e.preventDefault());
+form.addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b||b.disabled) return;
+  const id=b.dataset.f, v=b.dataset.v, prev=S[id]; S[id]=v;
+  if(id==='color'&&prev!==v) S.silk=/White/.test(v)?'Black':'White';
+  normalize(); renderForm(); afterChange(true);
+});
+form.addEventListener('input',e=>{
+  const t=e.target, id=t.dataset.f; if(!id) return;
+  if(t.dataset.i!==undefined){ const a=[...S[id]]; a[+t.dataset.i]=t.value; S[id]=a; } else S[id]=t.value;
+  afterChange(false);
+});
+form.addEventListener('change',e=>{
+  const t=e.target; if(t.id!=='qtySel') return;
+  if(t.value==='custom'){ S.qtyCustom=true; } else { S.qtyCustom=false; S.qty=t.value; }
+  renderForm(); afterChange(false);
+});
+function afterChange(viewer){ updateSummary(); save(); if(viewer&&V.mode!=='layers') renderFull(); }
+
+/* =====================================================================
+   ÖZET
+   ===================================================================== */
+const num2=v=>{ const n=parseFloat(v); return isFinite(n)?(Math.round(n*100)/100).toString():''; };
+function fmtVal(f){
+  const v=S[f.id];
+  switch(f.type){
+    case 'chips': return v+(f.unit?' '+f.unit:'');
+    case 'text': case 'textarea': return (v||'').trim();
+    case 'dims': return (num2(v[0])&&num2(v[1]))?`${num2(v[0])} × ${num2(v[1])} ${f.unit||''}`.trim():'';
+    case 'pair': return (v[0]&&v[1])?`${v[0]} × ${v[1]}`:'';
+    case 'number': return v===''?'':v+(f.unit?' '+UN(f):'');
+    case 'qty': return v?`${v} ${isPanel(S)?(LANG==='tr'?'panel':'panels'):(LANG==='tr'?'adet':'pcs')}`:'';
+  }
+  return String(v);
+}
+function panelCalc(){
+  const w=+S.dims[0], h=+S.dims[1], c=+(S.panel||[])[0], r=+(S.panel||[])[1];
+  if(!(w>0&&h>0&&c>0&&r>0)) return null;
+  const gap=/Tab/.test(S.panelMethod)?2:0, rw=S.rails==='None'?0:(+S.railW||0);
+  const lr=S.rails==='2 sides (L/R)'||S.rails==='4 sides', tb=S.rails==='2 sides (T/B)'||S.rails==='4 sides';
+  return {W:c*w+(c-1)*gap+(lr?2*rw:0), H:r*h+(r-1)*gap+(tb?2*rw:0), per:c*r};
+}
+function summaryRows(){
+  const rows=[], tr=LANG==='tr';
+  for(const [sid,t,e] of SECS){
+    const fs=FIELDS.filter(f=>f.sec===sid&&shown(f)); const sec=[];
+    for(const f of fs){ const val=fmtVal(f); if(!val||(f.id==='panelQty'&&!isPanel(S))) continue; sec.push([tr?f.tr:f.en,val]);
+      if(isPanel(S)&&f.id===(isMfrPanel(S)?'panelFid':'panelQty')){
+        { const p=panelCalc(); const per=+S.panelQty||0;
+          if(isMfrPanel(S)&&p) sec.push([tr?'Panel boyutu (hesaplanan)':'Panel size (calculated)',`${num2(p.W)} × ${num2(p.H)} mm`]);
+          if(per>0&&+S.qty>0) sec.push([tr?'Toplam kart adedi':'Total boards',`${per*S.qty} ${tr?'adet':'pcs'} (${S.qty} × ${per})`]); }
+      }
+    }
+    if(sid==='base'&&layers.length){
+      sec.push([tr?'Gerber dosyası':'Gerber file',loadedLabel]);
+      if(det) sec.push([tr?"Gerber'den algılanan":'Detected from Gerber',detSummary(tr)]);
+      if(det&&det.job){ const J=det.job;
+        if(J.minLine) sec.push([tr?'Min iz genişliği (dış / iç)':'Min track width (outer / inner)',`${r3(J.minLine)}${J.minLineIn?' / '+r3(J.minLineIn):''} mm`]);
+        if(J.minClr) sec.push([tr?'Min aralık (dış / iç)':'Min clearance (outer / inner)',`${r3(J.minClr)}${J.minClrIn?' / '+r3(J.minClrIn):''} mm`]); }
+    }
+    if(sec.length) rows.push({sec:tr?t:e,rows:sec});
+  }
+  return rows;
+}
+function detSummary(tr){
+  const p=[];
+  if(det.cu) p.push(`${det.cu} ${tr?'bakır katman':'copper layers'}`);
+  if(det.w) p.push(`${num2(det.w)} × ${num2(det.h)} mm`);
+  if(det.holes) p.push(`${det.holes} ${tr?'delik':'holes'}${det.slots?` (${det.slots} slot)`:''}`);
+  if(isFinite(det.minPTH)) p.push(`${tr?'min PTH':'min PTH'} ${num2(det.minPTH)} mm`);
+  return p.join(', ');
+}
+function warnings(){
+  const w=[];
+  if(!(+S.dims[0]>0&&+S.dims[1]>0)) w.push(['',T('Kart boyutu girilmedi.','Board size is missing.')]);
+  if(isPanel(S)&&!(+S.panelQty>0)) w.push(['',T('Kaçlı panel olduğu (kart / panel) girilmedi.','Boards per panel is missing.')]);
+  if(isMfrPanel(S)&&+S.panel[0]>0&&+S.panel[1]>0&&+S.panelQty>0&&S.panel[0]*S.panel[1]!==+S.panelQty) w.push(['',T(`Dizilim ${S.panel[0]} × ${S.panel[1]} = ${S.panel[0]*S.panel[1]} kart; kaçlı panel ${S.panelQty} girildi.`,`Layout ${S.panel[0]} × ${S.panel[1]} = ${S.panel[0]*S.panel[1]} boards, but boards per panel is ${S.panelQty}.`)]);
+  if(det){
+    if(det.cu&&String(det.cu)!==S.layers) w.push(['',T(`Gerber'de ${det.cu} bakır katman var, formda ${S.layers} seçili.`,`Gerbers have ${det.cu} copper layers but ${S.layers} is selected.`)]);
+    if(isFinite(det.minPTH)){ const sel=parseFloat(S.minVia); if(det.minPTH<sel-1e-6) w.push(['',T(`En küçük kaplamalı delik ${num2(det.minPTH)} mm; seçilen min via deliği ${sel} mm.`,`Smallest plated hole is ${num2(det.minPTH)} mm; selected min via hole is ${sel} mm.`)]); }
+    if(det.w&&(Math.abs(det.w-(+S.dims[0]))>0.3||Math.abs(det.h-(+S.dims[1]))>0.3)) w.push(['',T(`Formdaki boyut Gerber dış hattından (${num2(det.w)} × ${num2(det.h)} mm) farklı.`,`Form size differs from the Gerber outline (${num2(det.w)} × ${num2(det.h)} mm).`)]);
+    if(det.noOutline) w.push(['',T('Dış hat (Edge.Cuts / outline) katmanı bulunamadı; boyut bakır sınırlarından tahmin edildi.','No outline (Edge.Cuts) layer found; size estimated from copper extents.')]);
+  }
+  if(S.impedance==='Yes'&&shown(FBY.impedance)&&!S.stackup.trim()) w.push(['',T('Empedans kontrolü seçili ama stackup / hedef empedans yazılmadı.','Impedance control is selected but no stack-up / target impedance is given.')]);
+  if(!layers.length) w.push(['info',T('Gerber yüklenmedi; özet yalnızca form seçimlerini içerir.','No Gerber loaded; the summary contains form selections only.')]);
+  return w;
+}
+function titleLine(){
+  const tr=LANG==='tr', d=new Date().toISOString().slice(0,10);
+  const n=[S.projName,S.partNo].filter(Boolean).join(' / ');
+  return `${tr?'PCB Sipariş Özeti':'PCB Order Summary'}${n?' — '+n:''}${S.rev?' — Rev. '+S.rev:''} — ${d}`;
+}
+function updateSummary(){
+  const rows=summaryRows();
+  $('#sumTable').innerHTML=rows.map(s=>`<tr class="sh"><td colspan="2">${esc(s.sec)}</td></tr>`+s.rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1]).replace(/\n/g,'<br>')}</td></tr>`).join('')).join('');
+  $('#warn').innerHTML=warnings().map(([c,t])=>`<div class="w ${c}">${esc(t)}</div>`).join('');
+}
+function asHtml(){
+  const rows=summaryRows(), tr=LANG==='tr';
+  const td='border:1px solid #c9ced6;padding:4px 8px;font-family:Arial,sans-serif;font-size:10pt;vertical-align:top';
+  let h=`<table style="border-collapse:collapse"><tr><th colspan="2" style="${td};background:#1f6b3a;color:#fff;text-align:left">${esc(titleLine())}</th></tr>`;
+  h+=`<tr><th style="${td};background:#e9ecf1;text-align:left">${tr?'Parametre':'Parameter'}</th><th style="${td};background:#e9ecf1;text-align:left">${tr?'Seçim':'Value'}</th></tr>`;
+  for(const s of rows){ h+=`<tr><td colspan="2" style="${td};background:#f4f6f8;font-weight:bold">${esc(s.sec)}</td></tr>`;
+    for(const r of s.rows) h+=`<tr><td style="${td}">${esc(r[0])}</td><td style="${td}">${esc(r[1]).replace(/\n/g,'<br>')}</td></tr>`; }
+  return h+'</table>';
+}
+function asTsv(){
+  const rows=summaryRows(), tr=LANG==='tr'; let t=titleLine()+'\n'+(tr?'Parametre\tSeçim':'Parameter\tValue')+'\n';
+  for(const s of rows){ t+=`[${s.sec}]\t\n`; for(const r of s.rows) t+=`${r[0]}\t${r[1].replace(/\s*\n\s*/g,' / ')}\n`; }
+  return t;
+}
+function asText(){
+  const rows=summaryRows(); let t=titleLine()+'\n'+'='.repeat(60)+'\n';
+  for(const s of rows){ t+=`\n${s.sec.toLocaleUpperCase(LANG==='tr'?'tr-TR':'en-US')}\n`; for(const r of s.rows){ const lines=r[1].split('\n'); t+=`  ${(r[0]+' ').padEnd(34,'.')} ${lines[0]}\n`; lines.slice(1).forEach(l=>t+=' '.repeat(38)+l+'\n'); } }
+  return t;
+}
+function asMd(){
+  const rows=summaryRows(), tr=LANG==='tr'; let t=`**${titleLine()}**\n\n| ${tr?'Parametre':'Parameter'} | ${tr?'Seçim':'Value'} |\n|---|---|\n`;
+  for(const s of rows){ t+=`| **${s.sec}** | |\n`; for(const r of s.rows) t+=`| ${r[0]} | ${r[1].replace(/\|/g,'\\|').replace(/\n/g,'<br>')} |\n`; }
+  return t;
+}
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800); }
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+}
+async function copyRich(html,text){
+  try{ if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([text],{type:'text/plain'})})]); return true; } }catch(e){}
+  return copyText(text);
+}
+function fallback(t){ $('#mtext').value=t; $('#modal').classList.add('show'); setTimeout(()=>{$('#mtext').focus();$('#mtext').select();},30); }
+$('#mclose').onclick=()=>$('#modal').classList.remove('show');
+$('#cpTable').onclick=async()=>{ const t=asTsv(); (await copyRich(asHtml(),t))?toast(T('Tablo kopyalandı — Excel / e-postaya yapıştırın','Table copied — paste into Excel / e-mail')):fallback(t); };
+$('#cpText').onclick=async()=>{ const t=asText(); (await copyText(t))?toast(T('Düz metin kopyalandı','Plain text copied')):fallback(t); };
+$('#cpMd').onclick=async()=>{ const t=asMd(); (await copyText(t))?toast(T('Markdown kopyalandı','Markdown copied')):fallback(t); };
+$('#segLang').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setLang(b.dataset.v); });
+$('#btnReset').onclick=()=>{ const keep={projName:S.projName,partNo:S.partNo,rev:S.rev}; S=defaults(); Object.assign(S,keep); if(det) applyDetect(); normalize(); renderForm(); updateSummary(); save(); renderFull(); toast(T('Seçenekler varsayılana döndü (proje bilgisi korundu)','Options reset to defaults (project info kept)')); };
+function setSeg(sel,v){ document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
+
+/* =====================================================================
+   PDF RAPOR (jsPDF + AutoTable + gömülü DejaVu Sans alt kümesi)
+   ===================================================================== */
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
+let pdfLibP=null, SNAP=null;
+function ensurePdfLibs(){
+  if(!pdfLibP) pdfLibP=(async()=>{
+    if(!(window.jspdf&&window.jspdf.jsPDF)) await loadScript('lib/jspdf.umd.min.js');
+    if(!window.jspdf.jsPDF.API.autoTable) await loadScript('lib/jspdf.plugin.autotable.min.js');
+    if(!window.PDF_FONTS) await loadScript('lib/pdf-fonts.js');
+  })().catch(e=>{ pdfLibP=null; throw e; });
+  return pdfLibP;
+}
+/* Kartın gerçekçi görüntüsünü ekrandaki görünümü bozmadan çiz */
+function snapshot(side,maxW,maxH){
+  const b=contentBounds(); if(!b) return null;
+  const bw=Math.max(b.maxx-b.minx,1), bh=Math.max(b.maxy-b.miny,1), k=Math.min(maxW/bw,maxH/bh);
+  const W=Math.round(bw*k), H=Math.round(bh*k);
+  const sv={...V}, sD=DPR;
+  SNAP={W,H}; DPR=1; V.side=side; V.mode='real';
+  V.zoom=Math.min(W/bw,H/bh)*0.94; const cx=(b.minx+b.maxx)/2, cy=(b.miny+b.maxy)/2; V.panX=W/2-sgn()*V.zoom*cx; V.panY=H/2+V.zoom*cy;
+  const out=getC(0), o=out.getContext('2d'); clr(o); renderReal(o);
+  o.setTransform(1,0,0,1,0,0); o.globalCompositeOperation='destination-over'; o.fillStyle='#1b1f26'; o.fillRect(0,0,W,H); o.globalCompositeOperation='source-over';
+  const url=out.toDataURL('image/jpeg',0.9);
+  SNAP=null; Object.assign(V,sv); DPR=sD; cache=null;
+  return {url,W,H};
+}
+async function deliver(name,blob){
+  let ns=null; try{ if(window.claude&&typeof window.claude.use==='function') ns=await window.claude.use('downloads'); }catch(e){}
+  if(ns){
+    try{ await ns.save({filename:name,data:blob}); toast(T('PDF kaydedildi','PDF saved')); return; }
+    catch(e){ const c=e&&e.code;
+      if(c==='declined'){ toast(T('İndirme iptal edildi','Download cancelled')); return; }
+      if(c==='rate_limited'){ toast(T('Bir indirme onayı zaten açık','A download prompt is already open')); return; } }
+  }
+  try{ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000); toast(T('PDF indiriliyor: ','Downloading PDF: ')+name); }
+  catch(e){ toast(T('Bu görünümde indirme kullanılamıyor','Downloads are unavailable in this view')); }
+}
+async function makePdf(){
+  const btn=$('#cpPdf'); const old=btn.textContent; btn.disabled=true; btn.textContent=T('Hazırlanıyor…','Preparing…');
+  try{
+    await ensurePdfLibs();
+    const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4',compress:true});
+    doc.addFileToVFS('DejaVuSans.ttf',PDF_FONTS.r); doc.addFont('DejaVuSans.ttf','DejaVu','normal');
+    doc.addFileToVFS('DejaVuSans-Bold.ttf',PDF_FONTS.b); doc.addFont('DejaVuSans-Bold.ttf','DejaVu','bold');
+    const PW=210, PH=297, M=14, date=new Date().toISOString().slice(0,10);
+    doc.setProperties({title:titleLine(),subject:T('PCB sipariş özeti','PCB order summary'),creator:T('PCB Sipariş Hazırlayıcı','PCB Order Builder')});
+    // başlık bandı
+    doc.setFillColor(31,107,58); doc.rect(0,0,PW,20,'F');
+    doc.setTextColor(255,255,255); doc.setFont('DejaVu','bold'); doc.setFontSize(15); doc.text(T('PCB Sipariş Özeti','PCB Order Summary'),M,11);
+    doc.setFont('DejaVu','normal'); doc.setFontSize(8.5); doc.text(T('Üretici için sipariş ve üretim seçenekleri','Order and fabrication options for the manufacturer'),M,16);
+    doc.setFontSize(10); doc.text(date,PW-M,11,{align:'right'});
+    // proje başlık bloğu
+    let y=25; const cells=[[T('Proje / kart','Project / board'),S.projName||'—'],[T('Parça no','Part number'),S.partNo||'—'],[T('Revizyon','Revision'),S.rev?'Rev. '+S.rev:'—'],[T('Gerber dosyası','Gerber file'),loadedLabel||'—']];
+    const cw4=(PW-2*M)/4; doc.setDrawColor(220,224,230); doc.setLineWidth(0.2);
+    cells.forEach(([k,v],i)=>{ const x=M+i*cw4; doc.rect(x,y,cw4,13);
+      doc.setFont('DejaVu','normal'); doc.setFontSize(7); doc.setTextColor(110,118,130); doc.text(k,x+2.5,y+4.5);
+      doc.setFont('DejaVu','bold'); doc.setFontSize(9.5); doc.setTextColor(22,26,32); doc.text(doc.splitTextToSize(String(v),cw4-5)[0],x+2.5,y+10); });
+    y+=18;
+    // kart görüntüleri
+    if(layers.some(l=>l.data)){
+      const top=snapshot('top',1000,760), bot=snapshot('bottom',1000,760); renderFull();
+      if(top){ const colW=(PW-2*M-6)/2, r=top.H/top.W, h=Math.min((colW-4)*r+4,82);
+        [[top,T('Üst yüz','Top side')],[bot,T('Alt yüz','Bottom side')]].forEach(([im,cap],i)=>{ if(!im) return; const x=M+i*(colW+6);
+          doc.setFillColor(27,31,38); doc.roundedRect(x,y,colW,h,1.5,1.5,'F');
+          let iw=colW-4, ih=iw*im.H/im.W; if(ih>h-4){ ih=h-4; iw=ih*im.W/im.H; }
+          doc.addImage(im.url,'JPEG',x+(colW-iw)/2,y+(h-ih)/2,iw,ih,undefined,'FAST');
+          doc.setFont('DejaVu','normal'); doc.setFontSize(7.5); doc.setTextColor(110,118,130); doc.text(cap,x,y+h+4); });
+        y+=h+8;
+        if(det){ doc.setFontSize(8); doc.setTextColor(70,78,90); const ln=doc.splitTextToSize(T('Gerber\'den algılanan: ','Detected from Gerber: ')+detSummary(LANG==='tr'),PW-2*M); doc.text(ln,M,y); y+=ln.length*3.8+2; }
+      }
+    }
+    // uyarılar
+    const ws=warnings().filter(w=>w[0]!=='info').map(w=>w[1]);
+    if(ws.length){ doc.setFontSize(8.3); const lines=[]; ws.forEach(w=>lines.push(...doc.splitTextToSize('• '+w,PW-2*M-8)));
+      const h=lines.length*3.9+8; doc.setFillColor(255,246,229); doc.setDrawColor(240,200,130); doc.roundedRect(M,y,PW-2*M,h,1.5,1.5,'FD');
+      doc.setFont('DejaVu','bold'); doc.setTextColor(154,91,0); doc.text(T('Uyarılar','Warnings'),M+4,y+5);
+      doc.setFont('DejaVu','normal'); doc.text(lines,M+4,y+9.5); y+=h+5; }
+    // seçenek tablosu
+    const body=[];
+    for(const s of summaryRows()){ body.push([{content:s.sec,colSpan:2,styles:{fillColor:[236,241,238],textColor:[31,107,58],fontStyle:'bold',fontSize:8.5}}]); s.rows.forEach(r=>body.push([r[0],r[1]])); }
+    doc.autoTable({startY:y,head:[[T('Parametre','Parameter'),T('Seçim','Value')]],body,theme:'grid',margin:{left:M,right:M,top:14,bottom:16},
+      styles:{font:'DejaVu',fontSize:8.6,cellPadding:{top:1.6,bottom:1.6,left:2.2,right:2.2},lineColor:[222,226,232],lineWidth:0.15,textColor:[22,26,32],overflow:'linebreak',valign:'top'},
+      headStyles:{fillColor:[22,26,32],textColor:[255,255,255],fontStyle:'bold'},
+      columnStyles:{0:{cellWidth:66,textColor:[85,93,105]}}});
+    // altbilgi
+    const n=doc.getNumberOfPages();
+    for(let i=1;i<=n;i++){ doc.setPage(i); doc.setDrawColor(222,226,232); doc.line(M,PH-12,PW-M,PH-12);
+      doc.setFont('DejaVu','normal'); doc.setFontSize(7.3); doc.setTextColor(120,126,136);
+      doc.text(doc.splitTextToSize(titleLine(),PW-2*M-30)[0],M,PH-8); doc.text(`${T('Sayfa','Page')} ${i} / ${n}`,PW-M,PH-8,{align:'right'}); }
+    const safe=v=>String(v).replace(/[^\w.-]+/g,'_').replace(/^_+|_+$/g,'');
+    const fname=`${safe(S.projName||'PCB')||'PCB'}_Rev${safe(S.rev||'A')}_${T('siparis','order')}.pdf`;
+    window.__pdfBlob=doc.output('blob');
+    await deliver(fname,window.__pdfBlob);
+  }catch(e){ console.error(e); toast(T('PDF oluşturulamadı: ','Could not create PDF: ')+(e&&e.message||e)); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+}
+$('#cpPdf').onclick=makePdf;
+
+/* =====================================================================
+   3D GÖRÜNÜM (three.js r147 + OrbitControls, sayfanın kendi dosyaları)
+   ===================================================================== */
+let G3=null, threeP=null, sig3='', t3T=null;
+function ensureThree(){
+  if(!threeP) threeP=(async()=>{ if(!window.THREE) await loadScript('lib/three.min.js'); if(!THREE.OrbitControls) await loadScript('lib/OrbitControls.js'); })().catch(e=>{ threeP=null; throw e; });
+  return threeP;
+}
+/* Kart koordinatlarına hizalı, aynalanmamış, saydam arka planlı yüz dokusu */
+function texCanvas(side,b){
+  const bw=Math.max(b.maxx-b.minx,1), bh=Math.max(b.maxy-b.miny,1), k=Math.min(3072/bw,3072/bh,40);
+  const W=Math.max(2,Math.round(bw*k)), H=Math.max(2,Math.round(bh*k));
+  const sv={...V}, sD=DPR; SNAP={W,H,noMirror:true,punch:true}; DPR=1; V.side=side; V.mode='real'; V.zoom=k; V.panX=-b.minx*k; V.panY=b.maxy*k;
+  const out=getC(0), o=out.getContext('2d'); clr(o); renderReal(o);
+  const c=document.createElement('canvas'); c.width=W; c.height=H; c.getContext('2d').drawImage(out,0,0);
+  SNAP=null; Object.assign(V,sv); DPR=sD; cache=null;
+  return c;
+}
+function loopPts(lp){
+  const pts=[];
+  for(const {seg:s,rev} of lp){
+    if(s.t==='l'){ pts.push(rev?[s.x1,s.y1]:[s.x0,s.y0]); continue; }
+    const a0=rev?s.a1:s.a0, a1=rev?s.a0:s.a1, n=Math.max(4,Math.ceil(Math.abs(a1-a0)/(Math.PI/36)));
+    for(let k=0;k<n;k++){ const a=a0+(a1-a0)*k/n; pts.push([s.cx+s.r*Math.cos(a),s.cy+s.r*Math.sin(a)]); }
+  }
+  return pts;
+}
+const polyArea=p=>{ let a=0; for(let i=0;i<p.length;i++){ const q=p[(i+1)%p.length]; a+=p[i][0]*q[1]-q[0]*p[i][1]; } return a/2; };
+function boardShape(b){
+  const T3=THREE; let outer=null, holes=[];
+  const ol=layers.filter(l=>l.type==='outline'&&l.data&&l.data.kind==='gerber'); const segs=[]; ol.forEach(l=>segs.push(...l.data.segs));
+  if(segs.length&&!board.fallback){ const loops=chainLoops(segs).map(loopPts).filter(p=>p.length>2); loops.sort((x,y)=>Math.abs(polyArea(y))-Math.abs(polyArea(x))); outer=loops[0]; holes=loops.slice(1); }
+  if(!outer) outer=[[b.minx,b.miny],[b.maxx,b.miny],[b.maxx,b.maxy],[b.minx,b.maxy]];
+  const sh=new T3.Shape(outer.map(p=>new T3.Vector2(p[0],p[1])));
+  holes.forEach(h=>sh.holes.push(new T3.Path(h.map(p=>new T3.Vector2(p[0],p[1])))));
+  // büyük delikleri gövdeden gerçekten del (montaj delikleri, THT pinleri)
+  let n=0; const inB=(x,y,r)=>x-r>b.minx+0.05&&x+r<b.maxx-0.05&&y-r>b.miny+0.05&&y+r<b.maxy-0.05;
+  const hb=holes.map(h=>{ const q=newB(); h.forEach(p=>addB(q,p[0],p[1])); return q; }), placed=[];
+  const clash=(x,y,r)=>hb.some(q=>x+r>q.minx&&x-r<q.maxx&&y+r>q.miny&&y-r<q.maxy)||placed.some(c=>Math.hypot(c[0]-x,c[1]-y)<c[2]+r+0.05)||outer.some((p,i)=>segDist(x,y,p[0],p[1],outer[(i+1)%outer.length][0],outer[(i+1)%outer.length][1])<r+0.1);
+  for(const l of layers){ if(!l.data||l.data.kind!=='drill'||!l.visible) continue;
+    for(const r of l.data.objs){ if(r.t!=='h'||r.w<0.8||!inB(r.x,r.y,r.w/2)||clash(r.x,r.y,r.w/2)) continue; if(++n>600) break; placed.push([r.x,r.y,r.w/2]); const p=new T3.Path(); p.absarc(r.x,r.y,r.w/2,0,TAU,true); sh.holes.push(p); } }
+  return sh;
+}
+function init3D(){
+  const T3=THREE, host=$('#v3d');
+  const renderer=new T3.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true});
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1)); renderer.outputEncoding=T3.sRGBEncoding; renderer.setClearColor(0x14171c,1);
+  host.appendChild(renderer.domElement);
+  const scene=new T3.Scene();
+  const camera=new T3.PerspectiveCamera(32,1,0.1,10000); camera.up.set(0,0,1);
+  scene.add(new T3.HemisphereLight(0xffffff,0x3a3f48,0.75));
+  const d1=new T3.DirectionalLight(0xffffff,0.85); d1.position.set(0.6,-0.8,1.6); scene.add(d1);
+  const d2=new T3.DirectionalLight(0xffffff,0.45); d2.position.set(-0.7,0.6,-1.4); scene.add(d2);
+  const controls=new T3.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.dampingFactor=0.12; controls.screenSpacePanning=true;
+  const group=new T3.Group(); scene.add(group);
+  G3={renderer,scene,camera,controls,group,raf:0,size:1,anim:null};
+  const loop=()=>{ if(V.mode!=='3d'){ G3.raf=0; return; } G3.raf=requestAnimationFrame(loop);
+    if(G3.anim){ const a=G3.anim, t=Math.min(1,(performance.now()-a.t0)/450), e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      camera.position.lerpVectors(a.from,a.to,e); controls.target.lerpVectors(a.tf,a.tt,e); if(t>=1) G3.anim=null; }
+    controls.update(); renderer.render(scene,camera); };
+  G3.start=()=>{ if(!G3.raf) loop(); };
+}
+function disposeGroup(g){ g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); const ms=Array.isArray(o.material)?o.material:o.material?[o.material]:[]; ms.forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); }); while(g.children.length) g.remove(g.children[0]); }
+function build3D(){
+  const T3=THREE, b=board.bounds||contentBounds(); disposeGroup(G3.group); if(!b) return;
+  const t=parseFloat(S.thickness)||1.6, col=viewColors(), sh=boardShape(b);
+  const aniso=G3.renderer.capabilities.getMaxAnisotropy();
+  const bw=b.maxx-b.minx, bh=b.maxy-b.miny;
+  const mkTex=side=>{ const tx=new T3.CanvasTexture(texCanvas(side,b)); tx.encoding=T3.sRGBEncoding; tx.anisotropy=aniso; tx.wrapS=tx.wrapT=T3.ClampToEdgeWrapping; return tx; };
+  // gövde: yalnızca dış kenar ve delik duvarları (kapak üçgenlemesine güvenilmez)
+  const body=new T3.Mesh(new T3.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false,curveSegments:32}),
+    [new T3.MeshBasicMaterial({visible:false}), new T3.MeshStandardMaterial({color:new T3.Color(col.sub).multiplyScalar(0.82),roughness:.85,side:T3.DoubleSide})]);
+  // yüzler: kart sınırında düz levha; kart dışı ve delikler dokuda saydam
+  const face=new T3.PlaneGeometry(bw,bh); face.translate(b.minx+bw/2,b.miny+bh/2,0);
+  const top=new T3.Mesh(face,new T3.MeshStandardMaterial({map:mkTex('top'),roughness:.42,metalness:.08,alphaTest:.5}));
+  top.position.z=t+0.003;
+  const bot=new T3.Mesh(face,new T3.MeshStandardMaterial({map:mkTex('bottom'),roughness:.42,metalness:.08,side:T3.BackSide,alphaTest:.5}));
+  bot.position.z=-0.003;
+  G3.group.add(body,top,bot);
+  const cx=(b.minx+b.maxx)/2, cy=(b.miny+b.maxy)/2; G3.group.position.set(-cx,-cy,-t/2);
+  G3.size=Math.max(b.maxx-b.minx,b.maxy-b.miny);
+}
+function cam3D(view,instant){
+  if(!G3) return; const d=G3.size/(2*Math.tan(G3.camera.fov*Math.PI/360))*0.92;
+  const to=view==='bottom'?new THREE.Vector3(0,-0.55*d,-0.9*d):view==='plan'?new THREE.Vector3(0,-0.001,d):new THREE.Vector3(0,-0.55*d,0.9*d);
+  const tt=new THREE.Vector3(0,0,0);
+  G3.camera.near=Math.max(0.05,d/500); G3.camera.far=d*20; G3.camera.updateProjectionMatrix();
+  if(instant){ G3.camera.position.copy(to); G3.controls.target.copy(tt); G3.anim=null; }
+  else G3.anim={t0:performance.now(),from:G3.camera.position.clone(),to,tf:G3.controls.target.clone(),tt};
+}
+function resize3D(){ if(!G3) return; const {W,H}=vw(); G3.renderer.setSize(W,H,false); G3.renderer.domElement.style.width='100%'; G3.renderer.domElement.style.height='100%'; G3.camera.aspect=W/H; G3.camera.updateProjectionMatrix(); }
+function sigNow(){ return JSON.stringify([uid,layers.map(l=>l.id+(l.visible?'+':'-')),S.color,S.silk,S.finish,S.material,S.thickness]); }
+async function show3D(){
+  $('#v3d').classList.add('on'); cv.style.visibility='hidden'; hideInfo(); $('#hlBadge').classList.remove('show'); $('#readout').textContent='3D';
+  document.querySelector('.hintbar').textContent=T('Sol tık: döndür · Sağ tık: kaydır · Tekerlek: yakınlaştır · F: sığdır · Üst/Alt: görünüm','Left drag: orbit · Right drag: pan · Wheel: zoom · F: fit · Top/Bottom: view');
+  $('#btnMeasure').disabled=true;
+  if(!layers.some(l=>l.data)){ $('#drop').style.display=''; return; }
+  try{ await ensureThree(); }catch(e){ toast(T('3D kütüphanesi yüklenemedi','Could not load the 3D library')); V.mode='real'; setSeg('#segMode','real'); hide3D(); renderFull(); return; }
+  if(V.mode!=='3d') return;
+  const fresh=!G3; if(fresh) init3D();
+  resize3D();
+  const s=sigNow(); if(s!==sig3||fresh){ const rebuild=s.split(',')[0]!==sig3.split(',')[0]||fresh; sig3=s; build3D(); if(rebuild) cam3D(V.side,true); }
+  G3.start();
+}
+function hide3D(){ $('#v3d').classList.remove('on'); cv.style.visibility=''; $('#btnMeasure').disabled=false; const k=LANG==='en'?1:0; document.querySelector('.hintbar').textContent=I18N.hintbar[k]; if(HL) $('#hlBadge').classList.add('show'); }
+
+/* =====================================================================
+   GEOMETRİ YARDIMCILARI
+   ===================================================================== */
+const newB=()=>({minx:Infinity,miny:Infinity,maxx:-Infinity,maxy:-Infinity});
+function addB(b,x,y,r){ r=r||0; if(x-r<b.minx)b.minx=x-r; if(y-r<b.miny)b.miny=y-r; if(x+r>b.maxx)b.maxx=x+r; if(y+r>b.maxy)b.maxy=y+r; }
+function mergeB(b,o){ if(!o||!isFinite(o.minx)) return; addB(b,o.minx,o.miny); addB(b,o.maxx,o.maxy); }
+function arcB(b,a,pad){ for(let k=0;k<=24;k++){ const t=a.a0+(a.a1-a.a0)*k/24; addB(b,a.cx+a.r*Math.cos(t),a.cy+a.r*Math.sin(t),pad); } }
+function addPoly(path,pts,b){
+  if(pts.length<3) return; let ar=0;
+  for(let i=0;i<pts.length;i++){ const p=pts[i],q=pts[(i+1)%pts.length]; ar+=p[0]*q[1]-q[0]*p[1]; }
+  const P=ar<0?pts.slice().reverse():pts;
+  path.moveTo(P[0][0],P[0][1]); for(let i=1;i<P.length;i++) path.lineTo(P[i][0],P[i][1]); path.closePath();
+  if(b) P.forEach(p=>addB(b,p[0],p[1]));
+}
+function hull(pts){
+  const p=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]); if(p.length<3) return p;
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]); const lo=[],up=[];
+  for(const q of p){ while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0) lo.pop(); lo.push(q); }
+  for(let i=p.length-1;i>=0;i--){ const q=p[i]; while(up.length>=2&&cr(up[up.length-2],up[up.length-1],q)<=0) up.pop(); up.push(q); }
+  up.pop(); lo.pop(); return lo.concat(up);
+}
+function circ(path,x,y,r,b){ path.moveTo(x+r,y); path.arc(x,y,r,0,TAU,false); if(b) addB(b,x,y,r); }
+
+/* Aperture macro ifade değerlendirici: + - x X / ( ) $n */
+function evalExpr(expr,vars){
+  const s=expr.replace(/\s+/g,''); let i=0;
+  const E=()=>{ let v=T(); while(s[i]==='+'||s[i]==='-'){ const o=s[i++]; const r=T(); v=o==='+'?v+r:v-r; } return v; };
+  const T=()=>{ let v=F(); while(s[i]==='x'||s[i]==='X'||s[i]==='/'){ const o=s[i++]; const r=F(); v=o==='/'?v/r:v*r; } return v; };
+  const F=()=>{ const c=s[i];
+    if(c==='+'){i++;return F();} if(c==='-'){i++;return -F();}
+    if(c==='('){ i++; const v=E(); if(s[i]===')') i++; return v; }
+    if(c==='$'){ i++; const j=i; while(i<s.length&&/\d/.test(s[i])) i++; return vars[+s.slice(j,i)]||0; }
+    const j=i; while(i<s.length&&/[\d.eE]/.test(s[i])) i++; const n=parseFloat(s.slice(j,i)); return isFinite(n)?n:NaN; };
+  return E();
+}
+
+/* =====================================================================
+   APERTURE ŞEKİLLERİ (ayrıştırıcı, vurgulama ve seçim ortak kullanır)
+   ===================================================================== */
+function apShape(path,ap,cx,cy,bb){
+  if(ap.type==='C'){ circ(path,cx,cy,ap.d/2); }
+  else if(ap.type==='R'){ const w=ap.w/2,h=ap.h/2; addPoly(path,[[cx-w,cy-h],[cx+w,cy-h],[cx+w,cy+h],[cx-w,cy+h]]); }
+  else if(ap.type==='O'){ const w=ap.w/2,h=ap.h/2;
+    if(Math.abs(w-h)<1e-9){ circ(path,cx,cy,w); }
+    else if(w>h){ const r=h,o=w-r; path.moveTo(cx-o,cy-r); path.lineTo(cx+o,cy-r); path.arc(cx+o,cy,r,-Math.PI/2,Math.PI/2,false); path.lineTo(cx-o,cy+r); path.arc(cx-o,cy,r,Math.PI/2,Math.PI*1.5,false); path.closePath(); }
+    else { const r=w,o=h-r; path.moveTo(cx+r,cy-o); path.lineTo(cx+r,cy+o); path.arc(cx,cy+o,r,0,Math.PI,false); path.lineTo(cx-r,cy-o); path.arc(cx,cy-o,r,Math.PI,TAU,false); path.closePath(); } }
+  else if(ap.type==='P'){ const pts=[]; for(let k=0;k<ap.n;k++){ const a=ap.rot*Math.PI/180+TAU*k/ap.n; pts.push([cx+ap.d/2*Math.cos(a),cy+ap.d/2*Math.sin(a)]); } addPoly(path,pts); }
+  else if(ap.type==='M'){ return macroShape(path,ap,cx,cy,bb); }
+  if(bb) addB(bb,cx,cy,ap.ext);
+  return null;
+}
+/* Makro aperture: açık (exposure on) primitifler path'e, kapalılar dönen off path'e */
+function macroShape(on,ap,fx,fy,bb){
+  const vars=[]; ap.params.forEach((v,k)=>vars[k+1]=v); const u=ap.unit; let off=null;
+  const T=(px,py,rot)=>{ const r=(rot||0)*Math.PI/180, c=Math.cos(r), s=Math.sin(r); return [fx+(px*c-py*s)*u, fy+(px*s+py*c)*u]; };
+  const pick=e=>{ if(e===0){ off=off||new Path2D(); return off; } return on; };
+  for(const raw of ap.macro){
+    const st=raw.trim(); if(!st||/^0(?![.,\d])/.test(st)) continue;
+    const asg=st.match(/^\$(\d+)\s*=(.*)$/); if(asg){ vars[+asg[1]]=evalExpr(asg[2],vars); continue; }
+    const a=st.split(',').map(e=>evalExpr(e,vars)); if(a.some(v=>!isFinite(v))) continue;
+    switch(a[0]){
+      case 1:{ const [px,py]=T(a[3],a[4],a[5]||0); circ(pick(a[1]),px,py,a[2]/2*u,bb); break; }
+      case 2: case 20:{ const [,e,w,x1,y1,x2,y2,rot]=a; const len=Math.hypot(x2-x1,y2-y1)||1; const nx=-(y2-y1)/len*w/2, ny=(x2-x1)/len*w/2;
+        addPoly(pick(e),[[x1+nx,y1+ny],[x2+nx,y2+ny],[x2-nx,y2-ny],[x1-nx,y1-ny]].map(p=>T(p[0],p[1],rot)),bb); break; }
+      case 21:{ const [,e,w,h,cx,cy,rot]=a; addPoly(pick(e),[[cx-w/2,cy-h/2],[cx+w/2,cy-h/2],[cx+w/2,cy+h/2],[cx-w/2,cy+h/2]].map(p=>T(p[0],p[1],rot)),bb); break; }
+      case 22:{ const [,e,w,h,lx,ly,rot]=a; addPoly(pick(e),[[lx,ly],[lx+w,ly],[lx+w,ly+h],[lx,ly+h]].map(p=>T(p[0],p[1],rot)),bb); break; }
+      case 4:{ const e=a[1], n=a[2]; const pts=[]; for(let k=0;k<=n;k++) pts.push([a[3+2*k],a[4+2*k]]); const rot=a[3+2*(n+1)]||0;
+        addPoly(pick(e),pts.map(p=>T(p[0],p[1],rot)),bb); break; }
+      case 5:{ const [,e,n,cx,cy,d,rot]=a; const pts=[]; for(let k=0;k<n;k++){ const an=TAU*k/n; pts.push([cx+d/2*Math.cos(an),cy+d/2*Math.sin(an)]); } addPoly(pick(e),pts.map(p=>T(p[0],p[1],rot)),bb); break; }
+      case 6:{ const [px,py]=T(a[1],a[2],a[9]||0); circ(on,px,py,a[3]/2*u,bb); break; }
+      case 7:{ const [px,py]=T(a[1],a[2],a[6]||0); const ro=a[3]/2*u, ri=a[4]/2*u; on.moveTo(px+ro,py); on.arc(px,py,ro,0,TAU,false); on.moveTo(px+ri,py); on.arc(px,py,ri,TAU,0,true); if(bb) addB(bb,px,py,ro); break; }
+    }
+  }
+  return off;
+}
+const r3=v=>Math.round(v*1000)/1000;
+function apDesc(ap){
+  if(!ap) return '—';
+  switch(ap.type){
+    case 'C': return `${T('Daire','Circle')} Ø${r3(ap.d)}`+(ap.hole?` (${T('delik','hole')} Ø${r3(ap.hole)})`:'');
+    case 'R': return `${T('Dikdörtgen','Rectangle')} ${r3(ap.w)}×${r3(ap.h)}`;
+    case 'O': return `${T('Oval','Obround')} ${r3(ap.w)}×${r3(ap.h)}`;
+    case 'P': return `${T('Poligon','Polygon')} Ø${r3(ap.d)}, ${ap.n} ${T('köşe','vertices')}`;
+    case 'M': return `${ap.name} (${T('makro','macro')})`+(ap.rb?` ≈ ${r3(ap.rb.maxx-ap.rb.minx)}×${r3(ap.rb.maxy-ap.rb.miny)}`:'');
+    case 'T': return `${T('Matkap','Drill')} Ø${r3(ap.d)}`;
+  }
+  return ap.type;
+}
+
+/* =====================================================================
+   GERBER (RS-274X / X2) AYRIŞTIRICI
+   ===================================================================== */
+function tokenizeGerber(text){
+  const out=[]; let i=0; const n=text.length;
+  while(i<n){
+    const c=text[i];
+    if(c==='%'){ const j=text.indexOf('%',i+1); if(j<0) break; out.push([1,text.slice(i+1,j)]); i=j+1; }
+    else if(c<=' '){ i++; }
+    else { const j=text.indexOf('*',i); if(j<0) break; out.push([0,text.slice(i,j).replace(/\s+/g,' ').trim()]); i=j+1; }
+  }
+  return out;
+}
+function parseGerber(text){
+  let fmt={zero:'L',abs:true,xi:3,xd:6,yi:3,yd:6}, unit=25.4;
+  const aps={}, macros={}; let cur=null, curCode=0, interp=1, quad='multi', pol='D', region=false, rpath=null, rbb=null, rfn=null, open=false, x=0, y=0, lastD=2, end=false;
+  const groups=[]; let g=null; const segs=[], objs=[]; const b=newB(); let minStroke=Infinity, ff=null;
+  let apFn=null; const oa={N:null,C:null,P:null};
+
+  const grp=()=>{ const c=pol==='C'; if(!g||g.clear!==c){ g={clear:c,flash:new Path2D(),fills:[],strokes:new Map()}; groups.push(g); } return g; };
+  const rec=o=>{ o.N=oa.N; o.C=oa.C; o.P=oa.P; if(pol==='C') o.neg=true; objs.push(o); };
+  function attr(c){
+    if(c.startsWith('TF.FileFunction,')) ff=c.slice(16);
+    else if(c.startsWith('TA.AperFunction,')) apFn=c.slice(16);
+    else if(c.startsWith('TO.N,')) oa.N=c.slice(5);
+    else if(c.startsWith('TO.C,')) oa.C=c.slice(5);
+    else if(c.startsWith('TO.P,')) oa.P=c.slice(5);
+    else if(c==='TD'){ apFn=null; oa.N=oa.C=oa.P=null; }
+    else if(c.startsWith('TD.')){ const k=c.slice(3); if(k==='AperFunction') apFn=null; else if(k in oa) oa[k]=null; }
+  }
+  function num(s,ax){
+    if(s.includes('.')) return parseFloat(s)*unit;
+    let neg=false; if(s[0]==='-'){neg=true;s=s.slice(1);} else if(s[0]==='+') s=s.slice(1);
+    const I=ax==='x'?fmt.xi:fmt.yi, D=ax==='x'?fmt.xd:fmt.yd;
+    if(fmt.zero==='T') while(s.length<I+D) s+='0';
+    const v=parseInt(s,10)/Math.pow(10,D); return (neg?-v:v)*unit;
+  }
+  function defAp(code,name,params){
+    const p=params?params.split('X').map(parseFloat):[]; const u=unit; let a=null;
+    switch(name){
+      case 'C': a={type:'C',d:(p[0]||0)*u,hole:(p[1]||0)*u,ext:(p[0]||0)*u/2}; break;
+      case 'R': a={type:'R',w:p[0]*u,h:p[1]*u,hole:(p[2]||0)*u,ext:Math.hypot(p[0],p[1])*u/2}; break;
+      case 'O': a={type:'O',w:p[0]*u,h:p[1]*u,hole:(p[2]||0)*u,ext:Math.max(p[0],p[1])*u/2}; break;
+      case 'P': a={type:'P',d:p[0]*u,n:p[1]||3,rot:p[2]||0,hole:(p[3]||0)*u,ext:p[0]*u/2}; break;
+      default: if(macros[name]) a={type:'M',name,macro:macros[name],params:p,unit:u};
+    }
+    if(a){ a.code=code; a.fn=apFn; a.uses=0; }
+    return a;
+  }
+  function arcGeom(x0,y0,x1,y1,I,J,cw){
+    const norm=a=>{ a%=TAU; if(a<0)a+=TAU; return a; };
+    const cands=quad==='single'?[[1,1],[1,-1],[-1,1],[-1,-1]].map(([p,q])=>[x0+p*Math.abs(I),y0+q*Math.abs(J)]):[[x0+I,y0+J]];
+    let best=null; const same=Math.abs(x0-x1)<1e-9&&Math.abs(y0-y1)<1e-9;
+    for(const [cx,cy] of cands){
+      const r0=Math.hypot(x0-cx,y0-cy), r1=Math.hypot(x1-cx,y1-cy);
+      const a0=Math.atan2(y0-cy,x0-cx), a1=Math.atan2(y1-cy,x1-cx);
+      let sw=cw?norm(a0-a1):norm(a1-a0);
+      if(quad==='multi'&&(same||sw<1e-9)) sw=TAU;
+      if(quad==='single'&&sw>Math.PI/2+1e-3) continue;
+      const err=Math.abs(r0-r1);
+      if(!best||err<best.err) best={cx,cy,r:(r0+r1)/2,a0,a1:cw?a0-sw:a0+sw,cw,err};
+    }
+    return best&&best.r>1e-9?best:null;
+  }
+  function endRegion(){ if(rpath){ grp().fills.push({path:rpath,rule:'nonzero'}); rec({t:'r',path:rpath,bb:rbb,fn:rfn}); mergeB(b,rbb); } region=false; rpath=null; open=false; }
+  function interpolate(x0,y0,x1,y1,I,J){
+    const arc=interp!==1?arcGeom(x0,y0,x1,y1,I,J,interp===2):null;
+    if(region){
+      if(!open){ rpath.moveTo(x0,y0); open=true; addB(rbb,x0,y0); }
+      if(arc){ rpath.arc(arc.cx,arc.cy,arc.r,arc.a0,arc.a1,arc.cw); arcB(rbb,arc,0); } else rpath.lineTo(x1,y1);
+      addB(rbb,x1,y1); return;
+    }
+    const ap=cur, gg=grp(); let w=0, rect=false;
+    if(ap){ ap.uses++; if(ap.type==='C') w=ap.d; else if(ap.type==='R'){ rect=!arc; w=Math.min(ap.w,ap.h); } else if(ap.type==='O') w=Math.min(ap.w,ap.h); else if(ap.type==='P') w=ap.d; }
+    const sg=arc?Object.assign({t:'a',x0,y0,x1,y1},arc):{t:'l',x0,y0,x1,y1};
+    segs.push(sg); rec(Object.assign({w,d:curCode,rect},sg));
+    if(rect){ addPoly(gg.flash,rectHull(ap,x0,y0,x1,y1),b); }
+    else {
+      const key=w.toFixed(5); let s=gg.strokes.get(key); if(!s){ s={w,path:new Path2D()}; gg.strokes.set(key,s); }
+      s.path.moveTo(x0,y0); if(arc){ s.path.arc(arc.cx,arc.cy,arc.r,arc.a0,arc.a1,arc.cw); arcB(b,arc,w/2); } else s.path.lineTo(x1,y1);
+      addB(b,x0,y0,w/2); addB(b,x1,y1,w/2); if(w>0&&w<minStroke) minStroke=w;
+    }
+  }
+  function flash(fx,fy){
+    const ap=cur; if(!ap) return; ap.uses++;
+    const gg=grp(); rec({t:'f',x:fx,y:fy,d:curCode});
+    if(ap.type==='M'){
+      const lb=newB(); const off=macroShape(gg.flash,ap,fx,fy,lb); mergeB(b,lb);
+      if(!ap.rb&&isFinite(lb.minx)) ap.rb={minx:lb.minx-fx,miny:lb.miny-fy,maxx:lb.maxx-fx,maxy:lb.maxy-fy};
+      if(off){ g={clear:true,flash:off,fills:[],strokes:new Map()}; groups.push(g); }
+      return;
+    }
+    if(ap.hole>0){ const p=new Path2D(); apShape(p,ap,fx,fy); const r=ap.hole/2; p.moveTo(fx+r,fy); p.arc(fx,fy,r,TAU,0,true); gg.fills.push({path:p,rule:'evenodd'}); }
+    else apShape(gg.flash,ap,fx,fy);
+    addB(b,fx,fy,ap.ext);
+  }
+  function ext(s){
+    const cmds=s.replace(/[\r\n]/g,'').split('*').map(c=>c.trim()).filter(Boolean); if(!cmds.length) return;
+    if(cmds[0].startsWith('AM')){ macros[cmds[0].slice(2)]=cmds.slice(1); return; }
+    for(const c of cmds){
+      if(c.startsWith('FS')){ const m=c.match(/^FS([LTD]?)([AI]?)[^X]*X(\d)(\d)Y(\d)(\d)/); if(m) fmt={zero:m[1]==='T'?'T':'L',abs:m[2]!=='I',xi:+m[3],xd:+m[4],yi:+m[5],yd:+m[6]}; }
+      else if(c==='MOMM') unit=1; else if(c==='MOIN') unit=25.4;
+      else if(c.startsWith('ADD')){ const m=c.match(/^ADD(\d+)([^,]+)(?:,(.*))?$/); if(m){ const a=defAp(+m[1],m[2],m[3]); if(a) aps[+m[1]]=a; } }
+      else if(c==='LPD') pol='D'; else if(c==='LPC') pol='C';
+      else if(/^T[FAOD]/.test(c)) attr(c);
+      else if(/^G\d/.test(c)) word(c);
+    }
+  }
+  function word(w){
+    if(/^G0?4(\D|$)/.test(w)){ const k=w.indexOf('#@!'); if(k>=0) attr(w.slice(k+3).trim()); return; }
+    const re=/([GDXYIJM])([+-]?[\d.]+)/g; let m, xs=null, ys=null, is=null, js=null, d=null;
+    while((m=re.exec(w))){
+      const l=m[1], v=m[2];
+      if(l==='G'){ const gc=+v;
+        if(gc===1||gc===2||gc===3) interp=gc;
+        else if(gc===36){ if(region) endRegion(); region=true; rpath=new Path2D(); rbb=newB(); rfn=apFn; open=false; }
+        else if(gc===37) endRegion();
+        else if(gc===74) quad='single'; else if(gc===75) quad='multi';
+        else if(gc===70) unit=25.4; else if(gc===71) unit=1;
+        else if(gc===90) fmt.abs=true; else if(gc===91) fmt.abs=false; }
+      else if(l==='X') xs=v; else if(l==='Y') ys=v; else if(l==='I') is=v; else if(l==='J') js=v;
+      else if(l==='D') d=+v;
+      else if(l==='M'){ if(+v===2||+v===0) end=true; }
+    }
+    if(d!==null&&d>=10){ cur=aps[d]||null; curCode=d; return; }
+    const hasXY=xs!==null||ys!==null;
+    const op=d!==null?d:(hasXY?lastD:null); if(op===null) return;
+    if(d!==null) lastD=d;
+    let nx=x, ny=y;
+    if(fmt.abs){ if(xs!==null) nx=num(xs,'x'); if(ys!==null) ny=num(ys,'y'); }
+    else { if(xs!==null) nx=x+num(xs,'x'); if(ys!==null) ny=y+num(ys,'y'); }
+    const I=is!==null?num(is,'x'):0, J=js!==null?num(js,'y'):0;
+    if(op===1) interpolate(x,y,nx,ny,I,J);
+    else if(op===2){ if(region) open=false; }
+    else if(op===3) flash(nx,ny);
+    x=nx; y=ny;
+  }
+  for(const [isExt,s] of tokenizeGerber(text)){ if(end) break; if(isExt) ext(s); else word(s); }
+  if(region) endRegion();
+  return {kind:'gerber',groups,bounds:b,segs,ff,minStroke,objs,aps};
+}
+function rectHull(ap,x0,y0,x1,y1){ const hw=ap.w/2, hh=ap.h/2, pts=[]; for(const [px,py] of [[x0,y0],[x1,y1]]) pts.push([px-hw,py-hh],[px+hw,py-hh],[px+hw,py+hh],[px-hw,py+hh]); return hull(pts); }
+
+/* =====================================================================
+   EXCELLON AYRIŞTIRICI
+   ===================================================================== */
+function parseExcellon(text){
+  let unit=25.4, zeros='TZ', fi=2, fd=4, fmtSet=false, tool=null, x=0, y=0, mode='drill', down=false, inHeader=false, tfn=null;
+  const tools={}, holes=new Path2D(), slots=new Map(), b=newB(), objs=[], aps={}; let count=0, nslot=0, minD=Infinity;
+  const ff=text.match(/FILE_FORMAT\s*=\s*(\d+):(\d+)/i); if(ff){ fi=+ff[1]; fd=+ff[2]; fmtSet=true; }
+  const num=s=>{ if(s.includes('.')) return parseFloat(s)*unit; let neg=false; if(s[0]==='-'){neg=true;s=s.slice(1);} else if(s[0]==='+') s=s.slice(1);
+    if(zeros==='LZ'){ while(s.length<fi+fd) s+='0'; } const v=parseInt(s,10)/Math.pow(10,fd); return (neg?-v:v)*unit; };
+  const xy=(s,dx,dy)=>{ const mx=s.match(/X([+-]?[\d.]+)/), my=s.match(/Y([+-]?[\d.]+)/); return [mx?num(mx[1]):dx, my?num(my[1]):dy]; };
+  const use=()=>{ const a=aps[tool]; if(a) a.uses++; };
+  const hole=(hx,hy)=>{ const d=tools[tool]||0; holes.moveTo(hx+d/2,hy); holes.arc(hx,hy,d/2,0,TAU,false); addB(b,hx,hy,d/2); count++; if(d>0&&d<minD) minD=d; objs.push({t:'h',x:hx,y:hy,w:d,d:tool}); use(); };
+  const slot=(x0,y0,x1,y1)=>{ const d=tools[tool]||0, k=d.toFixed(5); let s=slots.get(k); if(!s){ s={w:d,path:new Path2D()}; slots.set(k,s); }
+    s.path.moveTo(x0,y0); s.path.lineTo(x1,y1); addB(b,x0,y0,d/2); addB(b,x1,y1,d/2); nslot++; if(d>0&&d<minD) minD=d; objs.push({t:'s',x0,y0,x1,y1,w:d,d:tool}); use(); };
+  for(const raw of text.split(/\r?\n/)){
+    const l=raw.trim(); if(!l) continue;
+    if(l[0]===';'){ const m=l.match(/TA\.AperFunction,([^\r\n]*)/); if(m) tfn=m[1].trim(); continue; }
+    if(l==='M48'){ inHeader=true; continue; }
+    if(l==='%'||l==='M95'){ inHeader=false; continue; }
+    const um=l.match(/^(METRIC|INCH)(?:,(LZ|TZ))?(?:,(0*)\.(0*))?/);
+    if(um){ unit=um[1]==='METRIC'?1:25.4; if(um[2]) zeros=um[2];
+      if(um[3]!==undefined&&um[4]!==undefined&&(um[3].length+um[4].length)){ fi=um[3].length; fd=um[4].length; fmtSet=true; }
+      else if(!fmtSet){ if(unit===1){fi=3;fd=3;} else {fi=2;fd=4;} } continue; }
+    if(l==='M71'){ unit=1; if(!fmtSet){fi=3;fd=3;} continue; } if(l==='M72'){ unit=25.4; continue; }
+    let tm=l.match(/^T(\d+)(?:[FSBHZ][\d.]+)*C([\d.]+)/);
+    if(tm){ const t=+tm[1], d=parseFloat(tm[2])*unit; tools[t]=d; aps[t]={type:'T',d,code:t,fn:tfn,uses:0}; tfn=null; if(!inHeader) tool=t; continue; }
+    tm=l.match(/^T(\d+)$/); if(tm){ tool=+tm[1]; continue; }
+    if(l==='M30'||l==='M00') break;
+    if(l.startsWith('M15')){ down=true; continue; } if(l.startsWith('M16')||l.startsWith('M17')){ down=false; continue; }
+    const gm=l.match(/^G(\d+)/); const gc=gm?+gm[1]:null;
+    if(gc===5){ mode='drill'; down=false; } if(gc===0) mode='route';
+    if(!/[XY][+-]?[\d.]/.test(l)) continue;
+    if(l.includes('G85')){ const [a,c]=l.split('G85'); const [x0,y0]=xy(a,x,y); const [x1,y1]=xy(c,x0,y0); slot(x0,y0,x1,y1); x=x1; y=y1; continue; }
+    const [nx,ny]=xy(l,x,y);
+    if(mode==='route'){ if(gc!==0&&down&&(gc===1||gc===null)) slot(x,y,nx,ny); }
+    else hole(nx,ny);
+    x=nx; y=ny;
+  }
+  return {kind:'drill',groups:[{clear:false,flash:holes,fills:[],strokes:slots}],bounds:b,objs,aps,minStroke:Infinity,stats:{count:count+nslot,slots:nslot,minD,tools}};
+}
+
+/* =====================================================================
+   ZIP (DecompressionStream ile, harici kütüphane yok)
+   ===================================================================== */
+const SKIP_EXT=/\.(pos|csv|rpt|pdf|png|jpe?g|gif|bmp|md|html?|json|kicad_\w+|step|stp|wrl|xml|ipc|net|bom|xlsx?|docx?|zip|7z|rar|dxf|svg|log)$/i;
+const dec=u8=>new TextDecoder('utf-8').decode(u8);
+async function unzip(buf){
+  const dv=new DataView(buf), u8=new Uint8Array(buf); let e=-1;
+  for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--) if(dv.getUint32(i,true)===0x06054b50){ e=i; break; }
+  if(e<0) throw new Error('ZIP dizini bulunamadı');
+  const cnt=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const out=[];
+  for(let k=0;k<cnt;k++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true), csize=dv.getUint32(p+20,true), nlen=dv.getUint16(p+28,true), xlen=dv.getUint16(p+30,true), clen=dv.getUint16(p+32,true), loff=dv.getUint32(p+42,true);
+    const name=dec(u8.subarray(p+46,p+46+nlen)); p+=46+nlen+xlen+clen;
+    if(name.endsWith('/')||/(^|\/)(__MACOSX|\.)/.test(name)) continue;
+    const start=loff+30+dv.getUint16(loff+26,true)+dv.getUint16(loff+28,true); const data=u8.subarray(start,start+csize);
+    const isZip=/\.zip$/i.test(name);
+    if(SKIP_EXT.test(name)&&!isZip){ out.push({name,text:null}); continue; }
+    let bytes;
+    if(method===0) bytes=data;
+    else if(method===8){ const ds=new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')); bytes=new Uint8Array(await new Response(ds).arrayBuffer()); }
+    else { out.push({name,text:null}); continue; }
+    if(isZip){ try{ out.push(...(await unzip(bytes.slice().buffer)).map(o=>({...o,name:name.replace(/\.zip$/i,'')+'/'+o.name}))); }catch(_){} continue; }
+    out.push({name,text:dec(bytes)});
+  }
+  return out;
+}
+
+/* =====================================================================
+   KATMAN SINIFLANDIRMA
+   ===================================================================== */
+const TYPES=[['top-copper','Üst bakır','Top copper'],['inner-copper','İç bakır','Inner copper'],['bottom-copper','Alt bakır','Bottom copper'],['top-mask','Üst solder mask','Top solder mask'],['bottom-mask','Alt solder mask','Bottom solder mask'],
+  ['top-silk','Üst silkscreen','Top silkscreen'],['bottom-silk','Alt silkscreen','Bottom silkscreen'],['top-paste','Üst pasta','Top paste'],['bottom-paste','Alt pasta','Bottom paste'],['outline','Dış hat (outline)','Board outline'],
+  ['drill','Delik (PTH)','Drill (PTH)'],['drill-npth','Delik (NPTH)','Drill (NPTH)'],['other','Diğer / mekanik','Other / mechanical'],['ignore','Yoksay','Ignore']];
+const TYPE_OPTS_F=()=>TYPES.map(([v,t,e])=>`<option value="${v}">${T(t,e)}</option>`).join('');
+const RANK={'top-silk':0,'top-mask':1,'top-paste':2,'top-copper':3,'inner-copper':4,'bottom-copper':50,'bottom-paste':51,'bottom-mask':52,'bottom-silk':53,'outline':60,'drill':61,'drill-npth':62,'other':70,'ignore':80};
+const LCOL={'top-copper':'#e8584a','bottom-copper':'#4a8fe8','top-mask':'#b06be8','bottom-mask':'#4fd1b0','top-silk':'#f2f2f2','bottom-silk':'#e6e36b','top-paste':'#9aa3ad','bottom-paste':'#7a838d','outline':'#f5d142','drill':'#ffffff','drill-npth':'#ff9f43','other':'#8a8f98','ignore':'#555b66'};
+const INNER=['#e8b84a','#5fd38d','#e87fb8','#7fd3e8','#c3e86b','#e8a06b','#a58bff','#6be8a4'];
+const defColor=l=>l.type==='inner-copper'?INNER[((l.idx||2)-2+INNER.length*4)%INNER.length]:LCOL[l.type]||'#888';
+
+function fromX2(s){
+  const p=s.split(',');
+  switch(p[0]){
+    case 'Copper':{ const n=parseInt((p[1]||'').replace(/\D/g,''))||0; return p[2]==='Top'?{type:'top-copper',idx:n}:p[2]==='Bot'?{type:'bottom-copper',idx:n}:{type:'inner-copper',idx:n}; }
+    case 'Soldermask': return {type:p[1]==='Bot'?'bottom-mask':'top-mask'};
+    case 'Legend': return {type:p[1]==='Bot'?'bottom-silk':'top-silk'};
+    case 'Paste': case 'SolderPaste': return {type:p[1]==='Bot'?'bottom-paste':'top-paste'};
+    case 'Profile': return {type:'outline'};
+    case 'Plated': case 'MixedPlating': return {type:'drill'};
+    case 'NonPlated': return {type:'drill-npth'};
+    default: return {type:'other'};
+  }
+}
+function classifyByName(name){
+  const base=name.toLowerCase().split('/').pop(); const ext=base.includes('.')?base.split('.').pop():'';
+  const has=(...a)=>a.some(k=>base.includes(k));
+  if(SKIP_EXT.test(base)||ext==='gbrjob') return {type:'ignore'};
+  if(has('npth')) return {type:'drill-npth'};
+  if(['drl','xln','exc','drd','drr','tap','nc','xnc'].includes(ext)||has('drill','-pth','_pth')) return {type:'drill'};
+  if(has('edge_cuts','edge.cuts','edgecuts','outline','profile','boardoutline','board_outline')||['gko','gm1','gml','oln','dim','bor'].includes(ext)) return {type:'outline'};
+  if(has('f_cu','f.cu','top_copper','copper_top','cutop','cu_top','toplayer','top_layer','copper_signal_top')||['gtl','cmp','top'].includes(ext)) return {type:'top-copper'};
+  if(has('b_cu','b.cu','bottom_copper','copper_bottom','cubottom','cu_bottom','cubot','bottomlayer','bottom_layer','copper_signal_bot')||['gbl','sol','bot'].includes(ext)) return {type:'bottom-copper'};
+  let m=base.match(/in(\d+)[_.]cu/)||base.match(/inner_?(\d+)/)||base.match(/mid_?layer_?(\d+)/); if(m) return {type:'inner-copper',idx:+m[1]+1};
+  m=ext.match(/^g[pl]?(\d+)$/); if(m) return {type:'inner-copper',idx:+m[1]+1};
+  if(has('f_mask','f.mask','soldermask_top','masktop','top_mask','topsoldermask','mask_top')||['gts','stc','smt','tsm'].includes(ext)) return {type:'top-mask'};
+  if(has('b_mask','b.mask','soldermask_bot','maskbottom','maskbot','bottom_mask','bottomsoldermask','mask_bot')||['gbs','sts','smb','bsm'].includes(ext)) return {type:'bottom-mask'};
+  if(has('f_silk','f.silk','silk_top','silktop','top_silk','topsilk','legend_top','topoverlay')||['gto','plc','sst','tsk'].includes(ext)) return {type:'top-silk'};
+  if(has('b_silk','b.silk','silk_bot','silkbottom','silkbot','bottom_silk','bottomsilk','legend_bot','bottomoverlay')||['gbo','pls','ssb','bsk'].includes(ext)) return {type:'bottom-silk'};
+  if(has('f_paste','f.paste','paste_top','pastetop','top_paste','toppaste')||['gtp','crc','spt','tsp'].includes(ext)) return {type:'top-paste'};
+  if(has('b_paste','b.paste','paste_bot','pastebottom','pastebot','bottom_paste','bottompaste')||['gbp','crs','spb','bsp'].includes(ext)) return {type:'bottom-paste'};
+  return {type:'other'};
+}
+
+/* =====================================================================
+   YÜKLEME, KART ŞEKLİ, ALGILAMA, GERBER JOB
+   ===================================================================== */
+let layers=[], board={path:null,bounds:null}, det=null, job=null, loadedLabel='', uid=0, activeId=null;
+function loadEntries(entries,label){
+  layers=[]; job=null; HL=null; SEL=null; hlCache=new Map(); hideInfo();
+  const je=entries.find(e=>/\.gbrjob$/i.test(e.name)&&e.text);
+  if(je){ try{ job=parseJob(JSON.parse(je.text)); }catch(e){ console.warn('gbrjob',e); job=null; } }
+  for(const en of entries){
+    const Ly={id:++uid,name:en.name,type:'ignore',idx:0,data:null,visible:false,err:false};
+    if(/\.gbrjob$/i.test(en.name)){ Ly.job=!!job; Ly.color='#555b66'; layers.push(Ly); continue; }
+    const t=en.text;
+    if(t!=null){
+      const head=t.slice(0,20000);
+      const isDrl=/^\s*M48\s*$/m.test(head)||(/^T\d+C[\d.]+/m.test(head)&&!/%FS/.test(head));
+      const isGbr=!isDrl&&(/%FS/.test(head)||(/G04/.test(head)&&/D0?[123]\*/.test(t)));
+      let cls=classifyByName(en.name);
+      let x2=(head.match(/%TF\.FileFunction,([^*%]+)/)||head.match(/TF\.FileFunction,([^\r\n*]+)/)||[])[1];
+      if(!x2&&job&&job.ff){ x2=job.ff[en.name.toLowerCase().split('/').pop()]; }
+      if(x2&&(isDrl||isGbr)) cls=fromX2(x2.trim());
+      if(isDrl){ if(cls.type!=='drill-npth') cls={type:'drill'}; try{ Ly.data=parseExcellon(t); }catch(e){ console.error(e); Ly.err=true; } }
+      else if(isGbr){ if(cls.type==='ignore') cls={type:'other'}; try{ Ly.data=parseGerber(t); }catch(e){ console.error(e); Ly.err=true; } }
+      else cls={type:'ignore'};
+      Object.assign(Ly,cls);
+    }
+    Ly.visible=!!Ly.data&&!['ignore','other'].includes(Ly.type);
+    Ly.color=defColor(Ly);
+    layers.push(Ly);
+  }
+  loadedLabel=label;
+  sortLayers();
+  activeId=((V.side==='bottom'?layers.find(l=>l.type==='bottom-copper'&&l.data):null)||layers.find(l=>l.type==='top-copper'&&l.data)||layers.find(l=>l.data)||{}).id||null;
+  refreshDerived(true);
+  const n=layers.filter(l=>l.data).length;
+  $('#fileInfo').textContent=fileInfoText();
+  $('#drop').style.display=n?'none':'';
+  if(!n) toast(T('Okunabilir Gerber / Excellon bulunamadı','No readable Gerber / Excellon found'));
+  buildHLLists(); renderDC();
+  fit(); renderFull();
+}
+function fileInfoText(){ const n=layers.filter(l=>l.data).length, ign=layers.length-n-(job?1:0);
+  return `${loadedLabel} · ${n} ${T('katman okundu','layers read')}${job?T(' + job dosyası',' + job file'):''}${ign>0?`, ${ign} ${T('dosya yok sayıldı','files ignored')}`:''}`; }
+function sortLayers(){ layers.sort((a,b)=>(RANK[a.type]-RANK[b.type])||((a.idx||0)-(b.idx||0))||a.name.localeCompare(b.name)); }
+function refreshDerived(apply){ computeBoard(); detect(); if(apply) applyDetect(); renderLayerList(); renderDetect(); updateSummary(); }
+
+/* KiCad / X2 Gerber job (.gbrjob) dosyası */
+function parseJob(j){
+  const gs=j.GeneralSpecs||{}, ms=Array.isArray(j.MaterialStackup)?j.MaterialStackup:[], dr=Array.isArray(j.DesignRules)?j.DesignRules:[];
+  const pid=gs.ProjectId||{};
+  const o={name:pid.Name||'',rev:pid.Revision||'',layers:+gs.LayerNumber||0,thk:+gs.BoardThickness||0,finish:gs.Finish||'',imp:gs.ImpedanceControlled===true,ff:{}};
+  if(Array.isArray(j.FilesAttributes)) j.FilesAttributes.forEach(f=>{ if(f.Path&&f.FileFunction) o.ff[f.Path.toLowerCase().split('/').pop()]=f.FileFunction; });
+  const mk=ms.find(m=>m.Type==='SolderMask'&&m.Color); if(mk) o.mask=mk.Color;
+  const lg=ms.find(m=>m.Type==='Legend'&&m.Color); if(lg) o.silk=lg.Color;
+  const cus=ms.filter(m=>m.Type==='Copper'); if(cus.length){ o.cuOuter=+cus[0].Thickness||0; if(cus.length>2) o.cuInner=+cus[1].Thickness||0; }
+  const od=dr.find(r=>r.Layers==='Outer')||dr[0], idr=dr.find(r=>r.Layers==='Inner');
+  if(od){ o.minLine=+od.MinLineWidth||0; const c=['PadToPad','PadToTrack','TrackToTrack'].map(k=>+od[k]).filter(v=>v>0); if(c.length) o.minClr=Math.min(...c); }
+  if(idr){ o.minLineIn=+idr.MinLineWidth||0; const c=['PadToPad','PadToTrack','TrackToTrack'].map(k=>+idr[k]).filter(v=>v>0); if(c.length) o.minClrIn=Math.min(...c); }
+  const parts=[]; let prev=null, acc=0, mats=new Set(), ers=new Set();
+  for(const m of ms){
+    if(m.Type==='Copper'){ if(prev&&acc>0) parts.push(`${prev}–${m.Name}: ${r3(acc)} mm${mats.size?' '+[...mats].join('/'):''}${ers.size?' εr '+[...ers].join('/'):''}`); prev=m.Name; acc=0; mats=new Set(); ers=new Set(); }
+    else if(m.Type==='Dielectric'&&prev){ acc+=+m.Thickness||0; if(m.Material) mats.add(m.Material); if(m.DielectricConstant) ers.add(m.DielectricConstant); }
+  }
+  if(parts.length) o.stackup=parts.join(' · ');
+  return o;
+}
+
+function chainLoops(segs){
+  const tol=0.02, used=new Uint8Array(segs.length), loops=[];
+  const near=(ax,ay,bx,by)=>Math.abs(ax-bx)<tol&&Math.abs(ay-by)<tol;
+  for(let s=0;s<segs.length;s++){
+    if(used[s]) continue; used[s]=1;
+    const loop=[{seg:segs[s],rev:false}], sx=segs[s].x0, sy=segs[s].y0; let ex=segs[s].x1, ey=segs[s].y1, guard=0;
+    while(!near(ex,ey,sx,sy)&&guard++<segs.length){
+      let f=-1, rev=false;
+      for(let k=0;k<segs.length;k++){ if(used[k]) continue; const q=segs[k];
+        if(near(q.x0,q.y0,ex,ey)){ f=k; break; } if(near(q.x1,q.y1,ex,ey)){ f=k; rev=true; break; } }
+      if(f<0) break; used[f]=1; loop.push({seg:segs[f],rev}); const q=segs[f]; if(rev){ ex=q.x0; ey=q.y0; } else { ex=q.x1; ey=q.y1; }
+    }
+    if(near(ex,ey,sx,sy)) loops.push(loop);
+  }
+  return loops;
+}
+function computeBoard(){
+  board={path:null,bounds:null,fallback:false};
+  const ol=layers.filter(l=>l.type==='outline'&&l.data&&l.data.kind==='gerber');
+  const segs=[]; ol.forEach(l=>segs.push(...l.data.segs));
+  if(segs.length){
+    const loops=chainLoops(segs);
+    if(loops.length){
+      const p=new Path2D(), bb=newB();
+      for(const lp of loops){ let first=true;
+        for(const {seg:s,rev} of lp){
+          const sx=rev?s.x1:s.x0, sy=rev?s.y1:s.y0, ex=rev?s.x0:s.x1, ey=rev?s.y0:s.y1;
+          if(first){ p.moveTo(sx,sy); addB(bb,sx,sy); first=false; }
+          if(s.t==='l') p.lineTo(ex,ey);
+          else { if(!rev) p.arc(s.cx,s.cy,s.r,s.a0,s.a1,s.cw); else p.arc(s.cx,s.cy,s.r,s.a1,s.a0,!s.cw); arcB(bb,s,0); }
+          addB(bb,ex,ey);
+        }
+        p.closePath();
+      }
+      board={path:p,bounds:bb,fallback:false}; return;
+    }
+  }
+  const bb=newB(); const src=ol.length?ol:layers.filter(l=>l.data&&/copper|drill|mask/.test(l.type));
+  src.forEach(l=>mergeB(bb,l.data.bounds));
+  if(isFinite(bb.minx)){ if(!ol.length){ bb.minx-=0.5; bb.miny-=0.5; bb.maxx+=0.5; bb.maxy+=0.5; }
+    const p=new Path2D(); p.rect(bb.minx,bb.miny,bb.maxx-bb.minx,bb.maxy-bb.miny); board={path:p,bounds:bb,fallback:true,noOutline:!ol.length}; }
+}
+
+function detect(){
+  if(!layers.some(l=>l.data)){ det=null; return; }
+  const cu=layers.filter(l=>l.data&&/copper/.test(l.type)).length;
+  let holes=0, slots=0, minPTH=Infinity, minTrace=Infinity;
+  layers.forEach(l=>{ if(!l.data) return;
+    if(l.data.kind==='drill'&&(l.type==='drill'||l.type==='drill-npth')){ holes+=l.data.stats.count; slots+=l.data.stats.slots; if(l.type==='drill') minPTH=Math.min(minPTH,l.data.stats.minD); }
+    if(l.data.kind==='gerber'&&/copper/.test(l.type)) minTrace=Math.min(minTrace,l.data.minStroke); });
+  const b=board.bounds; det={cu,holes,slots,minPTH,minTrace,w:b?b.maxx-b.minx:0,h:b?b.maxy-b.miny:0,noOutline:!!board.noOutline,job};
+}
+function applyDetect(){
+  if(!det) return;
+  if(det.w>0) S.dims=[(Math.round(det.w*100)/100).toString(),(Math.round(det.h*100)/100).toString()];
+  if(det.cu>0){ const n=det.cu; if(!LAYERS_BY_MAT[S.material].includes(n)) S.material='FR-4'; if(ALL_LAYERS.includes(n)) S.layers=String(n); }
+  if(isFinite(det.minPTH)){ const opts=[[0.3,0],[0.25,1],[0.2,2],[0.15,3]]; const o=opts.find(([h])=>det.minPTH>=h-1e-6)||opts[3]; S.minVia=FBY.minVia.opts[o[1]]; }
+  const J=det.job;
+  if(J){
+    if(J.name&&!S.projName) S.projName=J.name;
+    if(J.rev&&(!S.rev||S.rev==='A')) S.rev=String(J.rev);
+    if(J.layers&&ALL_LAYERS.includes(J.layers)&&!det.cu){ if(!LAYERS_BY_MAT[S.material].includes(J.layers)) S.material='FR-4'; S.layers=String(J.layers); }
+    normalize();
+    if(J.thk){ let best=null; optList(FBY.thickness,S).filter(o=>!o.dis).forEach(o=>{ if(!best||Math.abs(+o.v-J.thk)<Math.abs(+best.v-J.thk)) best=o; }); if(best) S.thickness=best.v; }
+    const fm={'HAL SnPb':'HASL (with lead)','HAL lead-free':'LeadFree HASL','ENIG':'ENIG','ENEPIG':'ENIG','Immersion gold':'ENIG','Immersion tin':'Immersion Tin','Immersion silver':'Immersion Silver','OSP':'OSP','HT_OSP':'OSP'};
+    if(fm[J.finish]) S.finish=fm[J.finish];
+    if(J.imp){ S.impedance='Yes'; if(!S.stackup&&J.stackup) S.stackup=J.stackup; }
+    if(J.mask){ const k=['Green','Purple','Red','Yellow','Blue','White','Black'].find(c=>J.mask.toLowerCase().includes(c.toLowerCase())); if(k) S.color=k; }
+    if(J.silk){ if(/black/i.test(J.silk)) S.silk='Black'; else if(/white/i.test(J.silk)) S.silk='White'; }
+    const oz=t=>t>=0.095?'3 oz':t>=0.06?'2 oz':t>=0.03?'1 oz':'0.5 oz';
+    if(J.cuOuter){ const v=oz(J.cuOuter); if(v!=='0.5 oz') S.outerCu=v; }
+    if(J.cuInner){ const v=oz(J.cuInner); S.innerCu=v==='3 oz'?'2 oz':v; }
+  }
+  normalize(); renderForm(); save();
+}
+function renderDetect(){
+  const el=$('#detect'); if(!det){ el.hidden=true; return; } el.hidden=false;
+  const r=(k,v)=>`<dt>${k}</dt><dd>${v}</dd>`, J=det.job;
+  const short=[(det.cu||(J&&J.layers))?`${det.cu||J.layers}L`:'',det.w?`${num2(det.w)}×${num2(det.h)} mm`:'',det.holes?`${det.holes} ${T('delik','holes')}`:''].filter(Boolean).join(' · ');
+  el.innerHTML=`<summary class="dt"><span>${J?'Gerber + job':'Gerber'}: ${short} <span style="color:var(--dmute);font-weight:400">▾</span></span><span class="ok">✓ ${T('forma uygulandı','applied to form')}</span></summary><dl style="margin-top:6px">`+
+    r(T('Bakır katman','Copper layers'),det.cu||(J&&J.layers)||'—')+r(T('Boyut','Size'),det.w?`${num2(det.w)} × ${num2(det.h)} mm`:'—')+
+    r(T('Delik','Holes'),det.holes?`${det.holes}${det.slots?` (${det.slots} slot)`:''}`:'—')+
+    r('Min PTH',isFinite(det.minPTH)?`${num2(det.minPTH)} mm`:'—')+
+    r(T('En ince çizgi','Thinnest line'),isFinite(det.minTrace)?`${r3(det.minTrace)} mm`:'—')+
+    (J?r(T('Kalınlık (job)','Thickness (job)'),J.thk?`${r3(J.thk)} mm`:'—')+
+      (J.minLine?r(T('Min iz dış/iç','Min track out/in'),`${r3(J.minLine)}${J.minLineIn?' / '+r3(J.minLineIn):''} mm`):'')+
+      (J.minClr?r(T('Min aralık','Min clearance'),`${r3(J.minClr)} mm`):'')+
+      r(T('Empedans kontrolü','Impedance control'),J.imp?T('Evet','Yes'):T('Hayır','No'))+(J.finish&&J.finish!=='None'?r(T('Kaplama (job)','Finish (job)'),esc(J.finish)):''):'')+`</dl>`;
+}
+function renderLayerList(){
+  const el=$('#layerList');
+  if(!layers.length){ el.innerHTML='<div class="empty">'+T('Gerber .zip dosyasını görüntüleyiciye sürükleyin ya da “Gerber yükle”yi kullanın. Katman tipi X2 özniteliklerinden, .gbrjob dosyasından ve dosya adından otomatik bulunur; yanlışsa buradan değiştirebilirsiniz. Ada tıklayınca katman aktif olur.','Drag a Gerber .zip onto the viewer or use “Load Gerber”. Layer types come from X2 attributes, the .gbrjob file and file names; change them here if wrong. Click a name to make that layer active.')+'</div>'; return; }
+  el.innerHTML=layers.map((l,i)=>l.data?`<div class="lyr${l.id===activeId?' act':''}" data-i="${i}">
+    <input type="checkbox" data-act="vis"${l.visible?' checked':''}>
+    <input type="color" data-act="col" value="${l.color}" title="${T('Katman rengi (Katmanlar görünümü)','Layer color (Layers view)')}">
+    <div class="lname" data-act="sel" title="${esc(l.name)} — ${TYPE_NAME(l.type)}">${esc(l.name.split('/').pop())}</div></div>`:'').join('');
+}
+function setActive(id){ activeId=id; renderLayerList(); const l=layers.find(x=>x.id===id); if(l&&$('#dcLayer')){ $('#dcLayer').value=String(id); renderDCTable(); } if(V.mode==='layers') renderFull(); }
+$('#layerList').addEventListener('click',e=>{ const t=e.target.closest('[data-act="sel"]'); if(!t) return; const l=layers[+t.closest('.lyr').dataset.i]; if(l&&l.data) setActive(l.id); });
+$('#layerList').addEventListener('input',e=>{ const t=e.target, d=t.closest('.lyr'); if(!d) return; const l=layers[+d.dataset.i];
+  if(t.dataset.act==='col'){ l.color=t.value; if(V.mode==='layers') renderFull(); } });
+$('#layerList').addEventListener('change',e=>{ const t=e.target, d=t.closest('.lyr'); if(!d) return; const l=layers[+d.dataset.i];
+  if(t.dataset.act==='vis'){ l.visible=t.checked; renderFull(); }
+  else if(t.dataset.act==='type'){ l.type=t.value; l.color=defColor(l); l.visible=!!l.data&&!['ignore','other'].includes(l.type); sortLayers(); refreshDerived(true); buildHL(); renderFull(); }
+});
+const setVisAll=f=>{ layers.forEach(l=>{ if(l.data) l.visible=f(l); }); renderLayerList(); renderFull(); };
+$('#lAll').onclick=()=>setVisAll(l=>l.type!=='ignore');
+$('#lNone').onclick=()=>setVisAll(()=>false);
+$('#lAct').onclick=()=>setVisAll(l=>l.id===activeId);
+$('#sideTabs')&&$('#sideTabs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#sideTabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on',p.id===b.dataset.t)); });
+
+/* =====================================================================
+   GÖRÜNTÜLEYİCİ
+   ===================================================================== */
+const cv=$('#cv'), cw=$('#cwrap'); const BG='#14171c', HLC='#22d3ee';
+const V={zoom:8,panX:0,panY:0,side:'top',mode:'real'};
+const VO={sketchL:false,sketchF:false,sketchP:false,ghost:false,xor:false,inactive:'normal',cross:false,unit:'mm'};
+try{ Object.assign(VO,JSON.parse(localStorage.getItem(LS_KEY+'.vo')||'{}')); }catch(e){}
+const saveVO=()=>{ try{ localStorage.setItem(LS_KEY+'.vo',JSON.stringify(VO)); }catch(e){} };
+let DPR=Math.max(1,Math.min(2.5,window.devicePixelRatio||1)), cache=null, pool=[], meas={on:false,a:null,b:null}, hover=null;
+let HL=null, hlCache=new Map(), SEL=null;
+const HC=document.createElement('canvas').getContext('2d');
+function vw(){ if(SNAP) return SNAP; return {W:cw.clientWidth||1,H:cw.clientHeight||1}; }
+function getC(i){ const {W,H}=vw(); const w=Math.round(W*DPR), h=Math.round(H*DPR); let c=pool[i]; if(!c){ c=pool[i]=document.createElement('canvas'); } if(c.width!==w||c.height!==h){ c.width=w; c.height=h; } return c; }
+function clr(x){ x.setTransform(1,0,0,1,0,0); x.globalCompositeOperation='source-over'; x.globalAlpha=1; x.clearRect(0,0,x.canvas.width,x.canvas.height); }
+const sgn=()=>(V.side==='bottom'&&!(SNAP&&SNAP.noMirror))?-1:1;
+function setXf(x){ x.setTransform(DPR*V.zoom*sgn(),0,0,-DPR*V.zoom,DPR*V.panX,DPR*V.panY); }
+const toWorld=(sx,sy)=>[(sx-V.panX)/(V.zoom*sgn()),-(sy-V.panY)/V.zoom];
+const toScreen=(wx,wy)=>[V.panX+sgn()*V.zoom*wx,V.panY-V.zoom*wy];
+const fmtL=mm=>VO.unit==='mil'?`${(mm/0.0254).toFixed(1)} mil`:VO.unit==='in'?`${(mm/25.4).toFixed(4)} in`:`${mm.toFixed(3)} mm`;
+const fmtN=mm=>VO.unit==='mil'?(mm/0.0254).toFixed(1):VO.unit==='in'?(mm/25.4).toFixed(4):mm.toFixed(3);
+
+function prep(x){ clr(x); setXf(x); x.fillStyle='#fff'; x.strokeStyle='#fff'; x.lineCap='round'; x.lineJoin='round'; }
+function drawData(x,d){
+  const minW=1/V.zoom;
+  for(const g of d.groups){
+    x.globalCompositeOperation=g.clear?'destination-out':'source-over';
+    x.fill(g.flash,'nonzero');
+    for(const f of g.fills) x.fill(f.path,f.rule);
+    for(const s of g.strokes.values()){ x.lineWidth=Math.max(s.w,minW); x.stroke(s.path); }
+  }
+  x.globalCompositeOperation='source-over';
+}
+function paint(i,arr){ const c=getC(i), x=c.getContext('2d'); prep(x); arr.forEach(l=>drawData(x,l.data)); return c; }
+/* Katmanlar görünümü: GerbView tarzı çerçeve (sketch) modları */
+function paintL(i,l){
+  const c=getC(i), x=c.getContext('2d'); prep(x); const px=1/V.zoom;
+  let t=null; if(VO.sketchL){ t=getC(6).getContext('2d'); prep(t); }
+  for(const g of l.data.groups){
+    x.globalCompositeOperation=g.clear?'destination-out':'source-over';
+    if(VO.sketchF){ x.lineWidth=px; x.stroke(g.flash); } else x.fill(g.flash,'nonzero');
+    for(const f of g.fills){ if(VO.sketchP){ x.lineWidth=px; x.stroke(f.path); } else x.fill(f.path,f.rule); }
+    for(const s of g.strokes.values()){
+      if(t&&!g.clear){ t.globalCompositeOperation='source-over'; t.lineWidth=Math.max(s.w,px); t.stroke(s.path); if(s.w>3*px){ t.globalCompositeOperation='destination-out'; t.lineWidth=s.w-2*px; t.stroke(s.path); } }
+      else { x.lineWidth=Math.max(s.w,px); x.stroke(s.path); }
+    }
+  }
+  if(t){ x.setTransform(1,0,0,1,0,0); x.globalCompositeOperation='source-over'; x.drawImage(t.canvas,0,0); }
+  x.globalCompositeOperation='source-over';
+  return c;
+}
+function paintNeg(i,l){ const c=getC(i), x=c.getContext('2d'); prep(x); let n=0; const px=1/V.zoom;
+  for(const g of l.data.groups){ if(!g.clear) continue; n++; x.fill(g.flash,'nonzero'); for(const f of g.fills) x.fill(f.path,f.rule); for(const s of g.strokes.values()){ x.lineWidth=Math.max(s.w,px); x.stroke(s.path); } }
+  return n?c:null; }
+function tint(src,color){ const T=getC(5), t=T.getContext('2d'); clr(t); t.drawImage(src,0,0); t.globalCompositeOperation='source-in'; t.fillStyle=color; t.fillRect(0,0,T.width,T.height); t.globalCompositeOperation='source-over'; return T; }
+function viewColors(){
+  const white=/White/.test(S.color), black=/Black/.test(S.color);
+  return {sub:SUBC[S.material]||SUBC['FR-4'],cu:'#b4733a',mask:MASKC[S.color]||'#1f6b3a',maskA:white?0.94:black?0.93:0.8,
+    silk:S.silk==='Black'?'#141414':'#f3f3ee',fin:FINC[S.finish]||'#d3d7da'};
+}
+function renderReal(o){
+  const s=V.side, vis=t=>layers.filter(l=>l.visible&&l.data&&l.type===t);
+  const cu=vis(s+'-copper'), mk=vis(s+'-mask'), sk=vis(s+'-silk'), dr=layers.filter(l=>l.visible&&l.data&&(l.type==='drill'||l.type==='drill-npth'));
+  const col=viewColors();
+  const B=getC(1), bx=B.getContext('2d'); clr(bx); if(board.path){ setXf(bx); bx.fillStyle='#fff'; bx.fill(board.path,'evenodd'); }
+  o.drawImage(tint(B,col.sub),0,0);
+  const C=paint(2,cu); o.drawImage(tint(C,col.cu),0,0);
+  const T=getC(5), t=T.getContext('2d'); let O=null;
+  if(mk.length){
+    O=paint(3,mk);
+    clr(t); t.drawImage(B,0,0); t.globalCompositeOperation='destination-out'; t.drawImage(O,0,0); t.globalCompositeOperation='source-in'; t.fillStyle=col.mask; t.fillRect(0,0,T.width,T.height);
+    o.globalAlpha=col.maskA; o.drawImage(T,0,0); o.globalAlpha=1;
+    clr(t); t.drawImage(C,0,0); t.globalCompositeOperation='destination-in'; t.drawImage(O,0,0); t.globalCompositeOperation='source-in'; t.fillStyle=col.fin; t.fillRect(0,0,T.width,T.height);
+    o.drawImage(T,0,0);
+  } else o.drawImage(tint(C,col.fin),0,0);
+  if(sk.length){ const Sx=paint(4,sk); clr(t); t.drawImage(Sx,0,0); if(O){ t.globalCompositeOperation='destination-out'; t.drawImage(O,0,0); } t.globalCompositeOperation='source-in'; t.fillStyle=col.silk; t.fillRect(0,0,T.width,T.height); o.drawImage(T,0,0); }
+  if(board.path){ o.globalCompositeOperation='destination-in'; o.drawImage(B,0,0); o.globalCompositeOperation='source-over'; }
+  if(dr.length){ const D=paint(4,dr); if(SNAP&&SNAP.punch){ o.globalCompositeOperation='destination-out'; o.drawImage(D,0,0); o.globalCompositeOperation='source-over'; } else o.drawImage(tint(D,'#0b0d10'),0,0); }
+}
+function layerOrder(){
+  const vis=layers.filter(l=>l.visible&&l.data&&l.type!=='ignore');
+  const stack=vis.filter(l=>RANK[l.type]<60), rest=vis.filter(l=>RANK[l.type]>=60).sort((a,b)=>RANK[b.type]-RANK[a.type]);
+  let order=[...rest.filter(l=>l.type==='other'),...(V.side==='top'?stack.slice().reverse():stack),...rest.filter(l=>l.type!=='other').reverse()];
+  const a=order.find(l=>l.id===activeId); if(a){ order=order.filter(l=>l!==a); order.push(a); }
+  return order;
+}
+function renderLayers(o){
+  for(const l of layerOrder()){
+    const inactive=activeId&&l.id!==activeId;
+    if(inactive&&VO.inactive==='hide') continue;
+    let a=/mask|paste/.test(l.type)?0.45:0.85; if(inactive&&VO.inactive==='dim') a*=0.22;
+    const C=paintL(2,l);
+    o.globalCompositeOperation=VO.xor?'xor':'source-over'; o.globalAlpha=a; o.drawImage(tint(C,l.color),0,0);
+    if(VO.ghost){ const N=paintNeg(4,l); if(N){ o.globalAlpha=a*0.55; o.drawImage(tint(N,'#a7adb6'),0,0); } }
+    o.globalAlpha=1; o.globalCompositeOperation='source-over';
+  }
+}
+/* görünümde hangi katmanlar seçilebilir/vurgulanabilir */
+function viewLayers(){
+  if(V.mode==='layers') return layerOrder().filter(l=>!(activeId&&l.id!==activeId&&VO.inactive==='hide'));
+  const s=V.side; return layers.filter(l=>l.visible&&l.data&&(l.type===s+'-copper'||l.type===s+'-silk'||l.type===s+'-mask'||l.type==='drill'||l.type==='drill-npth'||l.type==='outline'));
+}
+function renderHL(o){
+  if(!hlCache.size) return;
+  const vl=viewLayers().filter(l=>hlCache.has(l.id)); if(!vl.length) return;
+  o.setTransform(1,0,0,1,0,0); o.fillStyle='rgba(8,10,14,.6)'; o.fillRect(0,0,o.canvas.width,o.canvas.height);
+  for(const l of vl){ const C=paint(2,[{data:hlCache.get(l.id)}]); o.drawImage(tint(C,/drill/.test(l.type)?'#ffffff':HLC),0,0); }
+}
+function renderFull(){
+  if(V.mode==='3d'){ show3D(); return; } else if($('#v3d').classList.contains('on')) hide3D();
+  const {W,H}=vw(); DPR=Math.max(1,Math.min(2.5,window.devicePixelRatio||1));
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  const out=getC(0), o=out.getContext('2d'); clr(o);
+  if(layers.some(l=>l.data)){ if(V.mode==='real') renderReal(o); else renderLayers(o); renderHL(o); }
+  o.setTransform(1,0,0,1,0,0); o.globalAlpha=1; o.globalCompositeOperation='destination-over'; o.fillStyle=BG; o.fillRect(0,0,out.width,out.height); o.globalCompositeOperation='source-over';
+  cache={zoom:V.zoom,panX:V.panX,panY:V.panY,W,H};
+  blit();
+}
+function blit(){
+  const c=cv.getContext('2d'); c.setTransform(1,0,0,1,0,0); c.fillStyle=BG; c.fillRect(0,0,cv.width,cv.height);
+  if(cache){ const k=V.zoom/cache.zoom; c.setTransform(DPR,0,0,DPR,0,0); c.imageSmoothingEnabled=true; c.drawImage(getC(0),V.panX-cache.panX*k,V.panY-cache.panY*k,cache.W*k,cache.H*k); }
+  overlay(c);
+}
+function overlay(c){
+  c.setTransform(DPR,0,0,DPR,0,0);
+  const {W,H}=vw();
+  if(VO.cross&&hover){ const [hx,hy]=toScreen(...hover); c.strokeStyle='rgba(255,255,255,.38)'; c.lineWidth=1; c.beginPath(); c.moveTo(0,Math.round(hy)+.5); c.lineTo(W,Math.round(hy)+.5); c.moveTo(Math.round(hx)+.5,0); c.lineTo(Math.round(hx)+.5,H); c.stroke(); }
+  if(SEL){ const bb=recBox(SEL.l,SEL.r); if(bb){ const [x0,y0]=toScreen(bb.minx,bb.maxy), [x1,y1]=toScreen(bb.maxx,bb.miny);
+    const rx=Math.min(x0,x1)-3, ry=Math.min(y0,y1)-3, rw=Math.abs(x1-x0)+6, rh=Math.abs(y1-y0)+6;
+    c.strokeStyle='#ffd23f'; c.lineWidth=1.5; c.setLineDash([4,3]); c.strokeRect(rx,ry,rw,rh); c.setLineDash([]); } }
+  const pts=[meas.a,meas.b||(meas.on&&meas.a?hover:null)].filter(Boolean);
+  if(pts.length){
+    const [ax,ay]=toScreen(...pts[0]);
+    c.strokeStyle='#ffd23f'; c.fillStyle='#ffd23f'; c.lineWidth=1.5;
+    c.beginPath(); c.arc(ax,ay,3,0,TAU); c.fill();
+    if(pts[1]){ const [bx,by]=toScreen(...pts[1]); c.setLineDash([5,4]); c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.stroke(); c.setLineDash([]); c.beginPath(); c.arc(bx,by,3,0,TAU); c.fill();
+      const dx=pts[1][0]-pts[0][0], dy=pts[1][1]-pts[0][1], d=Math.hypot(dx,dy);
+      const txt=`${fmtL(d)}   Δx ${fmtN(Math.abs(dx))}  Δy ${fmtN(Math.abs(dy))}`;
+      c.font='12px "IBM Plex Mono",monospace'; const tw=c.measureText(txt).width; const lx=(ax+bx)/2+8, ly=(ay+by)/2-8;
+      c.fillStyle='rgba(20,23,28,.92)'; c.fillRect(lx-4,ly-14,tw+8,19); c.fillStyle='#ffd23f'; c.fillText(txt,lx,ly); }
+  }
+}
+let rT=null; function schedule(){ clearTimeout(rT); rT=setTimeout(renderFull,140); }
+function contentBounds(){ if(board.bounds&&isFinite(board.bounds.minx)) return board.bounds; const b=newB(); layers.forEach(l=>{ if(l.data&&l.visible) mergeB(b,l.data.bounds); }); return isFinite(b.minx)?b:null; }
+function fit(){
+  if(V.mode==='3d'){ cam3D(V.side); return; }
+  const {W,H}=vw(); const b=contentBounds();
+  if(!b){ V.zoom=8; V.panX=W/2; V.panY=H/2; return; }
+  const bw=Math.max(b.maxx-b.minx,1), bh=Math.max(b.maxy-b.miny,1); V.zoom=Math.min(W/bw,H/bh)*0.88;
+  const cx=(b.minx+b.maxx)/2, cy=(b.miny+b.maxy)/2; V.panX=W/2-sgn()*V.zoom*cx; V.panY=H/2+V.zoom*cy;
+}
+
+/* ---------- nesne seçimi (GerbView: tıkla → bilgi) ---------- */
+const apOf=(l,r)=>l.data.aps?l.data.aps[r.d]:null;
+function recBox(l,r){
+  const b=newB();
+  switch(r.t){
+    case 'f':{ const ap=apOf(l,r); if(!ap) return null; if(ap.type==='M'&&ap.rb){ addB(b,r.x+ap.rb.minx,r.y+ap.rb.miny); addB(b,r.x+ap.rb.maxx,r.y+ap.rb.maxy); } else addB(b,r.x,r.y,ap.ext||0.1); break; }
+    case 'l': case 's': addB(b,r.x0,r.y0,r.w/2); addB(b,r.x1,r.y1,r.w/2); break;
+    case 'a': arcB(b,r,r.w/2); break;
+    case 'r': return r.bb;
+    case 'h': addB(b,r.x,r.y,r.w/2); break;
+  }
+  return b;
+}
+function segDist(px,py,x0,y0,x1,y1){ const dx=x1-x0, dy=y1-y0, L=dx*dx+dy*dy; let t=L?((px-x0)*dx+(py-y0)*dy)/L:0; t=Math.max(0,Math.min(1,t)); return Math.hypot(px-(x0+t*dx),py-(y0+t*dy)); }
+function hit(l,r,x,y,tol){
+  switch(r.t){
+    case 'l': case 's': return segDist(x,y,r.x0,r.y0,r.x1,r.y1)<=r.w/2+tol;
+    case 'h': return Math.hypot(x-r.x,y-r.y)<=r.w/2+tol;
+    case 'a':{ const d=Math.abs(Math.hypot(x-r.cx,y-r.cy)-r.r); if(d>r.w/2+tol) return false; const norm=a=>{ a%=TAU; if(a<0)a+=TAU; return a; };
+      const a=Math.atan2(y-r.cy,x-r.cx); return r.cw?norm(r.a0-a)<=r.a0-r.a1+1e-6:norm(a-r.a0)<=r.a1-r.a0+1e-6; }
+    case 'r':{ const b=r.bb; if(x<b.minx||x>b.maxx||y<b.miny||y>b.maxy) return false; return HC.isPointInPath(r.path,x,y,'nonzero'); }
+    case 'f':{ const b=recBox(l,r); if(!b||x<b.minx-tol||x>b.maxx+tol||y<b.miny-tol||y>b.maxy+tol) return false;
+      const p=new Path2D(); apShape(p,apOf(l,r),r.x,r.y); return HC.isPointInPath(p,x,y,'nonzero')||Math.hypot(x-r.x,y-r.y)<=tol; }
+  }
+  return false;
+}
+function pickAll(wx,wy){
+  const tol=4/V.zoom; let order=viewLayers().slice().reverse(); const out=[];
+  if(V.mode==='real'){ const rk={'top-copper':0,'bottom-copper':0,'drill':1,'drill-npth':1,'top-silk':2,'bottom-silk':2,'top-mask':3,'bottom-mask':3,'outline':4}; order.sort((a,b)=>rk[a.type]-rk[b.type]); }
+  for(const l of order){ const o=l.data.objs; if(!o) continue; const fl=[], ot=[];
+    for(let i=o.length-1;i>=0;i--){ const r=o[i]; if(r.neg) continue; if(hit(l,r,wx,wy,tol)) (r.t==='f'||r.t==='h'?fl:ot).push({l,r}); if(fl.length+ot.length>12) break; }
+    out.push(...fl,...ot); if(out.length>24) break; }
+  return out;
+}
+let pickState={sx:-99,sy:-99,i:0,list:[]};
+function pickClick(sx,sy){
+  const same=Math.hypot(sx-pickState.sx,sy-pickState.sy)<4&&pickState.list.length>1;
+  if(same){ pickState.i=(pickState.i+1)%pickState.list.length; }
+  else { const [wx,wy]=toWorld(sx,sy); pickState={sx,sy,i:0,list:pickAll(wx,wy)}; }
+  const s=pickState.list[pickState.i]||null; if(s){ s.k=pickState.i+1; s.n=pickState.list.length; } return s;
+}
+const TYPE_NAME=k=>{ const t=TYPES.find(x=>x[0]===k); return t?T(t[1],t[2]):k; };
+const KIND=k=>({f:T('Flash (pad / via)','Flash (pad / via)'),l:T('Çizgi (iz)','Line (track)'),a:T('Yay','Arc'),r:T('Bölge (poligon / pour)','Region (polygon / pour)'),h:T('Delik','Hole'),s:T('Slot (oval delik)','Slot')}[k]||k);
+function showInfo(sel){
+  const el=$('#info'); if(!sel){ hideInfo(); return; }
+  const {l,r}=sel, ap=r.t==='r'?null:apOf(l,r), fn=r.t==='r'?r.fn:(ap&&ap.fn);
+  const row=(k,v)=>v?`<dt>${k}</dt><dd>${esc(v)}</dd>`:'';
+  let pos='', size='';
+  if(r.t==='f'||r.t==='h') pos=`${fmtN(r.x)}, ${fmtN(r.y)}`;
+  else if(r.t==='l'||r.t==='s'){ pos=`${fmtN(r.x0)}, ${fmtN(r.y0)} → ${fmtN(r.x1)}, ${fmtN(r.y1)}`; size=`${T('genişlik','width')} ${fmtL(r.w)}, ${T('uzunluk','length')} ${fmtL(Math.hypot(r.x1-r.x0,r.y1-r.y0))}`; }
+  else if(r.t==='a'){ pos=`${T('merkez','center')} ${fmtN(r.cx)}, ${fmtN(r.cy)}`; size=`${T('genişlik','width')} ${fmtL(r.w)}, R ${fmtL(r.r)}`; }
+  else if(r.t==='r'){ size=`${fmtL(r.bb.maxx-r.bb.minx)} × ${fmtL(r.bb.maxy-r.bb.miny)}`; }
+  const pin=r.P?r.P.split(','):null;
+  const isDrill=l.data.kind==='drill';
+  el.innerHTML=`<h4><span>${KIND(r.t)}${sel.n>1?` <small style="color:var(--dmute);font-weight:400">(${sel.k}/${sel.n} — ${T('tekrar tıkla: sonraki','click again: next')})</small>`:''}</span><button type="button" id="infoX" title="${T('Kapat','Close')}">×</button></h4><dl>`+
+    row(T('Katman','Layer'),`${l.name.split('/').pop()} — ${TYPE_NAME(l.type)}`)+
+    (r.t!=='r'?row(isDrill?T('Takım','Tool'):'D-code',`${isDrill?'T':'D'}${r.d}  ${apDesc(ap)}`):'')+
+    row(T('Aperture işlevi','Aperture function'),fn)+row('Net',r.N)+row(T('Bileşen','Component'),r.C||(pin&&pin[0]))+
+    (pin?row('Pin',pin.slice(1).join(' · ')):'')+row(T('Konum','Position'),pos)+row(T('Ölçü','Size'),size)+'</dl><div class="acts">'+
+    (r.N?`<button class="ibtn primary" data-ih="net" type="button">${T('Neti vurgula','Highlight net')}</button>`:'')+
+    ((r.C||pin)?`<button class="ibtn" data-ih="cmp" type="button">${T('Bileşeni vurgula','Highlight component')}</button>`:'')+
+    (r.t!=='r'?`<button class="ibtn" data-ih="dcode" type="button">${isDrill?T('Takımı vurgula','Highlight tool'):T('D-code vurgula','Highlight D-code')}</button>`:'')+
+    (fn?`<button class="ibtn" data-ih="fn" type="button">${T('İşlevi vurgula','Highlight function')}</button>`:'')+'</div>';
+  el.classList.add('show');
+  $('#infoX').onclick=()=>{ SEL=null; hideInfo(); blit(); };
+  el.querySelectorAll('[data-ih]').forEach(b=>b.onclick=()=>{ const k=b.dataset.ih;
+    if(k==='net') setHL({kind:'net',v:r.N});
+    else if(k==='cmp') setHL({kind:'cmp',v:r.C||pin[0]});
+    else if(k==='fn') setHL({kind:'fn',v:fn});
+    else setHL({kind:'dcode',v:r.d,layer:l.id}); });
+}
+function hideInfo(){ const el=$('#info'); if(el) el.classList.remove('show'); }
+
+/* ---------- vurgulama (GerbView: Highlight Net / Component / Aperture / DCode) ---------- */
+function hlMatch(l,r){
+  if(r.neg) return false;
+  switch(HL.kind){
+    case 'net': return r.N===HL.v;
+    case 'cmp': return r.C===HL.v||(!!r.P&&r.P.split(',')[0]===HL.v);
+    case 'fn': return (r.t==='r'?r.fn:(apOf(l,r)||{}).fn)===HL.v;
+    case 'dcode': return l.id===HL.layer&&r.d===HL.v;
+  }
+  return false;
+}
+function addRec(g,l,r){
+  switch(r.t){
+    case 'f':{ const ap=apOf(l,r); if(ap) apShape(g.flash,ap,r.x,r.y); break; }
+    case 'h': circ(g.flash,r.x,r.y,r.w/2); break;
+    case 'r': g.fills.push({path:r.path,rule:'nonzero'}); break;
+    case 'l': case 's': case 'a':{
+      if(r.rect){ const ap=apOf(l,r); if(ap){ addPoly(g.flash,rectHull(ap,r.x0,r.y0,r.x1,r.y1)); break; } }
+      const k=r.w.toFixed(5); let s=g.strokes.get(k); if(!s){ s={w:r.w,path:new Path2D()}; g.strokes.set(k,s); }
+      s.path.moveTo(r.x0,r.y0); if(r.t==='a') s.path.arc(r.cx,r.cy,r.r,r.a0,r.a1,r.cw); else s.path.lineTo(r.x1,r.y1); break; }
+  }
+}
+function buildHL(){
+  hlCache=new Map(); if(!HL) return {n:0,layers:0};
+  let n=0;
+  for(const l of layers){ if(!l.data||!l.data.objs) continue;
+    const g={clear:false,flash:new Path2D(),fills:[],strokes:new Map()}; let k=0;
+    for(const r of l.data.objs) if(hlMatch(l,r)){ addRec(g,l,r); k++; }
+    if(k){ hlCache.set(l.id,{groups:[g]}); n+=k; } }
+  return {n,layers:hlCache.size};
+}
+function setHL(h){
+  HL=h&&h.v!=null&&h.v!==''?h:null; const res=buildHL();
+  const lbl=HL?({net:'Net',cmp:T('Bileşen','Component'),fn:T('İşlev','Function'),dcode:'D-code'}[HL.kind])+': '+(HL.kind==='dcode'?(layers.find(l=>l.id===HL.layer)||{}).data?.kind==='drill'?'T'+HL.v:'D'+HL.v:HL.v):'';
+  if($('#hlStat')) $('#hlStat').textContent=HL?(res.n?`${lbl} — ${res.n} ${T('nesne','objects')}, ${res.layers} ${T('katman','layers')}`:`${lbl} — ${T('eşleşen nesne yok','no matching objects')}`):'';
+  $('#hlBadgeT').textContent=HL?`${lbl} · ${res.n} ${T('nesne','objects')}`:''; $('#hlBadge').classList.toggle('show',!!HL);
+  if($('#dcLayer')) document.querySelectorAll('#dcTable tr[data-d]').forEach(tr=>tr.classList.toggle('on',!!HL&&HL.kind==='dcode'&&+tr.dataset.d===HL.v&&+$('#dcLayer').value===HL.layer));
+  renderFull();
+}
+function buildHLLists(){
+  if(!$('#dlNet')) return;
+  const nets=new Set(), cmps=new Set(), fns=new Set();
+  for(const l of layers){ if(!l.data||!l.data.objs) continue;
+    for(const r of l.data.objs){ if(r.N) nets.add(r.N); if(r.C) cmps.add(r.C); if(r.P) cmps.add(r.P.split(',')[0]); if(r.t==='r'&&r.fn) fns.add(r.fn); }
+    if(l.data.aps) Object.values(l.data.aps).forEach(a=>{ if(a.fn&&a.uses) fns.add(a.fn); }); }
+  const nat=(a,b)=>a.localeCompare(b,undefined,{numeric:true});
+  $('#dlNet').innerHTML=[...nets].sort(nat).map(v=>`<option value="${esc(v)}">`).join('');
+  $('#dlCmp').innerHTML=[...cmps].sort(nat).map(v=>`<option value="${esc(v)}">`).join('');
+  $('#hlFn').innerHTML=fns.size?[...fns].sort(nat).map(v=>`<option>${esc(v)}</option>`).join(''):`<option value="">— ${T('X2 işlev bilgisi yok','no X2 function data')} —</option>`;
+  $('#hlNet').placeholder=nets.size?`${nets.size} net — ${T('yazın veya seçin','type or pick')}`:T('X2 net bilgisi yok','no X2 net data');
+  $('#hlCmp').placeholder=cmps.size?`${cmps.size} ${T('bileşen — ör.','components — e.g.')} ${[...cmps].sort(nat)[0]}`:T('X2 bileşen bilgisi yok','no X2 component data');
+  $('#hlStat').textContent='';
+}
+document.querySelectorAll('[data-hl]').forEach(b=>b.onclick=()=>{ const k=b.dataset.hl;
+  setHL({kind:k,v:k==='net'?$('#hlNet').value.trim():k==='cmp'?$('#hlCmp').value.trim():$('#hlFn').value}); });
+$('#hlNet')&&$('#hlNet').addEventListener('keydown',e=>{ if(e.key==='Enter') setHL({kind:'net',v:e.target.value.trim()}); });
+$('#hlCmp')&&$('#hlCmp').addEventListener('keydown',e=>{ if(e.key==='Enter') setHL({kind:'cmp',v:e.target.value.trim()}); });
+if($('#hlClear')) $('#hlClear').onclick=()=>setHL(null); $('#hlBadgeX').onclick=()=>setHL(null);
+
+/* ---------- D-code listesi (GerbView: List DCodes) ---------- */
+function renderDC(){
+  if(!$('#dcLayer')) return;
+  const sel=$('#dcLayer'); const ls=layers.filter(l=>l.data&&l.data.aps);
+  sel.innerHTML=ls.map(l=>`<option value="${l.id}">${esc(l.name.split('/').pop())}</option>`).join('')||'<option>—</option>';
+  if(activeId&&ls.some(l=>l.id===activeId)) sel.value=String(activeId);
+  renderDCTable();
+}
+function renderDCTable(){
+  if(!$('#dcLayer')) return;
+  const l=layers.find(x=>x.id===+$('#dcLayer').value); const t=$('#dcTable');
+  if(!l){ t.innerHTML=''; return; }
+  const drill=l.data.kind==='drill';
+  const aps=Object.values(l.data.aps).sort((a,b)=>a.code-b.code);
+  t.innerHTML=`<thead><tr><th>${drill?'T':'D'}</th><th>${T('Şekil / boyut','Shape / size')}</th><th>${T('Adet','Uses')}</th><th>${T('İşlev','Function')}</th></tr></thead><tbody>`+
+    aps.map(a=>`<tr data-d="${a.code}"${HL&&HL.kind==='dcode'&&HL.layer===l.id&&HL.v===a.code?' class="on"':''}><td>${drill?'T':'D'}${a.code}</td><td>${esc(apDesc(a).replace(/^(Daire|Circle|Matkap|Drill) /,''))}</td><td>${a.uses}</td><td title="${esc(a.fn||'')}">${esc((a.fn||'').replace(/,.*$/,''))}</td></tr>`).join('')+'</tbody>';
+}
+$('#dcLayer')&&$('#dcLayer').addEventListener('change',renderDCTable);
+$('#dcTable')&&$('#dcTable').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-d]'); if(!tr) return; const lid=+$('#dcLayer').value, d=+tr.dataset.d;
+  if(HL&&HL.kind==='dcode'&&HL.layer===lid&&HL.v===d) setHL(null); else setHL({kind:'dcode',v:d,layer:lid}); });
+
+/* ---------- etkileşim ---------- */
+let drag=null;
+cv.addEventListener('pointerdown',e=>{
+  const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top;
+  if(meas.on&&e.button===0){ const w=toWorld(sx,sy); if(!meas.a||meas.b){ meas.a=w; meas.b=null; } else meas.b=w; blit(); return; }
+  drag={x:e.clientX,y:e.clientY,sx,sy,moved:false}; cv.setPointerCapture(e.pointerId); cv.classList.add('drag');
+});
+cv.addEventListener('pointermove',e=>{
+  const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top; const [wx,wy]=toWorld(sx,sy); hover=[wx,wy];
+  $('#readout').textContent=`X ${fmtN(wx)}  Y ${fmtN(wy)} ${VO.unit==='in'?'in':VO.unit}`;
+  if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(!drag.moved&&Math.hypot(e.clientX-drag.sx-r.left,e.clientY-drag.sy-r.top)<4) return;
+    V.panX+=dx; V.panY+=dy; drag.x=e.clientX; drag.y=e.clientY; drag.moved=true; blit(); schedule(); }
+  else if((meas.on&&meas.a&&!meas.b)||VO.cross) blit();
+});
+const endDrag=e=>{ if(!drag) return; const d=drag; drag=null; cv.classList.remove('drag');
+  if(d.moved){ clearTimeout(rT); renderFull(); return; }
+  if(e.type==='pointerup'&&layers.some(l=>l.data)){ SEL=pickClick(d.sx,d.sy); if(SEL) showInfo(SEL); else hideInfo(); blit(); } };
+cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',endDrag);
+cv.addEventListener('pointerleave',()=>{ $('#readout').textContent='—'; hover=null; if(VO.cross) blit(); });
+cv.addEventListener('wheel',e=>{
+  e.preventDefault(); const r=cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top; const [wx,wy]=toWorld(sx,sy);
+  const f=Math.exp(-e.deltaY*(e.deltaMode===1?0.05:0.0015)); V.zoom=Math.min(Math.max(V.zoom*f,0.5),4000);
+  V.panX=sx-sgn()*V.zoom*wx; V.panY=sy+V.zoom*wy; blit(); schedule();
+},{passive:false});
+function setSide(v){ if(V.mode==='3d'){ V.side=v; setSeg('#segSide',v); cam3D(v); return; } const {W,H}=vw(); const [cx,cy]=toWorld(W/2,H/2); V.side=v; V.panX=W/2-sgn()*V.zoom*cx; V.panY=H/2+V.zoom*cy; setSeg('#segSide',v); renderFull(); }
+$('#segSide').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setSide(b.dataset.v); });
+$('#segMode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; V.mode=b.dataset.v; setSeg('#segMode',V.mode); renderFull(); });
+$('#btnFit').onclick=()=>{ fit(); renderFull(); };
+function toggleMeasure(on){ meas.on=on===undefined?!meas.on:on; if(!meas.on){ meas.a=meas.b=null; } $('#btnMeasure').classList.toggle('on',meas.on); cv.classList.toggle('meas',meas.on); blit(); }
+$('#btnMeasure').onclick=()=>toggleMeasure();
+/* görünüm menüsü */
+function syncPop(){ document.querySelectorAll('#pop [data-vo]').forEach(i=>i.checked=!!VO[i.dataset.vo]); setSeg('#segInact',VO.inactive); setSeg('#segUnit',VO.unit); }
+$('#btnView').onclick=e=>{ e.stopPropagation(); const p=$('#pop'); p.classList.toggle('show'); $('#btnView').classList.toggle('on',p.classList.contains('show')); syncPop(); };
+document.addEventListener('click',e=>{ const p=$('#pop'); if(p.classList.contains('show')&&!p.contains(e.target)&&e.target!==$('#btnView')){ p.classList.remove('show'); $('#btnView').classList.remove('on'); } });
+$('#pop').addEventListener('change',e=>{ const k=e.target.dataset.vo; if(!k) return; VO[k]=e.target.checked; saveVO(); if(k!=='cross'&&['sketchL','sketchF','sketchP','ghost','xor'].includes(k)&&V.mode!=='layers'){ V.mode='layers'; setSeg('#segMode','layers'); toast(T('Bu seçenek Katmanlar görünümünde etkilidir','This option applies to the Layers view')); } k==='cross'?blit():renderFull(); });
+$('#segInact').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; VO.inactive=b.dataset.v; saveVO(); syncPop(); if(V.mode!=='layers'){ V.mode='layers'; setSeg('#segMode','layers'); } renderFull(); });
+$('#segUnit').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; VO.unit=b.dataset.v; saveVO(); syncPop(); if(SEL) showInfo(SEL); blit(); });
+function cycleActive(dir){ const ls=layers.filter(l=>l.data&&l.type!=='ignore'); if(!ls.length) return; let i=ls.findIndex(l=>l.id===activeId); i=(i+dir+ls.length)%ls.length; setActive(ls[i].id); toast(T('Aktif katman: ','Active layer: ')+ls[i].name.split('/').pop()); }
+document.addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+  if(e.key==='f'||e.key==='F'){ fit(); renderFull(); }
+  else if((e.key==='m'||e.key==='M')&&V.mode!=='3d') toggleMeasure();
+  else if(e.key==='PageDown'){ e.preventDefault(); cycleActive(1); }
+  else if(e.key==='PageUp'){ e.preventDefault(); cycleActive(-1); }
+  else if(e.key==='Escape'){ toggleMeasure(false); $('#modal').classList.remove('show'); SEL=null; hideInfo(); if(HL) setHL(null); else blit(); }
+});
+new ResizeObserver(()=>{ if(!cache){ fit(); } renderFull(); }).observe(cw);
+
+// dosya alma
+async function handleFiles(files){
+  const entries=[], names=[];
+  for(const f of files){
+    names.push(f.name);
+    try{
+      const buf=await f.arrayBuffer(); const u=new Uint8Array(buf,0,Math.min(4,buf.byteLength));
+      if(/\.zip$/i.test(f.name)||(u[0]===0x50&&u[1]===0x4b&&u[2]===3&&u[3]===4)) entries.push(...await unzip(buf));
+      else entries.push({name:f.name,text:SKIP_EXT.test(f.name)?null:dec(new Uint8Array(buf))});
+    }catch(e){ console.error(e); toast(`${f.name}: ${T('açılamadı','could not be opened')} — ${e.message}`); }
+  }
+  if(entries.length) loadEntries(entries,names.length>2?`${names.length} dosya`:names.join(', '));
+}
+$('#fileIn').addEventListener('change',e=>{ if(e.target.files.length) handleFiles([...e.target.files]); e.target.value=''; });
+const vEl=$('#viewer');
+['dragenter','dragover'].forEach(t=>vEl.addEventListener(t,e=>{ e.preventDefault(); vEl.classList.add('over'); }));
+['dragleave','drop'].forEach(t=>vEl.addEventListener(t,e=>{ e.preventDefault(); if(t==='dragleave'&&vEl.contains(e.relatedTarget)) return; vEl.classList.remove('over'); }));
+vEl.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files]); });
+$('#btnDemo').onclick=()=>loadEntries(demoFiles(),T('Örnek kart (demo)','Sample board (demo)'));
+
+/* =====================================================================
+   ÖRNEK KART (KiCad tarzı X2 Gerber + Excellon üretir)
+   ===================================================================== */
+function demoFiles(){
+  const c=v=>Math.round(v*1e6), P=(x,y)=>`X${c(x)}Y${c(y)}`;
+  const mk=fn=>{ const a=['%TF.GenerationSoftware,PCB-Siparis-Demo*%',`%TF.FileFunction,${fn}*%`,'%FSLAX46Y46*%','%MOMM*%','%LPD*%','G75*','G01*'];
+    const o={a, s:t=>(a.push(t),o), ap:n=>o.s(`D${n}*`), mv:(x,y)=>o.s(`${P(x,y)}D02*`), ln:(x,y)=>o.s(`G01${P(x,y)}D01*`), fl:(x,y)=>o.s(`${P(x,y)}D03*`),
+      arc:(x,y,i,j,ccw)=>o.s(`${ccw?'G03':'G02'}${P(x,y)}I${c(i)}J${c(j)}D01*`),
+      path:pts=>{ o.mv(...pts[0]); pts.slice(1).forEach(p=>o.ln(...p)); return o; },
+      region:pts=>{ o.s('G36*'); o.mv(...pts[0]); pts.slice(1).forEach(p=>o.ln(...p)); o.ln(...pts[0]); o.s('G37*'); return o; },
+      done:()=>(a.push('M02*'),a.join('\n')) }; return o; };
+  const RR='%AMRoundRect*\n0 Rectangle with rounded corners*\n0 $1 Rounding radius*\n0 $2 $3 $4 $5 $6 $7 $8 $9 X,Y pos of 4 corners*\n4,1,4,$2,$3,$4,$5,$6,$7,$8,$9,$2,$3,0*\n1,1,$1+$1,$2,$3*\n1,1,$1+$1,$4,$5*\n1,1,$1+$1,$6,$7*\n1,1,$1+$1,$8,$9*\n20,1,$1+$1,$2,$3,$4,$5,0*\n20,1,$1+$1,$4,$5,$6,$7,0*\n20,1,$1+$1,$6,$7,$8,$9,0*\n20,1,$1+$1,$8,$9,$2,$3,0*%';
+  const rr=(n,w,h,r)=>{ const x=w/2-r, y=h/2-r; return `%ADD${n}RoundRect,${r}X${-x}X${-y}X${x}X${-y}X${x}X${y}X${-x}X${y}X0*%`; };
+  const soic=[]; for(let k=0;k<4;k++){ const y=23.905-k*1.27; soic.push([19.3,y]); } for(let k=0;k<4;k++){ const y=20.095+k*1.27; soic.push([24.7,y]); }
+  const caps=[[29.2,14],[30.8,14],[29.2,17],[30.8,17],[35.2,22],[36.8,22],[12.2,29],[13.8,29]];
+  const conn=[[6,13],[6,15.54],[6,18.08],[6,20.62]];
+  const vias=[[16,10],[34,25.6],[40,30],[44,33],[27,31],[52,22],[12,24]];
+  const obr=[[48,10],[48,14]];
+  const npth=[[4,4],[56,4],[4,36],[56,36]];
+
+  // dış hat
+  const ol=mk('Profile,NP'); ol.s('%ADD10C,0.100000*%').ap(10);
+  ol.mv(3,0).ln(57,0).arc(60,3,0,3,true).ln(60,37).arc(57,40,-3,0,true).ln(3,40).arc(0,37,0,-3,true).ln(0,3).arc(3,0,3,0,true);
+  ol.mv(54,30).arc(54,30,-2,0,true);
+
+  // üst bakır
+  const tc=mk('Copper,L1,Top'); tc.s(RR);
+  tc.s('%ADD10C,0.250000*%').s('%ADD11C,0.500000*%').s('%ADD12C,1.700000*%').s('%ADD13R,1.700000X1.700000*%').s(rr(14,1.95,0.6,0.15)).s('%ADD15R,0.900000X0.950000*%').s('%ADD16C,0.600000*%').s('%ADD17O,1.600000X2.400000*%').s('%ADD18C,1.300000*%').s(rr(19,1.0,1.0,0.25));
+  tc.region([[33,24],[47,24],[47,37],[33,37]]);
+  tc.s('%LPC*%').ap(18); vias.filter(v=>v[0]>33&&v[0]<47&&v[1]>24).forEach(v=>tc.fl(...v)); tc.s('D11*'); tc.path([[33,28],[47,35.5]]);
+  tc.s('%LPD*%');
+  tc.ap(16); vias.forEach(v=>tc.fl(...v));
+  tc.ap(14); soic.forEach(p=>tc.fl(...p));
+  tc.ap(15); caps.forEach(p=>tc.fl(...p));
+  tc.ap(13); tc.fl(...conn[0]); tc.ap(12); conn.slice(1).forEach(p=>tc.fl(...p));
+  tc.ap(17); obr.forEach(p=>tc.fl(...p));
+  tc.ap(19); tc.fl(30,30); tc.fl(30,33);
+  tc.ap(11); tc.path([[6,13],[11,13],[14,16],[17.2,16],[19.3,18.1],[19.3,23.905]]); tc.path([[6,15.54],[9,15.54],[12.2,18.7],[12.2,24],[12.2,29]]);
+  tc.mv(48,14).ln(48,18).arc(52,22,4,0,false);
+  tc.ap(10); tc.path([[24.7,20.095],[27,20.095],[29.2,17]]); tc.path([[24.7,21.365],[27.4,21.365],[28,22]]); tc.s('G01*');
+  tc.mv(28,22).arc(31,25,0,3,true); tc.ln(31,29).ln(30,30);
+  tc.path([[24.7,22.635],[33,22.635],[35.2,22]]); tc.path([[36.8,22],[40,22],[40,30]]); tc.path([[6,18.08],[10,18.08],[16,10]]);
+  tc.path([[30.8,14],[38,14],[46,10],[48,10]]); tc.path([[19.3,22.635],[16,22.635],[12,24]]); tc.path([[6,20.62],[9,23.62],[9,27],[12.2,29]]);
+  tc.path([[13.8,29],[22,29],[27,31]]); tc.path([[30,33],[30,36],[25,36]]);
+
+  // alt bakır
+  const bc=mk('Copper,L2,Bot');
+  bc.s('%ADD20C,1.700000*%').s('%ADD21R,1.700000X1.700000*%').s('%ADD22C,2.300000*%').s('%ADD23C,0.600000*%').s('%ADD24C,1.200000*%').s('%ADD25O,2.200000X3.000000*%').s('%ADD26O,1.600000X2.400000*%').s('%ADD27C,4.400000*%').s('%ADD28C,0.900000*%').s('%ADD29C,0.300000*%').s('%ADD30C,5.000000*%');
+  bc.region([[1,2],[2,1],[58,1],[59,2],[59,38],[58,39],[2,39],[1,38]]);
+  bc.s('%LPC*%'); bc.ap(22); conn.forEach(p=>bc.fl(...p)); bc.ap(25); obr.forEach(p=>bc.fl(...p)); bc.ap(27); npth.forEach(p=>bc.fl(...p)); bc.ap(30); bc.fl(52,30);
+  bc.ap(24); vias.slice(1).forEach(v=>bc.fl(...v)); bc.ap(28); bc.path([[34,25.6],[44,25.6],[44,33]]); bc.path([[27,31],[27,36],[52,36],[56,32]]);
+  bc.s('%LPD*%'); bc.ap(21); bc.fl(...conn[0]); bc.ap(20); conn.slice(1).forEach(p=>bc.fl(...p)); bc.ap(26); obr.forEach(p=>bc.fl(...p));
+  bc.ap(23); vias.forEach(v=>bc.fl(...v)); bc.ap(29); bc.path([[34,25.6],[44,25.6],[44,33]]); bc.path([[27,31],[27,36],[52,36],[56,32]]);
+
+  // maskeler
+  const tm=mk('Soldermask,Top'); tm.s('%ADD40R,2.050000X0.700000*%').s('%ADD41R,1.000000X1.050000*%').s('%ADD42C,1.800000*%').s('%ADD43R,1.800000X1.800000*%').s('%ADD44O,1.700000X2.500000*%').s('%ADD45R,1.100000X1.100000*%');
+  tm.ap(40); soic.forEach(p=>tm.fl(...p)); tm.ap(41); caps.forEach(p=>tm.fl(...p)); tm.ap(43); tm.fl(...conn[0]); tm.ap(42); conn.slice(1).forEach(p=>tm.fl(...p)); tm.ap(44); obr.forEach(p=>tm.fl(...p)); tm.ap(45); tm.fl(30,30); tm.fl(30,33);
+  const bm=mk('Soldermask,Bot'); bm.s('%ADD42C,1.800000*%').s('%ADD43R,1.800000X1.800000*%').s('%ADD44O,1.700000X2.500000*%'); bm.ap(43); bm.fl(...conn[0]); bm.ap(42); conn.slice(1).forEach(p=>bm.fl(...p)); bm.ap(44); obr.forEach(p=>bm.fl(...p));
+  const tp=mk('Paste,Top'); tp.s(RR).s(rr(50,1.95,0.6,0.15)).s('%ADD51R,0.900000X0.950000*%'); tp.ap(50); soic.forEach(p=>tp.fl(...p)); tp.ap(51); caps.forEach(p=>tp.fl(...p));
+
+  // silkscreen
+  const ts=mk('Legend,Top'); ts.s('%ADD60C,0.150000*%').s('%ADD61C,0.500000*%').ap(60);
+  ts.path([[20.6,25.2],[23.4,25.2]]).path([[20.6,18.8],[23.4,18.8]]); ts.path([[4.6,11.6],[7.4,11.6],[7.4,22],[4.6,22],[4.6,11.6]]);
+  [[30,14],[30,17],[36,22]].forEach(([x,y])=>{ ts.path([[x-0.2,y+0.75],[x+0.2,y+0.75]]); ts.path([[x-0.2,y-0.75],[x+0.2,y-0.75]]); });
+  ts.path([[46.4,7.8],[49.6,7.8],[49.6,16.2],[46.4,16.2],[46.4,7.8]]);
+  ts.path([[36,6],[36,9],[37.3,9],[38,8.3],[38,6.7],[37.3,6],[36,6]]).path([[41,9],[39,9],[39,6],[41,6]]).path([[39,7.5],[40.6,7.5]]).path([[42,6],[42,9],[43,7.5],[44,9],[44,6]]);
+  ts.mv(48,7.5).arc(48,7.5,-1.5,0,true); ts.s('G01*');
+  ts.path([[8.5,25],[8.5,27],[9.3,27],[9.7,26.6],[9.7,26.4],[9.3,26],[8.5,26]]).path([[9.3,26],[9.8,25]]);
+  ts.ap(61); ts.fl(18.4,25.2); ts.fl(3.6,13);
+  const bs=mk('Legend,Bot'); bs.s('%ADD60C,0.150000*%').ap(60); bs.path([[8,30],[24,30],[24,37],[8,37],[8,30]]); bs.path([[10,32],[22,32]]).path([[10,35],[18,35]]);
+
+  // delikler
+  const f3=v=>v.toFixed(3);
+  const pth=['M48','; DRILL file {PCB-Siparis-Demo}','; FORMAT={-:-/ absolute / metric / decimal}','; #@! TF.FileFunction,Plated,1,2,PTH','FMAT,2','METRIC','T1C0.300','T2C1.000','T3C0.900','%','G90','G05',
+    'T1',...vias.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'T2',...conn.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'T3',...obr.map(v=>`X${f3(v[0])}Y${f3(v[1]-0.4)}G85X${f3(v[0])}Y${f3(v[1]+0.4)}`),'M30'].join('\n');
+  const np=['M48','; #@! TF.FileFunction,NonPlated,1,2,NPTH','FMAT,2','METRIC','T1C3.200','%','G90','G05','T1',...npth.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'M30'].join('\n');
+
+  return [
+    {name:'DEMO-F_Cu.gbr',text:tc.done()},{name:'DEMO-B_Cu.gbr',text:bc.done()},
+    {name:'DEMO-F_Mask.gbr',text:tm.done()},{name:'DEMO-B_Mask.gbr',text:bm.done()},
+    {name:'DEMO-F_Paste.gbr',text:tp.done()},{name:'DEMO-F_Silkscreen.gbr',text:ts.done()},{name:'DEMO-B_Silkscreen.gbr',text:bs.done()},
+    {name:'DEMO-Edge_Cuts.gbr',text:ol.done()},{name:'DEMO-PTH.drl',text:pth},{name:'DEMO-NPTH.drl',text:np},{name:'DEMO-job.gbrjob',text:null}
+  ];
+}
+
+/* =====================================================================
+   BAŞLAT
+   ===================================================================== */
+load(); normalize(); setSeg('#segLang',LANG); applyI18n(); renderForm(); renderLayerList(); buildHLLists(); renderDC(); updateSummary(); fit(); renderFull();
+</script>
+</body>
+</html>

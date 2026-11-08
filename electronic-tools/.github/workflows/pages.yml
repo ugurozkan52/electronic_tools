@@ -1,0 +1,57 @@
+# Builds the combined site and publishes it on GitHub Pages.
+#   /              -> index.html (launcher)
+#   /simulation/   -> CircuitJS (static, copied as is)
+#   /pcb-order/    -> PCB Siparis Hazirlayici (static, copied as is)
+#   /assembly/     -> Montaj Goruntuleyici web build (built from assembly-src/)
+# Repository -> Settings -> Pages -> Source: "GitHub Actions".
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: assembly-src/package-lock.json
+      - name: Install Assembly dependencies (Electron binary not needed)
+        working-directory: assembly-src
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp index.html .nojekyll _site/
+          cp -r simulation pcb-order _site/
+          (cd assembly-src && node web/build.js ../_site/assembly)
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

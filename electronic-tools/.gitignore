@@ -1,0 +1,6 @@
+_site/
+node_modules/
+assembly-src/dist/
+assembly-src/dist-web/
+.DS_Store
+Thumbs.db
