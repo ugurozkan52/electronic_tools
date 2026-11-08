@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html gate.js .nojekyll _site/
-          cp -r simulation pcb-order filters wire _site/
+          cp -r simulation pcb-order filters wire components _site/
           (cd assembly-src && node web/build.js ../_site/assembly)
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

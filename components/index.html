@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<script src="../gate.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Components</title>
+<meta name="description" content="Resistor, capacitor, inductor and diode: parameters, technologies, selection wizard and calculators / Direnç, kondansatör, bobin ve diyot: parametreler, teknolojiler, seçim sihirbazı ve hesaplayıcılar.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314171c'/%3E%3Cpath d='M2 12h4l2-5 3 10 3-10 2 5h6' stroke='%232dd4bf' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>
+/* Shared light/dark theme (localStorage 'et-theme'); default dark. */
+(function(){var K='et-theme',r=document.documentElement,t;
+try{t=localStorage.getItem(K)}catch(e){}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
+function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark')}
+ap(t);
+window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
+window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'||e.newValue==='light'))ap(e.newValue)});
+})();
+</script>
+<style>
+:root{
+  --bg:#f3f4f6; --bg2:#ffffff; --card:#ffffff; --line:#dfe3e8; --line2:#eef0f3; --ink:#161a20; --mute:#56606c; --dot:#dde1e7;
+  --c:#0f766e; --c-bg:#e0f5f2; --c-ink:#ffffff; --err:#b3261e; --ok:#1f8f4f; --warn:#9a5b00;
+}
+:root[data-theme="dark"]{
+  --bg:#0f1216; --bg2:#151a20; --card:#181d24; --line:#262d37; --line2:#202630; --ink:#e7ebf0; --mute:#8b94a1; --dot:#1f252e;
+  --c:#2dd4bf; --c-bg:#10302c; --c-ink:#06231f; --err:#ff8a80; --ok:#46c37b; --warn:#f2b45a;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(circle at 1px 1px,var(--dot) 1px,transparent 0) 0 0/22px 22px,var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(6px);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:38px;height:38px;border-radius:10px;background:var(--c-bg);color:var(--c);display:grid;place-items:center}
+.brand strong{font-size:17px}
+.brand small{display:block;color:var(--mute);font-size:12.5px;margin-top:-2px}
+.hdr-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover,.btn:focus-visible{border-color:var(--c);outline:none}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{border:0;background:var(--card);padding:7px 11px;cursor:pointer;font-weight:700;font-size:13px;color:var(--mute)}
+.lang button[aria-pressed=true]{background:var(--c);color:var(--c-ink)}
+.theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
+main{max-width:1240px;margin:0 auto;padding:8px 24px 56px}
+.hero{padding:34px 0 8px;text-align:center}
+.hero .mark{width:56px;height:56px;margin:0 auto 14px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;color:var(--c)}
+.hero h1{margin:0;font-size:30px;letter-spacing:-.02em}
+.hero p{margin:8px auto 0;max-width:760px;color:var(--mute)}
+.parts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:20px 0 8px}
+.part{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 18px;font-weight:700;font-size:13.5px;color:var(--mute);cursor:pointer}
+.part:hover{color:var(--ink);border-color:var(--c)}
+.part[aria-pressed=true]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
+.part.soon{opacity:.55;cursor:default}
+.part.soon:hover{color:var(--mute);border-color:var(--line)}
+.part small{font-weight:600;margin-left:6px;font-size:11px}
+.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin:18px 0;padding:6px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.tab{border:0;background:transparent;border-radius:9px;padding:11px 12px;cursor:pointer;font-weight:700;color:var(--mute)}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{background:var(--c);color:var(--c-ink)}
+.tab:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 22px 20px;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
+.card h2{margin:0 0 4px;font-size:18px}
+.card .sub{margin:0 0 14px;color:var(--c);font-size:13px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;align-items:start}
+@media (max-width:760px){main{padding:8px 12px 40px}.grid{grid-template-columns:1fr}.hero h1{font-size:24px}header.top{padding:10px 12px}}
+.fld{display:block;margin:0 0 10px}
+.fld>span{display:flex;align-items:center;font-size:12px;color:var(--mute);margin-bottom:3px}
+.fin{display:flex;gap:6px}
+.fin input,.fin select,.sel{border:1px solid var(--line);background:var(--bg2);border-radius:8px;padding:8px 10px;min-width:0;flex:1;width:100%}
+.fin select{flex:0 0 auto;width:auto;max-width:48%}
+.fin input:focus,.fin select:focus,.sel:focus{outline:2px solid var(--c);outline-offset:-1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.two .wide{grid-column:1/-1}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px}
+.res div{background:var(--line2);border-radius:9px;padding:8px 10px}
+.res b{display:block;font-size:16px;font-variant-numeric:tabular-nums;word-break:break-word}
+.res small{color:var(--mute);font-size:11.5px}
+.res .big{grid-column:1/-1;background:var(--c-bg);border:1px solid var(--c)}
+.res .big b{font-size:24px;color:var(--c)}
+.res .bad b{color:var(--err)} .res .good b{color:var(--ok)} .res .warn b{color:var(--warn)}
+.note{font-size:12.5px;color:var(--mute);margin:10px 0 0;line-height:1.5}
+.qm{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--line2);color:var(--mute);font-size:10.5px;font-weight:700;line-height:1;cursor:help}
+.qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--c);border-color:var(--c);color:var(--c-ink);outline:none}
+.tipbox{margin:2px 0 8px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--c);background:var(--line2);font-size:12.5px;line-height:1.5}
+.tipbox[hidden]{display:none}
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line2);vertical-align:top}
+th{position:sticky;top:0;background:var(--card);color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+td:first-child{font-weight:700}
+tr:hover td{background:var(--line2)}
+.search{max-width:360px;margin-bottom:12px}
+.pane[hidden]{display:none}
+.rec{border:2px solid var(--c);background:var(--c-bg);border-radius:14px;padding:16px 18px;margin-top:14px}
+.rec h3{margin:0 0 6px;font-size:20px;color:var(--c)}
+.rec ul{margin:8px 0 0;padding-left:20px}
+.rec li{margin:3px 0}
+svg.sch{display:block;width:100%;height:auto;margin:0 auto;color:var(--ink)}
+svg.sch text{fill:var(--ink);font-size:12px;font-family:system-ui,sans-serif}
+svg.sch .nm,svg.sch .tm{font-weight:700}
+svg.sch .vl{fill:var(--mute);font-size:11px}
+.sch-wrap{margin-top:12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;overflow-x:auto}
+.sch-wrap[hidden]{display:none}
+.foot{margin-top:28px;color:var(--mute);font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-5 3 10 3-10 2 5h6"/></svg></div>
+    <div><strong>Components</strong><small>Elektronik Araçlar</small></div>
+  </div>
+  <div class="hdr-r">
+    <div class="lang" role="group" aria-label="Language"><button type="button" id="lTR" aria-pressed="true">TR</button><button type="button" id="lEN" aria-pressed="false">EN</button></div>
+    <a class="btn" href="../index.html" data-tr="← Araçlar" data-en="← Tools"></a>
+    <button id="btnTheme" class="btn theme-btn" type="button" title="Theme" aria-label="Theme">◐</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="mark" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-5 3 10 3-10 2 5h6"/></svg></div>
+    <h1 id="pageTitle"></h1>
+    <p id="pageSub"></p>
+    <div class="parts" id="parts" aria-label="Components"></div>
+  </div>
+
+  <div class="tabs" role="tablist" id="tabs"></div>
+
+  <section class="pane" id="p-guide"></section>
+  <section class="pane" id="p-tech" hidden></section>
+  <section class="pane" id="p-wiz" hidden></section>
+  <section class="pane" id="p-calc" hidden></section>
+
+  <p class="foot" data-tr="Taslak sürüm. Değerler tipik aralıklardır; kesin değerler için üretici veri sayfasına bakın. Hesaplar tarayıcıda yapılır, veri gönderilmez." data-en="Draft version. Values are typical ranges; check the manufacturer datasheet for exact figures. Calculations run in your browser; no data is sent."></p>
+</main>
+
+<script>
+'use strict';
+/* ================================================================= core helpers (shared with the component files) */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const I = (tr, en, tag = 'span') => `<${tag} data-tr="${esc(tr)}" data-en="${esc(en)}"></${tag}>`;
+let LANG = 'tr'; try { LANG = localStorage.getItem('et-lang') || ((navigator.language || '').toLowerCase().startsWith('tr') ? 'tr' : 'en'); } catch (e) { /* ignore */ }
+const tt = (tr, en) => (LANG === 'tr' ? tr : en);
+const CMP = {}; // component registry, filled by resistor.js / capacitor.js / inductor.js / diode.js
+const SCH_MAP = {}; // schematics per calculator, filled by schem.js
+const UNITS = {
+  R: [['mΩ', 1e-3], ['Ω', 1], ['kΩ', 1e3], ['MΩ', 1e6]],
+  C: [['pF', 1e-12], ['nF', 1e-9], ['µF', 1e-6], ['mF', 1e-3], ['F', 1]],
+  L: [['nH', 1e-9], ['µH', 1e-6], ['mH', 1e-3], ['H', 1]],
+  F: [['Hz', 1], ['kHz', 1e3], ['MHz', 1e6], ['GHz', 1e9]],
+  V: [['mV', 1e-3], ['V', 1], ['kV', 1e3]],
+  A: [['µA', 1e-6], ['mA', 1e-3], ['A', 1]],
+  W: [['mW', 1e-3], ['W', 1], ['kW', 1e3]],
+  T: [['µs', 1e-6], ['ms', 1e-3], ['s', 1]],
+};
+const sig = (x, n = 4) => (x === 0 ? '0' : !isFinite(x) ? '—' : String(parseFloat(Number(x).toPrecision(n))));
+const PFX = [[1e-12, 'p'], [1e-9, 'n'], [1e-6, 'µ'], [1e-3, 'm'], [1, ''], [1e3, 'k'], [1e6, 'M'], [1e9, 'G']];
+function eng(v, u) { // 0.0025,'W' -> "2.5 mW"
+  if (!isFinite(v)) return '—'; if (v === 0) return '0 ' + u;
+  const a = Math.abs(v); let p = PFX[0]; for (const x of PFX) if (a >= x[0] * 0.9995) p = x;
+  return sig(v / p[0]) + ' ' + p[1] + u;
+}
+const ESER = {
+  E6: [10, 15, 22, 33, 47, 68], E12: [10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82],
+  E24: [10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30, 33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91],
+};
+const E96 = [100, 102, 105, 107, 110, 113, 115, 118, 121, 124, 127, 130, 133, 137, 140, 143, 147, 150, 154, 158, 162, 165, 169, 174, 178, 182, 187, 191, 196, 200, 205, 210, 215, 221, 226, 232, 237, 243, 249, 255, 261, 267, 274, 280, 287, 294, 301, 309, 316, 324, 332, 340, 348, 357, 365, 374, 383, 392, 402, 412, 422, 432, 442, 453, 464, 475, 487, 499, 511, 523, 536, 549, 562, 576, 590, 604, 619, 634, 649, 665, 681, 698, 715, 732, 750, 768, 787, 806, 825, 845, 866, 887, 909, 931, 953, 976];
+ESER.E48 = E96.filter((_, i) => i % 2 === 0).map((x) => x / 10); ESER.E96 = E96.map((x) => x / 10);
+const ETOL = { E6: '±20 %', E12: '±10 %', E24: '±5 %', E48: '±2 %', E96: '±1 %' };
+function nearestE(v, s) {
+  const list = ESER[s], dec = Math.floor(Math.log10(v)), cands = [];
+  for (let d = -1; d <= 1; d++) list.forEach((x) => cands.push(x * Math.pow(10, dec - 1 + d)));
+  cands.sort((a, b) => a - b);
+  const lo = cands.filter((x) => x <= v * 1.0000001).pop(), hi = cands.find((x) => x >= v * 0.9999999);
+  const near = Math.abs(lo - v) <= Math.abs(hi - v) ? lo : hi;
+  return { near, lo, hi, err: (near - v) / v * 100 };
+}
+const SEL_E = ['E6', 'E12', 'E24', 'E48', 'E96'].map((s) => [s, s, s]);
+const pctF = (x) => sig(x, 3) + ' %';
+
+/* ----------------------------------------------------------------- language */
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-tr]').forEach((e) => { e.textContent = LANG === 'tr' ? e.dataset.tr : e.dataset.en; });
+  $('#lTR').setAttribute('aria-pressed', LANG === 'tr' ? 'true' : 'false'); $('#lEN').setAttribute('aria-pressed', LANG === 'en' ? 'true' : 'false');
+  const C = CMP[cur];
+  if (C) { $('#pageTitle').textContent = tt(...C.title); $('#pageSub').textContent = tt(...C.sub); document.title = 'Components · ' + tt(...C.name); }
+  document.querySelectorAll('.part:not(.soon)').forEach((b) => { b.textContent = tt(...CMP[b.dataset.comp].name); });
+  recalcAll();
+}
+function setLang(l) { LANG = l; try { localStorage.setItem('et-lang', l); } catch (e) { /* ignore */ } applyLang(); }
+
+/* ----------------------------------------------------------------- "?" help */
+let tipN = 0;
+function qm(tr, en) {
+  const id = 'tip' + (++tipN);
+  return `<button type="button" class="qm" data-tip="${id}" aria-label="Info" aria-expanded="false" aria-describedby="${id}">?</button><template data-for="${id}" data-tr="${esc(tr)}" data-en="${esc(en)}"></template>`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.qm'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const id = b.dataset.tip; let box = document.getElementById(id);
+  if (!box) {
+    const tpl = document.querySelector(`template[data-for="${id}"]`);
+    box = document.createElement('div'); box.className = 'tipbox'; box.id = id; box.hidden = true; box.dataset.tr = tpl.dataset.tr; box.dataset.en = tpl.dataset.en;
+    box.textContent = tt(tpl.dataset.tr, tpl.dataset.en);
+    const fld = b.closest('.fld') || b.parentElement, fin = fld.querySelector('.fin, .sel');
+    fld.insertBefore(box, fin || null);
+  }
+  box.hidden = !box.hidden; b.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
+});
+
+/* ----------------------------------------------------------------- generic forms */
+// field spec: {id,tr,en,def,u:'R'|…,ud:unitIndex,help:[tr,en],sel:[[v,tr,en]…],txt:true,wide:true}
+function fieldHTML(cid, f) {
+  const id = `${cid}_${f.id}`, label = `<span>${I(f.tr, f.en)}${f.help ? qm(f.help[0], f.help[1]) : ''}</span>`, w = f.wide ? ' wide' : '';
+  if (f.sel) return `<label class="fld${w}" for="${id}">${label}<select class="sel" id="${id}">${f.sel.map(([v, a, b]) => `<option value="${esc(v)}"${String(v) === String(f.def) ? ' selected' : ''} data-tr="${esc(a)}" data-en="${esc(b)}"></option>`).join('')}</select></label>`;
+  if (f.txt) return `<label class="fld${w}" for="${id}">${label}<div class="fin"><input id="${id}" value="${esc(f.def ?? '')}" autocomplete="off"></div></label>`;
+  const units = f.u ? UNITS[f.u] : null, ud = f.ud ?? (units ? units.findIndex((x) => x[1] === 1) : 0);
+  const us = units ? `<select id="${id}_u" aria-label="unit">${units.map(([n, m], i) => `<option value="${m}"${i === ud ? ' selected' : ''}>${n}</option>`).join('')}</select>` : '';
+  return `<label class="fld${w}" for="${id}">${label}<div class="fin"><input id="${id}" inputmode="decimal" value="${esc(f.def ?? '')}" autocomplete="off">${us}</div></label>`;
+}
+function getter(cid) {
+  const el = (id) => $('#' + cid + '_' + id);
+  return {
+    v(id) { const e = el(id); if (!e || e.value.trim() === '') return NaN; const m = $('#' + cid + '_' + id + '_u'); return Number(e.value.replace(',', '.')) * (m ? Number(m.value) : 1); },
+    r(id) { const e = el(id); return e && e.value.trim() !== '' ? Number(e.value.replace(',', '.')) : NaN; },
+    s(id) { const e = el(id); return e ? e.value : ''; },
+  };
+}
+function out(box, items) { // items: [bigText, label, cls]
+  const eb = $(box); if (!eb) return;
+  eb.innerHTML = items.map(([b, l, c]) => `<div class="${c || ''}"><b>${esc(b)}</b><small>${esc(l)}</small></div>`).join('');
+}
+
+/* ----------------------------------------------------------------- panes */
+const TABS = [['guide', 'Parametre rehberi', 'Parameter guide'], ['tech', 'Teknolojiler / türler', 'Technologies / types'], ['wiz', 'Seçim sihirbazı', 'Selection wizard'], ['calc', 'Hesaplayıcılar', 'Calculators']];
+let cur = 'resistor', curTab = 'calc';
+function buildTabs() {
+  const box = $('#tabs');
+  TABS.forEach(([id, tr, en]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.role = 'tab'; b.dataset.id = id; b.dataset.tr = tr; b.dataset.en = en;
+    b.onclick = () => showTab(id); box.appendChild(b);
+  });
+}
+function showTab(id) {
+  curTab = id;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.pane').forEach((p) => { p.hidden = p.id !== 'p-' + id; });
+  try { history.replaceState(null, '', '#' + cur + '/' + id); } catch (e) { /* ignore */ }
+}
+function buildParts() {
+  const box = $('#parts'); box.innerHTML = '';
+  Object.keys(CMP).forEach((k) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.dataset.comp = k; b.onclick = () => selectComp(k); box.appendChild(b);
+  });
+  [['Sensör', 'Sensor']].forEach(([a, b]) => { const s = document.createElement('span'); s.className = 'part soon'; s.innerHTML = `${I(a, b)}<small data-tr="yakında" data-en="soon"></small>`; box.appendChild(s); });
+}
+function buildGuide(params) {
+  $('#p-guide').innerHTML = `<div class="card"><h2>${I('Parametre rehberi', 'Parameter guide')}</h2><p class="sub">${I('Her parametre ne anlama gelir', 'What each parameter means')}</p>
+    <input class="sel search" id="gsearch" type="search" aria-label="search">
+    <div class="tbl-wrap"><table><thead><tr><th>${I('Parametre', 'Parameter')}</th><th>${I('Birim', 'Unit')}</th><th>${I('Açıklama', 'Description')}</th><th>${I('Tipik', 'Typical')}</th></tr></thead><tbody id="gbody"></tbody></table></div></div>`;
+  $('#gbody').innerHTML = params.map((p) => `<tr><td>${I(p[0], p[1])}</td><td>${esc(p[2])}</td><td>${I(p[3], p[4])}</td><td>${esc(p[5])}</td></tr>`).join('');
+  $('#gsearch').addEventListener('input', () => { const q = $('#gsearch').value.toLowerCase(); document.querySelectorAll('#gbody tr').forEach((r) => { r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none'; }); });
+}
+function buildTech(t) { // t: {title:[tr,en], head:[[tr,en]…], rows:[[ [tr,en], cell… ]]} ; cell: string | [tr,en]
+  const cell = (c) => (Array.isArray(c) ? I(c[0], c[1]) : esc(c));
+  $('#p-tech').innerHTML = `<div class="card"><h2>${I(...t.title)}</h2><p class="sub">${I('Tipik değerler', 'Typical values')}</p>
+    <div class="tbl-wrap"><table><thead><tr>${t.head.map((h) => `<th>${I(h[0], h[1])}</th>`).join('')}</tr></thead>
+    <tbody>${t.rows.map((r) => `<tr>${r.map((c, i) => `<td>${i === 0 ? I(c[0], c[1]) : cell(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+function buildWiz(w) {
+  $('#p-wiz').innerHTML = `<div class="card"><h2>${I('Seçim sihirbazı', 'Selection wizard')}</h2><p class="sub">${I('Uygulamanıza uygun türü bulun', 'Find the type that fits your application')}</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">${w.fields.map((f) => `<label class="fld"><span>${I(f.tr, f.en)}</span><select class="sel" id="w_${f.id}">${f.opts.map(([v, a, b]) => `<option value="${esc(v)}"${String(v) === String(f.def) ? ' selected' : ''} data-tr="${esc(a)}" data-en="${esc(b)}"></option>`).join('')}</select></label>`).join('')}</div>
+    <div id="w_out"></div></div>`;
+}
+function runWiz() {
+  const w = CMP[cur].wiz; if (!w || !$('#w_out')) return;
+  const v = {}; w.fields.forEach((f) => { v[f.id] = $('#w_' + f.id).value; });
+  const r = w.run(v);
+  $('#w_out').innerHTML = `<div class="rec"><h3>${esc(tt(...r.main))}</h3><ul>${r.why.map((x) => `<li>${esc(tt(x[0], x[1]))}</li>`).join('')}</ul><p class="note">${esc(tt('Genel kural: anma değerlerinin altında çalışın (derating) ve üretici veri sayfasındaki eğrileri kontrol edin.', 'Rule of thumb: operate below the ratings (derating) and check the curves in the manufacturer datasheet.'))}</p></div>`;
+}
+function buildCalcs(calcs) {
+  $('#p-calc').innerHTML = `<div class="grid">${calcs.map((c) => `<div class="card" id="c_${c.id}"><h2>${I(...c.title)}</h2><p class="sub">${I(...c.sub)}</p><div class="two">${c.fields.map((f) => fieldHTML(c.id, f)).join('')}</div><div class="res" id="o_${c.id}"></div><div class="sch-wrap" id="s_${c.id}" hidden></div>${c.note ? `<p class="note">${I(...c.note)}</p>` : ''}</div>`).join('')}</div>`;
+}
+function recalcAll() {
+  const C = CMP[cur]; if (!C || !$('#p-calc').firstChild) return;
+  for (const c of C.calcs) { let items; try { items = c.compute(getter(c.id)); } catch (e) { items = [['—', String(e.message || e)]]; } out("#o_" + c.id, items || [["—", ""]]);
+    const sf = SCH_MAP[cur + "." + c.id], sb = $("#s_" + c.id); if (sb) { if (sf) { try { sb.replaceChildren(sf(getter(c.id), items)); sb.hidden = false; } catch (e) { sb.hidden = true; } } else sb.hidden = true; } }
+  runWiz();
+}
+function selectComp(k, keepTab) {
+  cur = k; const C = CMP[k];
+  document.querySelectorAll('.part:not(.soon)').forEach((b) => b.setAttribute('aria-pressed', b.dataset.comp === k ? 'true' : 'false'));
+  buildGuide(C.params); buildTech(C.tech); buildWiz(C.wiz); buildCalcs(C.calcs);
+  applyLang(); showTab(keepTab || curTab);
+}
+</script>
+<script src="schem.js"></script>
+<script src="resistor.js"></script>
+<script src="capacitor.js"></script>
+<script src="inductor.js"></script>
+<script src="diode.js"></script>
+<script src="transistor.js"></script>
+<script src="mosfet.js"></script>
+<script src="opamp.js"></script>
+<script>
+/* ================================================================= boot */
+buildTabs(); buildParts();
+$('#p-calc').addEventListener('input', recalcAll); $('#p-calc').addEventListener('change', recalcAll);
+$('#p-wiz').addEventListener('change', runWiz);
+$('#lTR').onclick = () => setLang('tr'); $('#lEN').onclick = () => setLang('en');
+(function () { const tb = $('#btnTheme'), sync = () => tb.setAttribute('aria-pressed', window.etTheme.get() === 'dark' ? 'true' : 'false'); tb.onclick = () => { window.etTheme.set(window.etTheme.get() === 'dark' ? 'light' : 'dark'); sync(); }; sync(); })();
+const hp = (location.hash || '').slice(1).split('/'), hc = CMP[hp[0]] ? hp[0] : 'resistor', ht = TABS.some((t) => t[0] === hp[hp.length - 1]) ? hp[hp.length - 1] : 'calc';
+selectComp(hc, ht);
+</script>
+</body>
+</html>
