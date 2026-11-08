@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Filtre Hesaplayıcı</title>
+<meta name="description" content="RC, RL, LC, Pi/T ve aktif (Sallen-Key, MFB) filtre hesaplayıcı: bileşen değerlerinden kesim frekansı, Q ve Bode grafiği; kesim frekansından bileşen önerisi.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314171c'/%3E%3Cpath d='M4 8h9c3 0 3 8 7 8' stroke='%23a98bff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>
+/* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
+(function(){var K='et-theme',r=document.documentElement,t;
+try{t=localStorage.getItem(K)}catch(e){}
+if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark');window.dispatchEvent(new Event('et-theme-change'))}
+r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');
+window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
+window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'||e.newValue==='light'))ap(e.newValue)});
+})();
+</script>
+<style>
+:root{
+  --bg:#f3f4f6; --card:#fff; --line:#dfe3e8; --line2:#eef0f3; --ink:#161a20; --mute:#5b6470;
+  --acc:#6a45d6; --acc-bg:#efeafd; --ok:#1f8f4f; --warn:#9a5b00; --warn-bg:#fff6e5; --err:#b3261e;
+  --g1:#6a45d6; --g2:#c2410c; --grid:#d7dce3; --axis:#5b6470; --plot:#ffffff;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1216; --card:#181d24; --line:#2a313b; --line2:#222831; --ink:#e7ebf0; --mute:#98a1ae;
+  --acc:#a98bff; --acc-bg:#241d3d; --ok:#46c37b; --warn:#f2b45a; --warn-bg:#33270f; --err:#ff8a80;
+  --g1:#a98bff; --g2:#f2a33a; --grid:#2c333d; --axis:#98a1ae; --plot:#12161b;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand h1{font-size:18px;margin:0;font-weight:700}
+.brand p{margin:0;color:var(--mute);font-size:13px}
+.logo{width:36px;height:36px;border-radius:8px;background:var(--acc-bg);color:var(--acc);display:grid;place-items:center}
+.hdr-r{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover,.btn:focus-visible{border-color:var(--acc);outline:none}
+.theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
+main{max-width:1500px;margin:0 auto;padding:16px 24px 40px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600}
+.tab[aria-selected=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+.tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}main{padding:12px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.seg button{border:1px solid var(--line);background:var(--line2);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
+.fld{display:block;margin:0 0 9px}
+.fld>span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.fin{display:flex;gap:6px}
+.fin input,.fin select{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:6px 9px;min-width:0}
+.fin input{flex:1}
+.fin select:only-child{flex:1}
+.fin input:focus,.fin select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.fin input.bad{border-color:var(--err)}
+.hint{color:var(--mute);font-size:12px;margin:2px 0 8px}
+.msg{color:var(--err);font-size:13px;min-height:18px;margin:4px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:12px}
+.res div{background:var(--line2);border-radius:8px;padding:8px 10px}
+.res b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.res small{color:var(--mute);font-size:11.5px}
+.chart{position:relative}
+canvas{display:block;width:100%;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none}
+.readout{font-variant-numeric:tabular-nums;color:var(--mute);font-size:12.5px;min-height:20px;margin:6px 0 10px}
+svg.sch{display:block;width:100%;height:auto;margin:0 auto;color:var(--ink)}
+svg.sch text{fill:var(--ink);font-size:12px;font-family:system-ui,sans-serif}
+svg.sch .nm,svg.sch .tm{font-weight:700}
+svg.sch .vl{fill:var(--mute);font-size:11px}
+svg.sch .oa{font-size:16px;font-weight:700}
+.sch-wrap{background:var(--plot);border:1px solid var(--line);border-radius:8px;padding:10px 8px;overflow-x:auto}
+.mrow{padding:9px 0;border-top:1px solid var(--line2)}
+.mrow:first-child{border-top:0;padding-top:0}
+.mt{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-bottom:5px}
+.mf{font-family:"Cambria Math","STIX Two Math","Latin Modern Math","Times New Roman",serif;font-size:18px;line-height:2.1;overflow-x:auto;padding:2px 0}
+.mf i{font-style:italic}
+.mf sub{font-size:.68em;vertical-align:-.28em;line-height:0}
+.mf sup{font-size:.68em;vertical-align:.5em;line-height:0}
+.mf b{color:var(--acc)}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .22em;line-height:1.35}
+.fr>span:first-child{border-bottom:1.4px solid currentColor;padding:0 .3em .06em}
+.fr>span:last-child{padding:.06em .3em 0}
+.rt{display:inline-flex;align-items:stretch;vertical-align:middle}
+.rt .rs{font-size:1.15em;line-height:1;align-self:flex-end}
+.rt .rb{border-top:1.4px solid currentColor;padding:0 .15em;margin-top:.15em}
+.note{font-size:12px;color:var(--mute);border-left:3px solid var(--line);padding-left:10px;margin:8px 0 0}
+.range{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}
+.range .fld{margin:0;flex:1;min-width:120px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9c3 0 3 8 9 8"/></svg></div>
+    <div><h1>Filtre Hesaplayıcı</h1><p>RC · RL · LC · Pi/T · Aktif — bileşen değerlerinden analiz, kesim frekansından tasarım</p></div>
+  </div>
+  <div class="hdr-r">
+    <a class="btn" href="../index.html">← Araçlar</a>
+    <button id="btnTheme" class="btn theme-btn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema">◐</button>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist" aria-label="Filtre türü" id="tabs"></div>
+  <div class="layout">
+    <div>
+      <section class="card"><h2>Filtre</h2><div class="seg" id="variants" role="group" aria-label="Filtre çeşidi"></div>
+        <p class="hint" id="vdesc"></p></section>
+      <section class="card"><h2>Tasarım (fc → bileşen değerleri)</h2><div id="design"></div>
+        <label class="fld"><span>Standart değere yuvarla</span><div class="fin"><select id="eser"><option value="">Yok (hesaplanan değer)</option><option value="E12">E12</option><option value="E24" selected>E24</option></select></div></label>
+        <p class="hint">Tasarım alanları değişince bileşen değerleri yeniden hesaplanır.</p></section>
+      <section class="card"><h2>Bileşenler (elle değiştirilebilir)</h2><div id="comps"></div><div class="msg" id="msg" role="alert"></div></section>
+    </div>
+    <div>
+      <section class="card"><h2>Sonuçlar</h2><div class="res" id="res" aria-live="polite"></div>
+        <div class="grid2" style="max-width:420px"><label class="fld"><span>Sorgu frekansı</span><div class="fin"><input id="fq" inputmode="decimal" value="10"><select id="fqu"><option value="1">Hz</option><option value="1e3" selected>kHz</option><option value="1e6">MHz</option></select></div></label><div class="res" style="margin:0;align-self:end" id="qres"></div></div>
+      </section>
+      <section class="card"><h2>Frekans yanıtı</h2>
+        <div class="chart"><canvas id="cm" height="300" aria-label="Genlik grafiği (dB)" role="img"></canvas></div>
+        <div class="chart" style="margin-top:8px"><canvas id="cp" height="180" aria-label="Faz grafiği (derece)" role="img"></canvas></div>
+        <div class="readout" id="readout">Grafiğin üzerine gelerek frekansı okuyun.</div>
+        <div class="range"><label class="fld"><span>Başlangıç frekansı</span><div class="fin"><input id="fmin" inputmode="decimal" placeholder="otomatik"><select id="fminu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6">MHz</option></select></div></label>
+          <label class="fld"><span>Bitiş frekansı</span><div class="fin"><input id="fmax" inputmode="decimal" placeholder="otomatik"><select id="fmaxu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6" selected>MHz</option></select></div></label>
+          <button class="btn" id="fauto" type="button">Otomatik aralık</button></div>
+      </section>
+      <section class="card"><h2>Devre şeması</h2><div class="sch-wrap" id="sch"></div><p class="note" id="note"></p></section>
+      <section class="card"><h2>Formüller</h2><div id="math"></div></section>
+    </div>
+  </div>
+  <p class="hint" style="margin-top:6px">Hesaplar tarayıcıda yapılır; hiçbir veri gönderilmez. Pasif devreler ideal bileşenlerle (ESR/ESL, bobin direnci yok), aktif devreler ideal işlemsel yükselteçle (sonlu GBW ve çıkış empedansı yok) modellenir; gerçek devrede kesim frekansı ve Q sapabilir.</p>
+</main>
+
+<script>
+'use strict';
+const TAU = 2 * Math.PI;
+const $ = (s, r = document) => r.querySelector(s);
+
+/* ----------------------------------------------------------------- complex math */
+const cadd = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const cmul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+const cdiv = (a, b) => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
+const cabs = (a) => Math.hypot(a[0], a[1]);
+const carg = (a) => Math.atan2(a[1], a[0]);
+const polyEval = (coef, s) => { let r = [0, 0]; for (let i = coef.length - 1; i >= 0; i--) r = cadd(cmul(r, s), [coef[i], 0]); return r; }; // coef[0] + coef[1] s + ...
+
+/* ----------------------------------------------------------------- units and fields */
+const UNITS = {
+  R: [['mΩ', 1e-3], ['Ω', 1], ['kΩ', 1e3], ['MΩ', 1e6]],
+  L: [['nH', 1e-9], ['µH', 1e-6], ['mH', 1e-3], ['H', 1]],
+  C: [['pF', 1e-12], ['nF', 1e-9], ['µF', 1e-6], ['mF', 1e-3]],
+  F: [['Hz', 1], ['kHz', 1e3], ['MHz', 1e6], ['GHz', 1e9]],
+};
+const num = (x) => String(parseFloat(Number(x).toPrecision(5)));
+function fmtSI(v, kind) {
+  if (!isFinite(v)) return '∞';
+  const u = UNITS[kind]; if (!u) return num(v);
+  if (v === 0) return '0 ' + u[1][0];
+  let pick = u[0];
+  for (const x of u) if (Math.abs(v) >= x[1] * 0.9995) pick = x;
+  return num(v / pick[1]) + ' ' + pick[0];
+}
+// field: {id,label,kind:'R'|'L'|'C'|'F'|'N'|'sel', def, opts, open, min}
+function mkField(f, onchange) {
+  const wrap = document.createElement('label'); wrap.className = 'fld';
+  const sp = document.createElement('span'); sp.textContent = f.label; wrap.appendChild(sp);
+  const row = document.createElement('div'); row.className = 'fin'; wrap.appendChild(row);
+  let inp = null, sel = null;
+  if (f.kind === 'sel') {
+    sel = document.createElement('select');
+    for (const [v, l] of f.opts) { const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o); }
+    row.appendChild(sel);
+  } else {
+    inp = document.createElement('input'); inp.type = 'text'; inp.inputMode = 'decimal'; inp.autocomplete = 'off'; row.appendChild(inp);
+    if (UNITS[f.kind]) {
+      sel = document.createElement('select');
+      UNITS[f.kind].forEach(([n, m], i) => { const o = document.createElement('option'); o.value = i; o.textContent = n; sel.appendChild(o); });
+      row.appendChild(sel);
+    }
+  }
+  const fire = () => onchange && onchange(f.id);
+  if (inp) inp.addEventListener('input', fire);
+  if (sel) sel.addEventListener('change', fire);
+  const api = {
+    el: wrap, f,
+    get() {
+      if (f.kind === 'sel') return sel.value;
+      const t = inp.value.trim().replace(',', '.');
+      if (t === '') return f.open ? Infinity : NaN;
+      const x = Number(t); if (!isFinite(x)) return NaN;
+      return UNITS[f.kind] ? x * UNITS[f.kind][+sel.value][1] : x;
+    },
+    set(v) {
+      if (f.kind === 'sel') { sel.value = String(v); return; }
+      if (v === Infinity || v == null) { inp.value = ''; return; }
+      if (UNITS[f.kind]) {
+        const u = UNITS[f.kind]; let k = u.findIndex((x) => x[1] === 1); if (k < 0) k = 0;
+        if (v !== 0) { k = 0; u.forEach((x, i) => { if (Math.abs(v) >= x[1] * 0.9995) k = i; }); }
+        sel.value = k; inp.value = num(v / u[k][1]);
+      } else inp.value = num(v);
+    },
+    mark(bad) { if (inp) inp.classList.toggle('bad', !!bad); },
+  };
+  api.set(f.def);
+  return api;
+}
+
+/* E-series rounding */
+const ESER = {
+  E12: [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2],
+  E24: [1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1],
+};
+function roundE(v, ser) {
+  if (!ser || !(v > 0) || !isFinite(v)) return v;
+  const list = ESER[ser], dec = Math.floor(Math.log10(v)), m = v / Math.pow(10, dec);
+  let best = list[0], bd = Infinity;
+  for (const c of list.concat([10])) { const d = Math.abs(Math.log(m / c)); if (d < bd) { bd = d; best = c; } }
+  return best * Math.pow(10, dec);
+}
+
+/* ----------------------------------------------------------------- passive ladder engine */
+// elements: [type 'S'|'P', kind 'R'|'L'|'C', value]; source Rs, load RL (Infinity = open)
+function ladderH(els, Rs, RL, w) {
+  const s = [0, w];
+  let A = [1, 0], B = [0, 0], Cc = [0, 0], D = [1, 0];
+  for (const [t, k, v] of els) {
+    let Z = k === 'R' ? [v, 0] : k === 'L' ? [0, w * v] : [0, -1 / (w * v)];
+    if (t === 'S') { // [A B;C D] * [1 Z;0 1]
+      B = cadd(cmul(A, Z), B); D = cadd(cmul(Cc, Z), D);
+    } else { // * [1 0;Y 1]
+      const Y = cdiv([1, 0], Z);
+      A = cadd(A, cmul(B, Y)); Cc = cadd(Cc, cmul(D, Y));
+    }
+  }
+  void s;
+  const RLc = isFinite(RL) ? RL : 1e15;
+  const den = cadd(cadd(cmul(A, [RLc, 0]), B), cmul([Rs, 0], cadd(cmul(Cc, [RLc, 0]), D)));
+  return cdiv([RLc, 0], den);
+}
+function ladderG(n, approx, ripple) {
+  const g = [];
+  if (approx === 'but') { for (let k = 1; k <= n; k++) g.push(2 * Math.sin((2 * k - 1) * Math.PI / (2 * n))); return { g, gl: 1 }; }
+  const beta = Math.log(1 / Math.tanh(ripple / 17.37)), gam = Math.sinh(beta / (2 * n));
+  const a = (k) => Math.sin((2 * k - 1) * Math.PI / (2 * n)), b = (k) => gam * gam + Math.pow(Math.sin(k * Math.PI / n), 2);
+  g[0] = 2 * a(1) / gam;
+  for (let k = 2; k <= n; k++) g[k - 1] = 4 * a(k - 1) * a(k) / (b(k - 1) * g[k - 2]);
+  const gl = n % 2 ? 1 : Math.pow(1 / Math.tanh(beta / 4), 2);
+  return { g, gl };
+}
+function ladderLayout(dv) { // list of {t,k} for the chosen topology/type/order
+  const n = +dv.order, shuntFirst = dv.topo === 'P', out = [];
+  for (let i = 1; i <= n; i++) {
+    const shunt = shuntFirst ? i % 2 === 1 : i % 2 === 0;
+    const lp = dv.type === 'lp';
+    out.push({ t: shunt ? 'P' : 'S', k: shunt ? (lp ? 'C' : 'L') : (lp ? 'L' : 'C') });
+  }
+  return out;
+}
+function ladderDesign(dv) {
+  const n = +dv.order, wc = TAU * dv.fc, R0 = dv.R0;
+  const { g, gl } = ladderG(n, dv.approx, dv.ripple);
+  const lay = ladderLayout(dv), vals = {};
+  lay.forEach((e, i) => {
+    const gi = g[i];
+    if (dv.type === 'lp') vals['e' + i] = e.t === 'P' ? gi / (R0 * wc) : gi * R0 / wc;
+    else vals['e' + i] = e.t === 'P' ? R0 / (gi * wc) : 1 / (gi * wc * R0);
+  });
+  vals.Rs = R0;
+  vals.RL = lay[0].t === 'S' ? R0 * gl : R0 / gl;
+  return vals;
+}
+const ladderComps = (dv) => ladderLayout(dv).map((e, i) => ({ id: 'e' + i, kind: e.k, label: (e.t === 'S' ? 'Seri ' : 'Paralel ') + e.k + (i + 1), def: 1e-6, rounded: true }));
+function ladderModel(v, dv) {
+  const lay = ladderLayout(dv), els = lay.map((e, i) => [e.t, e.k, v['e' + i]]);
+  return { els, Rs: v.Rs, RL: v.RL, type: dv.type, H: (w) => ladderH(els, v.Rs, v.RL, w), f0: dv.fc };
+}
+
+/* ----------------------------------------------------------------- variant registry */
+const RS = { id: 'Rs', kind: 'R', label: 'Kaynak direnci Rs', def: 0 };
+const RLF = { id: 'RL', kind: 'R', label: 'Yük direnci RL (boş = açık devre)', def: Infinity, open: true };
+const FC = { id: 'fc', kind: 'F', label: 'Kesim frekansı fc', def: 1e3 };
+const QSEL = { id: 'Q', kind: 'sel', label: 'Yanıt (Q)', opts: [['0.5', 'Kritik sönümlü / Linkwitz-Riley (Q = 0.5)'], ['0.5774', 'Bessel (Q = 0.577)'], ['0.7071', 'Butterworth (Q = 0.707)'], ['0.8637', 'Chebyshev 0.5 dB (Q = 0.864)'], ['0.9565', 'Chebyshev 1 dB (Q = 0.957)']], def: '0.7071' };
+const passive1 = (id, label, desc, designIn, comps, designFn, els, f0, type, note) => ({
+  id, label, desc, type, design: designIn, comps, extras: [RS, RLF], designFn, note,
+  model: (v) => ({ els: els(v), Rs: v.Rs, RL: v.RL, type, f0: f0(v), H: (w) => ladderH(els(v), v.Rs, v.RL, w) }),
+});
+const ladderIn = (orders, orderDef, topoOpts) => [
+  { id: 'type', kind: 'sel', label: 'Tür', opts: [['lp', 'Alçak geçiren (LP)'], ['hp', 'Yüksek geçiren (HP)']], def: 'lp' },
+  { id: 'approx', kind: 'sel', label: 'Yaklaşım', opts: [['but', 'Butterworth (düz geçiş bandı)'], ['cheb', 'Chebyshev (dalgalı, dik)']], def: 'but' },
+  { id: 'ripple', kind: 'N', label: 'Chebyshev dalgası (dB)', def: 0.5 },
+  { id: 'order', kind: 'sel', label: 'Derece (eleman sayısı)', opts: orders, def: orderDef },
+  { id: 'topo', kind: 'sel', label: 'Yapı', opts: topoOpts, def: topoOpts[0][0] },
+  FC,
+  { id: 'R0', kind: 'R', label: 'Kaynak / referans direnci R0', def: 50 },
+];
+const FAMILIES = [
+  { id: 'rc', name: 'RC', variants: [
+    passive1('rc_lp', 'Alçak geçiren', 'R seri, C paralel. fc = 1 / (2π·R·C), −20 dB/dekad.',
+      [FC, { id: 'Cx', kind: 'C', label: 'Seçilen C', def: 100e-9 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'C', kind: 'C', label: 'C', rounded: 1 }],
+      (d) => ({ R: 1 / (TAU * d.fc * d.Cx), C: d.Cx }), (v) => [['S', 'R', v.R], ['P', 'C', v.C]], (v) => 1 / (TAU * v.R * v.C), 'lp'),
+    passive1('rc_hp', 'Yüksek geçiren', 'C seri, R paralel. fc = 1 / (2π·R·C), +20 dB/dekad.',
+      [FC, { id: 'Cx', kind: 'C', label: 'Seçilen C', def: 100e-9 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'C', kind: 'C', label: 'C', rounded: 1 }],
+      (d) => ({ R: 1 / (TAU * d.fc * d.Cx), C: d.Cx }), (v) => [['S', 'C', v.C], ['P', 'R', v.R]], (v) => 1 / (TAU * v.R * v.C), 'hp'),
+  ] },
+  { id: 'rl', name: 'RL', variants: [
+    passive1('rl_lp', 'Alçak geçiren', 'L seri, R paralel (yük). fc = R / (2π·L).',
+      [FC, { id: 'Lx', kind: 'L', label: 'Seçilen L', def: 10e-3 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'L', kind: 'L', label: 'L', rounded: 1 }],
+      (d) => ({ R: TAU * d.fc * d.Lx, L: d.Lx }), (v) => [['S', 'L', v.L], ['P', 'R', v.R]], (v) => v.R / (TAU * v.L), 'lp'),
+    passive1('rl_hp', 'Yüksek geçiren', 'R seri, L paralel. fc = R / (2π·L).',
+      [FC, { id: 'Lx', kind: 'L', label: 'Seçilen L', def: 10e-3 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'L', kind: 'L', label: 'L', rounded: 1 }],
+      (d) => ({ R: TAU * d.fc * d.Lx, L: d.Lx }), (v) => [['S', 'R', v.R], ['P', 'L', v.L]], (v) => v.R / (TAU * v.L), 'hp'),
+  ] },
+  { id: 'lc', name: 'LC (2. derece)', variants: [
+    { id: 'lc2', label: 'LC bölümü', desc: 'İki elemanlı LC merdiven filtre; kaynak ve yük direnci R0 ile uyumlu tasarlanır.', type: 'var',
+      design: ladderIn([['2', '2']], '2', [['S', 'Seri eleman önce (kaynağa seri)'], ['P', 'Paralel eleman önce (kaynağa paralel)']]),
+      comps: ladderComps, extras: [RS, RLF], designFn: ladderDesign, model: ladderModel,
+      note: 'Butterworth 2. derece: −40 dB/dekad. Chebyshev çift derecede yük direnci R0\'dan farklı çıkar (RL alanına bakın).' },
+  ] },
+  { id: 'pit', name: 'Pi / T (3–7. derece)', variants: [
+    { id: 'pit', label: 'Pi / T LC filtre', desc: 'Pi: paralel eleman ile başlar ve biter (C–L–C). T: seri eleman ile başlar ve biter (L–C–L). Butterworth veya Chebyshev.', type: 'var',
+      design: ladderIn([['3', '3'], ['4', '4'], ['5', '5'], ['6', '6'], ['7', '7']], '3', [['P', 'Pi (paralel başlar)'], ['S', 'T (seri başlar)']]),
+      comps: ladderComps, extras: [RS, RLF], designFn: ladderDesign, model: ladderModel,
+      note: 'Tek derecede kaynak ve yük R0\'a eşittir. Pi filtre kaynak/yükü kapasitif, T filtre endüktif görür.' },
+  ] },
+  { id: 'act', name: 'Aktif', variants: [
+    { id: 'sk_lp', label: 'Sallen-Key LP', desc: 'Birim kazançlı 2. derece Sallen-Key alçak geçiren. C1 geri besleme, C2 toprak kondansatörü. f₀ = 1/(2π√(R1R2C1C2)).', type: 'lp',
+      design: [FC, QSEL, { id: 'Cx', kind: 'C', label: 'Seçilen C2', def: 10e-9 }],
+      comps: [{ id: 'R1', kind: 'R', label: 'R1', rounded: 1 }, { id: 'R2', kind: 'R', label: 'R2', rounded: 1 }, { id: 'C1', kind: 'C', label: 'C1 (geri besleme)', rounded: 1 }, { id: 'C2', kind: 'C', label: 'C2 (toprak)', rounded: 1 }], extras: [],
+      designFn: (d) => { const C2 = d.Cx, C1 = 4 * d.Q * d.Q * C2, R = 1 / (TAU * d.fc * 2 * d.Q * C2); return { R1: R, R2: R, C1, C2 }; },
+      model: (v) => { const a = v.R1 * v.R2 * v.C1 * v.C2, b = v.C2 * (v.R1 + v.R2); return { type: 'lp', f0: 1 / (TAU * Math.sqrt(a)), Q: Math.sqrt(a) / b, active: 1, H: (w) => cdiv([1, 0], polyEval([1, b, a], [0, w])) }; },
+      note: 'R1 = R2 ve C1 = 4Q²·C2 alınır. Birim kazanç: op-amp gerilim izleyici.' },
+    { id: 'sk_hp', label: 'Sallen-Key HP', desc: 'Birim kazançlı 2. derece Sallen-Key yüksek geçiren. C1 = C2 = C, R1 geri besleme, R2 toprak direnci.', type: 'hp',
+      design: [FC, QSEL, { id: 'Cx', kind: 'C', label: 'Seçilen C (C1 = C2)', def: 10e-9 }],
+      comps: [{ id: 'C1', kind: 'C', label: 'C1', rounded: 1 }, { id: 'C2', kind: 'C', label: 'C2', rounded: 1 }, { id: 'R1', kind: 'R', label: 'R1 (geri besleme)', rounded: 1 }, { id: 'R2', kind: 'R', label: 'R2 (toprak)', rounded: 1 }], extras: [],
+      designFn: (d) => { const R1 = 1 / (TAU * d.fc * 2 * d.Q * d.Cx); return { C1: d.Cx, C2: d.Cx, R1, R2: 4 * d.Q * d.Q * R1 }; },
+      model: (v) => { const a = v.R1 * v.R2 * v.C1 * v.C2, b = v.R1 * (v.C1 + v.C2); return { type: 'hp', f0: 1 / (TAU * Math.sqrt(a)), Q: Math.sqrt(a) / b, active: 1, H: (w) => { const s = [0, w]; return cdiv(polyEval([0, 0, a], s), polyEval([1, b, a], s)); } }; },
+      note: 'C1 = C2 sabit, R2 = 4Q²·R1 alınır. Birim kazanç.' },
+    { id: 'mfb_lp', label: 'MFB LP (ters çeviren)', desc: 'Çoklu geri beslemeli (MFB) 2. derece alçak geçiren; DC kazancı −R3/R1. C1 toprak, C2 geri besleme kondansatörü.', type: 'lp',
+      design: [FC, QSEL, { id: 'Gk', kind: 'N', label: 'Kazanç (mutlak, V/V)', def: 1 }, { id: 'Cx', kind: 'C', label: 'Seçilen C2', def: 10e-9 }],
+      comps: [{ id: 'R1', kind: 'R', label: 'R1 (giriş)', rounded: 1 }, { id: 'R2', kind: 'R', label: 'R2', rounded: 1 }, { id: 'R3', kind: 'R', label: 'R3 (geri besleme)', rounded: 1 }, { id: 'C1', kind: 'C', label: 'C1 (toprak)', rounded: 1 }, { id: 'C2', kind: 'C', label: 'C2 (geri besleme)', rounded: 1 }], extras: [],
+      designFn: (d) => {
+        // C1 = 4Q²(1+K)·C2 is the smallest value that has a real solution; then R3 = S/2, R2 = S/(2(1+K)), R1 = R3/K
+        // with S = 1/(w0·Q·C2) (from C2·(R2(1+K)+R3) = 1/(w0 Q) and R2·R3 = 1/(w0²C1C2)).
+        const K = d.Gk, w0 = TAU * d.fc, C2 = d.Cx, C1 = 4 * d.Q * d.Q * (1 + K) * C2, S = 1 / (w0 * d.Q * C2);
+        return { R1: S / (2 * K), R2: S / (2 * (1 + K)), R3: S / 2, C1, C2 };
+      },
+      model: (v) => { const a = v.C1 * v.C2 * v.R2 * v.R3, b = v.C2 * (v.R2 * v.R3 / v.R1 + v.R3 + v.R2), g = v.R3 / v.R1; return { type: 'lp', f0: 1 / (TAU * Math.sqrt(a)), Q: Math.sqrt(a) / b, active: 1, H: (w) => cdiv([-g, 0], polyEval([1, b, a], [0, w])) }; },
+      note: 'Op-amp eviren girişi sanal toprak; kazanç ters çevirir (faz −180° ile başlar).' },
+    { id: 'ia_lp', label: '1. derece LP', desc: 'Ters çeviren aktif alçak geçiren: kazanç −Rf/Rin, fc = 1/(2π·Rf·Cf).', type: 'lp',
+      design: [FC, { id: 'Gk', kind: 'N', label: 'Kazanç (mutlak, V/V)', def: 1 }, { id: 'Cx', kind: 'C', label: 'Seçilen Cf', def: 10e-9 }],
+      comps: [{ id: 'Rin', kind: 'R', label: 'Rin', rounded: 1 }, { id: 'Rf', kind: 'R', label: 'Rf', rounded: 1 }, { id: 'Cf', kind: 'C', label: 'Cf (Rf ile paralel)', rounded: 1 }], extras: [],
+      designFn: (d) => { const Rf = 1 / (TAU * d.fc * d.Cx); return { Rf, Rin: Rf / d.Gk, Cf: d.Cx }; },
+      model: (v) => ({ type: 'lp', f0: 1 / (TAU * v.Rf * v.Cf), active: 1, H: (w) => cdiv([-v.Rf / v.Rin, 0], [1, w * v.Rf * v.Cf]) }) },
+    { id: 'ia_hp', label: '1. derece HP', desc: 'Ters çeviren aktif yüksek geçiren: yüksek frekans kazancı −Rf/Rin, fc = 1/(2π·Rin·Cin).', type: 'hp',
+      design: [FC, { id: 'Gk', kind: 'N', label: 'Kazanç (mutlak, V/V)', def: 1 }, { id: 'Cx', kind: 'C', label: 'Seçilen Cin', def: 10e-9 }],
+      comps: [{ id: 'Cin', kind: 'C', label: 'Cin', rounded: 1 }, { id: 'Rin', kind: 'R', label: 'Rin', rounded: 1 }, { id: 'Rf', kind: 'R', label: 'Rf', rounded: 1 }], extras: [],
+      designFn: (d) => { const Rin = 1 / (TAU * d.fc * d.Cx); return { Cin: d.Cx, Rin, Rf: Rin * d.Gk }; },
+      model: (v) => ({ type: 'hp', f0: 1 / (TAU * v.Rin * v.Cin), active: 1, H: (w) => cdiv([0, -w * v.Rf * v.Cin], [1, w * v.Rin * v.Cin]) }) },
+  ] },
+];
+
+/* ----------------------------------------------------------------- state and UI */
+const S = { fam: FAMILIES[0], v: FAMILIES[0].variants[0], dFields: {}, cFields: {}, dv: {}, model: null, res: null, hoverF: null };
+const store = {}; // remembered design values per variant
+
+function buildTabs() {
+  const tabs = $('#tabs');
+  FAMILIES.forEach((f) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tab'; b.role = 'tab'; b.textContent = f.name; b.dataset.id = f.id;
+    b.onclick = () => selectFamily(f); tabs.appendChild(b);
+  });
+}
+function selectFamily(f, variantId) {
+  S.fam = f;
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.id === f.id ? 'true' : 'false'));
+  const box = $('#variants'); box.innerHTML = '';
+  f.variants.forEach((v) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = v.label; b.dataset.id = v.id;
+    b.onclick = () => selectVariant(v); box.appendChild(b);
+  });
+  box.style.display = f.variants.length > 1 ? '' : 'none';
+  selectVariant(f.variants.find((v) => v.id === variantId) || f.variants[0]);
+}
+function selectVariant(v) {
+  S.v = v;
+  document.querySelectorAll('#variants button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.id === v.id ? 'true' : 'false'));
+  $('#vdesc').textContent = v.desc || '';
+  const box = $('#design'); box.innerHTML = ''; S.dFields = {}; S.cFields = {};
+  const mem = store[v.id] || {};
+  for (const f of v.design) {
+    const fld = mkField(Object.assign({}, f, { def: mem[f.id] != null ? mem[f.id] : f.def }), onDesign);
+    S.dFields[f.id] = fld; box.appendChild(fld.el);
+  }
+  syncRippleVisibility();
+  S.keep = null;
+  onDesign();
+}
+function syncRippleVisibility() {
+  const a = S.dFields.approx, r = S.dFields.ripple;
+  if (a && r) r.el.style.display = a.get() === 'cheb' ? '' : 'none';
+}
+function readDesign() {
+  const dv = {}; let ok = true;
+  for (const f of S.v.design) {
+    const x = S.dFields[f.id].get();
+    const bad = f.kind !== 'sel' && !(x > 0 && isFinite(x));
+    S.dFields[f.id].mark(bad); if (bad) ok = false;
+    dv[f.id] = f.kind === 'sel' && /^[0-9.]+$/.test(x) && f.id !== 'order' && f.id !== 'topo' ? +x : x;
+  }
+  return ok ? dv : null;
+}
+function onDesign() {
+  syncRippleVisibility();
+  const dv = readDesign();
+  if (!dv) { setMsg('Tasarım alanlarına pozitif sayı girin.'); return; }
+  S.dv = dv; store[S.v.id] = Object.fromEntries(Object.entries(S.dFields).map(([k, f]) => [k, f.get()]));
+  const keep = {};
+  for (const id of ['Rs', 'RL']) if (S.cFields[id]) keep[id] = S.cFields[id].get();
+  let vals = S.v.designFn(dv);
+  const ser = $('#eser').value, list = typeof S.v.comps === 'function' ? S.v.comps(dv) : S.v.comps;
+  for (const c of list) if (c.rounded) vals[c.id] = roundE(vals[c.id], ser);
+  for (const id of ['Rs', 'RL']) if (vals[id] === undefined && keep[id] !== undefined && !(S.v.extras.length === 0)) vals[id] = keep[id];
+  buildComps(list, vals);
+  recompute();
+}
+function buildComps(list, vals) {
+  const box = $('#comps'); box.innerHTML = ''; S.cFields = {};
+  const all = list.concat(S.v.extras);
+  for (const c of all) {
+    const f = mkField(Object.assign({}, c, { def: vals[c.id] !== undefined ? vals[c.id] : c.def }), recompute);
+    S.cFields[c.id] = f; box.appendChild(f.el);
+  }
+}
+function setMsg(t) { $('#msg').textContent = t || ''; }
+function readComps() {
+  const v = {}; let ok = true;
+  for (const [id, f] of Object.entries(S.cFields)) {
+    const x = f.get(), bad = id === 'Rs' ? !(x >= 0 && isFinite(x)) : id === 'RL' ? !(x > 0) : !(x > 0 && isFinite(x));
+    f.mark(bad); if (bad) ok = false; v[id] = x;
+  }
+  return ok ? v : null;
+}
+
+/* ----------------------------------------------------------------- analysis */
+function logspace(a, b, n) { const out = []; const la = Math.log10(a), lb = Math.log10(b); for (let i = 0; i < n; i++) out.push(Math.pow(10, la + (lb - la) * i / (n - 1))); return out; }
+const dB = (h) => 20 * Math.log10(Math.max(cabs(h), 1e-300));
+function analyse(m) {
+  const f0 = m.f0, fa = f0 / 1e3, fb = f0 * 1e3, N = 3000, fs = logspace(fa, fb, N);
+  const mag = fs.map((f) => dB(m.H(TAU * f)));
+  let f3 = null, ref;
+  if (m.type === 'hp') {
+    ref = mag[N - 1];
+    for (let i = N - 1; i > 0; i--) if (mag[i - 1] < ref - 3.0103) { const t = (ref - 3.0103 - mag[i]) / (mag[i - 1] - mag[i]); f3 = Math.pow(10, Math.log10(fs[i]) + t * (Math.log10(fs[i - 1]) - Math.log10(fs[i]))); break; }
+  } else {
+    ref = mag[0];
+    for (let i = 0; i < N - 1; i++) if (mag[i + 1] < ref - 3.0103) { const t = (ref - 3.0103 - mag[i]) / (mag[i + 1] - mag[i]); f3 = Math.pow(10, Math.log10(fs[i]) + t * (Math.log10(fs[i + 1]) - Math.log10(fs[i]))); break; }
+  }
+  let slope = null;
+  if (f3) slope = m.type === 'hp' ? dB(m.H(TAU * f3 / 10)) - dB(m.H(TAU * f3 / 100)) : dB(m.H(TAU * f3 * 100)) - dB(m.H(TAU * f3 * 10));
+  return { f3, ref, slope };
+}
+function recompute() {
+  setMsg('');
+  const v = readComps();
+  if (!v) { setMsg('Bileşen değerleri pozitif sayı olmalı (Rs ≥ 0; RL boş = açık devre).'); return; }
+  let m;
+  try { m = S.v.model(v, S.dv); } catch (e) { setMsg('Hesaplanamadı: ' + e.message); return; }
+  if (!(m.f0 > 0) || !isFinite(m.f0)) { setMsg('Geçersiz bileşen kombinasyonu.'); return; }
+  S.model = m; S.res = analyse(m); S.vals = v;
+  renderResults(); renderSchematic(m); renderMath(v, m); autoRange(false); draw();
+  $('#note').textContent = S.v.note || '';
+}
+function fmtF(f) { return f == null ? '—' : fmtSI(f, 'F'); }
+function renderResults() {
+  const m = S.model, r = S.res, box = $('#res'); box.innerHTML = '';
+  const add = (big, small) => { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); };
+  add(fmtF(r.f3), '−3 dB frekansı (hesaplanan)');
+  add(fmtF(m.f0), m.Q != null ? 'Kutup frekansı f₀' : 'Tasarım / teorik fc');
+  if (m.Q != null) add(num(m.Q), 'Kalite faktörü Q' + (m.Q > 0.7072 ? ' (tepe var)' : ''));
+  add(num(r.ref) + ' dB', (m.type === 'hp' ? 'Yüksek frekans' : 'DC') + ' kazancı');
+  add(r.slope == null ? '—' : num(Math.abs(r.slope)) + ' dB/dek', 'Kesim sonrası eğim (' + (m.type === 'hp' ? '↓ frekans' : '↑ frekans') + ')');
+  queryProbe();
+}
+function probeF() { const x = Number($('#fq').value.replace(',', '.')); return x > 0 ? x * Number($('#fqu').value) : null; }
+function queryProbe() {
+  const box = $('#qres'); box.innerHTML = '';
+  const f = probeF(); if (!f || !S.model) return;
+  const h = S.model.H(TAU * f), d = document.createElement('div');
+  d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = num(dB(h)) + ' dB, ' + num(carg(h) * 180 / Math.PI) + '°';
+  d.lastChild.textContent = '@ ' + fmtF(f) + ' (|H| = ' + num(cabs(h)) + ')'; box.appendChild(d);
+}
+
+/* ----------------------------------------------------------------- schematics */
+const NS = 'http://www.w3.org/2000/svg';
+function newSvg(w, h) {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute("viewBox", `-12 0 ${w + 60} ${h}`); svg.setAttribute('class', 'sch'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Devre şeması');
+  svg.style.maxWidth = Math.round(w * 1.6) + 'px';
+  const el = (tag, a, txt, parent) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; (parent || svg).appendChild(e); return e; };
+  const st = { fill: 'none', stroke: 'currentColor', 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+  const b = {
+    svg,
+    wire(...pts) { el('polyline', Object.assign({ points: pts.map((p) => p.join(',')).join(' ') }, st)); },
+    dot(x, y) { el('circle', { cx: x, cy: y, r: 3.4, fill: 'currentColor' }); },
+    text(x, y, t, anchor, cls) { el('text', { x, y, 'text-anchor': anchor || 'middle', class: cls || '' }, t); },
+    term(x, y, name, right) { el('circle', { cx: x, cy: y, r: 3.8, fill: 'var(--card)', stroke: 'currentColor', 'stroke-width': 1.8 }); if (right) b.text(x + 10, y + 4, name, "start", "tm"); else b.text(x, y - 11, name, "middle", "tm"); },
+    gnd(x, y) { b.wire([x, y], [x, y + 7]); b.wire([x - 12, y + 7], [x + 12, y + 7]); b.wire([x - 7.5, y + 12], [x + 7.5, y + 12]); b.wire([x - 3, y + 17], [x + 3, y + 17]); },
+    // two-terminal part centred on (x,y), 60 units long including leads; vert = vertical
+    part(kind, x, y, vert, name, value, left) {
+      const g = el('g', { transform: `translate(${x},${y})${vert ? ' rotate(90)' : ''}` });
+      const p = (d, extra) => el('path', Object.assign({ d }, st, extra || {}), null, g);
+      if (kind === 'R') p('M-30 0H-20L-16 -7L-8 7L0 -7L8 7L16 -7L20 0H30');
+      else if (kind === 'C') { p('M-30 0H-4M4 0H30'); p('M-4 -11V11M4 -11V11', { 'stroke-width': 2.6 }); }
+      else p('M-30 0H-20A5 5 0 0 1 -10 0A5 5 0 0 1 0 0A5 5 0 0 1 10 0A5 5 0 0 1 20 0H30');
+      if (vert) { const lx = left ? x - 16 : x + 16, an = left ? "end" : "start"; b.text(lx, y - 2, name, an, "nm"); b.text(lx, y + 13, value, an, "vl"); }
+      else { b.text(x, y - 15, name, 'middle', 'nm'); b.text(x, y + 28, value, 'middle', 'vl'); }
+    },
+    source(x, y) { el('circle', Object.assign({ cx: x, cy: y, r: 14 }, st)); el('path', Object.assign({ d: `M${x - 8} ${y}a4 4 0 0 1 8 0a4 4 0 0 0 8 0` }, st)); },
+    opamp(x, y, plusTop) {
+      el('polygon', Object.assign({ points: `${x},${y - 32} ${x},${y + 32} ${x + 64},${y}` }, st, { fill: 'var(--card)' }));
+      const yp = plusTop ? y - 16 : y + 16, yn = plusTop ? y + 16 : y - 16;
+      b.text(x + 8, yp + 5, '+', 'start', 'oa'); b.text(x + 8, yn + 5, '−', 'start', 'oa');
+      return { plus: [x, yp], minus: [x, yn], out: [x + 64, y] };
+    },
+  };
+  return b;
+}
+const lv = (v, id, kind, name) => [name || id, fmtSI(v[id], kind)];
+
+function schLadder(m) {
+  const items = [{ t: 'S', k: 'R', name: 'Rs', v: m.Rs }].concat(m.els.map((e, i) => ({ t: e[0], k: e[1], name: e[1] + (i + 1), v: e[2] })));
+  items.push({ t: 'P', k: 'R', name: 'RL', v: m.RL, load: true });
+  const top = 48, bot = 155, mid = (top + bot) / 2;
+  let w = 30; for (const it of items) w += it.t === 'S' ? 75 : 80; w += 120;
+  const b = newSvg(w, bot + 32);
+  b.wire([30, top], [30, mid - 14]); b.source(30, mid); b.wire([30, mid + 14], [30, bot]); b.gnd(30, bot);
+  b.text(48, mid + 4, 'Vin', 'start', 'tm');
+  let x = 30;
+  for (const it of items) {
+    const val = isFinite(it.v) ? fmtSI(it.v, it.k) : '∞';
+    if (it.t === 'S') { b.part(it.k, x + 30, top, false, it.name, val); x += 60; b.wire([x, top], [x + 15, top]); x += 15; }
+    else {
+      b.dot(x, top); b.wire([x, top], [x, mid - 30]); b.part(it.k, x, mid, true, it.name, val); b.wire([x, mid + 30], [x, bot]); b.dot(x, bot);
+      if (!it.load) { b.wire([x, top], [x + 80, top]); b.wire([x, bot], [x + 80, bot]); x += 80; }
+      else { b.wire([x, top], [x + 60, top]); b.term(x + 60, top, 'Vout', true); b.wire([x, bot], [x + 60, bot]); }
+    }
+  }
+  return b.svg;
+}
+
+// Sallen-Key: s1,s2 in series, g to ground, f feedback ([id,kind] each)
+function schSK(v, s1, s2, g, f) {
+  const b = newSvg(480, 200), y = 82;
+  b.term(14, y, 'Vin'); b.wire([14, y], [40, y]);
+  b.part(s1[1], 70, y, false, ...lv(v, s1[0], s1[1])); b.wire([100, y], [160, y]); b.dot(130, y);
+  b.part(s2[1], 190, y, false, ...lv(v, s2[0], s2[1])); b.wire([220, y], [300, y]); b.dot(250, y);
+  const oa = b.opamp(300, y + 16, true);
+  b.wire([250, y], [250, 100]); b.part(g[1], 250, 130, true, ...lv(v, g[0], g[1]), true); b.gnd(250, 160);
+  b.wire([130, y], [130, 32], [210, 32]); b.part(f[1], 240, 32, false, ...lv(v, f[0], f[1])); b.wire([270, 32], [405, 32], [405, oa.out[1]]);
+  b.wire(oa.out, [405, oa.out[1]]); b.dot(405, oa.out[1]); b.wire([405, oa.out[1]], [442, oa.out[1]]); b.term(446, oa.out[1], 'Vout', true);
+  b.wire([405, oa.out[1]], [405, 150], [278, 150], [278, oa.minus[1]], oa.minus);
+  return b.svg;
+}
+function schMFB(v) {
+  const b = newSvg(500, 215), y = 104;
+  b.term(14, y, 'Vin'); b.wire([14, y], [40, y]);
+  b.part('R', 70, y, false, ...lv(v, 'R1', 'R')); b.wire([100, y], [150, y]); b.dot(120, y);
+  b.wire([120, y], [120, 120]); b.part('C', 120, 150, true, ...lv(v, 'C1', 'C')); b.gnd(120, 180);
+  b.wire([120, y], [120, 30], [220, 30]); b.part('R', 250, 30, false, ...lv(v, 'R3', 'R')); b.wire([280, 30], [410, 30], [410, 120]);
+  b.part('R', 180, y, false, ...lv(v, 'R2', 'R')); b.wire([210, y], [300, y]); b.dot(255, y);
+  const oa = b.opamp(300, y + 16, false);
+  b.wire([255, y], [255, 60], [290, 60]); b.part('C', 320, 60, false, ...lv(v, 'C2', 'C')); b.wire([350, 60], [410, 60]); b.dot(410, 60);
+  b.wire(oa.out, [410, oa.out[1]]); b.dot(410, oa.out[1]); b.wire([410, oa.out[1]], [452, oa.out[1]]); b.term(456, oa.out[1], 'Vout', true);
+  b.wire(oa.plus, [280, oa.plus[1]], [280, 176]); b.gnd(280, 176);
+  return b.svg;
+}
+function schInvLP(v) {
+  const b = newSvg(420, 235), y = 125;
+  b.term(14, y, 'Vin'); b.wire([14, y], [50, y]);
+  b.part('R', 80, y, false, ...lv(v, 'Rin', 'R')); b.wire([110, y], [215, y]); b.dot(150, y);
+  const oa = b.opamp(215, y + 16, false);
+  b.wire([150, y], [150, 22], [210, 22]); b.dot(150, 80); b.wire([150, 80], [210, 80]);
+  b.part('C', 240, 22, false, ...lv(v, 'Cf', 'C')); b.part("R", 240, 80, false, ...lv(v, 'Rf', 'R'));
+  b.wire([270, 22], [335, 22], [335, oa.out[1]]); b.wire([270, 80], [335, 80]); b.dot(335, 80);
+  b.wire(oa.out, [335, oa.out[1]]); b.dot(335, oa.out[1]); b.wire([335, oa.out[1]], [372, oa.out[1]]); b.term(376, oa.out[1], 'Vout', true);
+  b.wire(oa.plus, [195, oa.plus[1]], [195, 185]); b.gnd(195, 185);
+  return b.svg;
+}
+function schInvHP(v) {
+  const b = newSvg(480, 215), y = 108;
+  b.term(14, y, 'Vin'); b.wire([14, y], [35, y]);
+  b.part('C', 65, y, false, ...lv(v, 'Cin', 'C')); b.wire([95, y], [105, y]);
+  b.part('R', 135, y, false, ...lv(v, 'Rin', 'R')); b.wire([165, y], [250, y]); b.dot(200, y);
+  const oa = b.opamp(250, y + 16, false);
+  b.wire([200, y], [200, 40], [260, 40]); b.part('R', 290, 40, false, ...lv(v, 'Rf', 'R')); b.wire([320, 40], [405, 40], [405, oa.out[1]]);
+  b.wire(oa.out, [405, oa.out[1]]); b.dot(405, oa.out[1]); b.wire([405, oa.out[1]], [442, oa.out[1]]); b.term(446, oa.out[1], 'Vout', true);
+  b.wire(oa.plus, [230, oa.plus[1]], [230, 188]); b.gnd(230, 188);
+  return b.svg;
+}
+function renderSchematic(m) {
+  const box = $('#sch'); box.innerHTML = '';
+  const v = S.vals, id = S.v.id;
+  let svg;
+  if (m.els) svg = schLadder(m);
+  else if (id === 'sk_lp') svg = schSK(v, ['R1', 'R'], ['R2', 'R'], ['C2', 'C'], ['C1', 'C']);
+  else if (id === 'sk_hp') svg = schSK(v, ['C1', 'C'], ['C2', 'C'], ['R2', 'R'], ['R1', 'R']);
+  else if (id === 'mfb_lp') svg = schMFB(v);
+  else if (id === 'ia_lp') svg = schInvLP(v);
+  else if (id === 'ia_hp') svg = schInvHP(v);
+  if (svg) box.appendChild(svg);
+}
+
+/* ----------------------------------------------------------------- formulas (HTML math, no external library) */
+const fr = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+const rt = (x) => `<span class="rt"><span class="rs">√</span><span class="rb">${x}</span></span>`;
+const Vr = (a, s) => s ? `<i>${a}</i><sub>${s}</sub>` : `<i>${a}</i>`;
+const fcs = Vr('f', 'c'), f0s = Vr('f', '0');
+const num3 = (x) => num(parseFloat(Number(x).toPrecision(4)));
+const MATH = {
+  rc_lp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr('1', `1 + ${Vr('s')}·${Vr('R')}·${Vr('C')}`)}`],
+    ['Genlik ve faz', `|${Vr('H')}| = ${fr('1', rt(`1 + (${Vr('f')} / ${fcs})<sup>2</sup>`))} &nbsp;&nbsp; ${'φ'} = −arctan(${Vr('f')} / ${fcs})`],
+    ['Kesim frekansı', `${fcs} = ${fr('1', `2π·${Vr('R')}·${Vr('C')}`)} = ${fr('1', `2π · ${fmtSI(v.R, 'R')} · ${fmtSI(v.C, 'C')}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Tasarım', `${Vr('R')} = ${fr('1', `2π·${fcs}·${Vr('C')}`)}`]],
+  rc_hp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr(`${Vr('s')}·${Vr('R')}·${Vr('C')}`, `1 + ${Vr('s')}·${Vr('R')}·${Vr('C')}`)}`],
+    ['Genlik ve faz', `|${Vr('H')}| = ${fr(`${Vr('f')} / ${fcs}`, rt(`1 + (${Vr('f')} / ${fcs})<sup>2</sup>`))} &nbsp;&nbsp; φ = 90° − arctan(${Vr('f')} / ${fcs})`],
+    ['Kesim frekansı', `${fcs} = ${fr('1', `2π·${Vr('R')}·${Vr('C')}`)} = ${fr('1', `2π · ${fmtSI(v.R, 'R')} · ${fmtSI(v.C, 'C')}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Tasarım', `${Vr('R')} = ${fr('1', `2π·${fcs}·${Vr('C')}`)}`]],
+  rl_lp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr('1', `1 + ${Vr('s')}·${Vr('L')} / ${Vr('R')}`)}`],
+    ['Genlik ve faz', `|${Vr('H')}| = ${fr('1', rt(`1 + (${Vr('f')} / ${fcs})<sup>2</sup>`))} &nbsp;&nbsp; φ = −arctan(${Vr('f')} / ${fcs})`],
+    ['Kesim frekansı', `${fcs} = ${fr(Vr('R'), `2π·${Vr('L')}`)} = ${fr(fmtSI(v.R, 'R'), `2π · ${fmtSI(v.L, 'L')}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Tasarım', `${Vr('R')} = 2π·${fcs}·${Vr('L')}`]],
+  rl_hp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr(`${Vr('s')}·${Vr('L')} / ${Vr('R')}`, `1 + ${Vr('s')}·${Vr('L')} / ${Vr('R')}`)}`],
+    ['Genlik ve faz', `|${Vr('H')}| = ${fr(`${Vr('f')} / ${fcs}`, rt(`1 + (${Vr('f')} / ${fcs})<sup>2</sup>`))} &nbsp;&nbsp; φ = 90° − arctan(${Vr('f')} / ${fcs})`],
+    ['Kesim frekansı', `${fcs} = ${fr(Vr('R'), `2π·${Vr('L')}`)} = ${fr(fmtSI(v.R, 'R'), `2π · ${fmtSI(v.L, 'L')}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Tasarım', `${Vr('R')} = 2π·${fcs}·${Vr('L')}`]],
+  sk_lp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr('1', `${Vr('s')}<sup>2</sup>·${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)} + ${Vr('s')}·${Vr('C', 2)}(${Vr('R', 1)} + ${Vr('R', 2)}) + 1`)}`],
+    ['Kutup frekansı', `${f0s} = ${fr('1', `2π ${rt(`${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)}`)}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Kalite faktörü', `${Vr('Q')} = ${fr(rt(`${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)}`), `${Vr('C', 2)}(${Vr('R', 1)} + ${Vr('R', 2)})`)} = <b>${num3(m.Q)}</b>`],
+    ['Tasarım (R1 = R2 = R)', `${Vr('C', 1)} = 4${Vr('Q')}<sup>2</sup>·${Vr('C', 2)} &nbsp;&nbsp; ${Vr('R')} = ${fr('1', `4π·${f0s}·${Vr('Q')}·${Vr('C', 2)}`)}`]],
+  sk_hp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = ${fr(`${Vr('s')}<sup>2</sup>·${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)}`, `${Vr('s')}<sup>2</sup>·${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)} + ${Vr('s')}·${Vr('R', 1)}(${Vr('C', 1)} + ${Vr('C', 2)}) + 1`)}`],
+    ['Kutup frekansı', `${f0s} = ${fr('1', `2π ${rt(`${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)}`)}`)} = <b>${fmtF(m.f0)}</b>`],
+    ['Kalite faktörü', `${Vr('Q')} = ${fr(rt(`${Vr('R', 1)}${Vr('R', 2)}${Vr('C', 1)}${Vr('C', 2)}`), `${Vr('R', 1)}(${Vr('C', 1)} + ${Vr('C', 2)})`)} = <b>${num3(m.Q)}</b>`],
+    ['Tasarım (C1 = C2 = C)', `${Vr('R', 1)} = ${fr('1', `4π·${f0s}·${Vr('Q')}·${Vr('C')}`)} &nbsp;&nbsp; ${Vr('R', 2)} = 4${Vr('Q')}<sup>2</sup>·${Vr('R', 1)}`]],
+  mfb_lp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = −${fr(`${Vr('R', 3)} / ${Vr('R', 1)}`, `${Vr('s')}<sup>2</sup>·${Vr('R', 2)}${Vr('R', 3)}${Vr('C', 1)}${Vr('C', 2)} + ${Vr('s')}·${Vr('C', 2)}(${Vr('R', 2)}${Vr('R', 3)} / ${Vr('R', 1)} + ${Vr('R', 2)} + ${Vr('R', 3)}) + 1`)}`],
+    ['Kutup frekansı ve kazanç', `${f0s} = ${fr('1', `2π ${rt(`${Vr('R', 2)}${Vr('R', 3)}${Vr('C', 1)}${Vr('C', 2)}`)}`)} = <b>${fmtF(m.f0)}</b> &nbsp;&nbsp; ${Vr('K')} = ${fr(Vr('R', 3), Vr('R', 1))} = <b>${num3(v.R3 / v.R1)}</b>`],
+    ['Kalite faktörü', `${Vr('Q')} = ${fr(rt(`${Vr('R', 2)}${Vr('R', 3)}${Vr('C', 1)}${Vr('C', 2)}`), `${Vr('C', 2)}(${Vr('R', 2)}${Vr('R', 3)} / ${Vr('R', 1)} + ${Vr('R', 2)} + ${Vr('R', 3)})`)} = <b>${num3(m.Q)}</b>`],
+    ['Tasarım', `${Vr('C', 1)} = 4${Vr('Q')}<sup>2</sup>(1 + ${Vr('K')})${Vr('C', 2)} &nbsp; ${Vr('R', 3)} = ${fr('1', `2·ω<sub>0</sub>·${Vr('Q')}·${Vr('C', 2)}`)} &nbsp; ${Vr('R', 2)} = ${fr(Vr('R', 3), `1 + ${Vr('K')}`)} &nbsp; ${Vr('R', 1)} = ${fr(Vr('R', 3), Vr('K'))}`]],
+  ia_lp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = −${fr(`${Vr('R', 'f')} / ${Vr('R', 'in')}`, `1 + ${Vr('s')}·${Vr('R', 'f')}·${Vr('C', 'f')}`)}`],
+    ['Kesim frekansı ve kazanç', `${fcs} = ${fr('1', `2π·${Vr('R', 'f')}·${Vr('C', 'f')}`)} = <b>${fmtF(m.f0)}</b> &nbsp;&nbsp; |${Vr('K')}| = ${fr(Vr('R', 'f'), Vr('R', 'in'))} = <b>${num3(v.Rf / v.Rin)}</b>`],
+    ['Tasarım', `${Vr('R', 'f')} = ${fr('1', `2π·${fcs}·${Vr('C', 'f')}`)} &nbsp;&nbsp; ${Vr('R', 'in')} = ${fr(Vr('R', 'f'), '|K|')}`]],
+  ia_hp: (v, m) => [
+    ['Transfer fonksiyonu', `${Vr('H')}(${Vr('s')}) = −${fr(`${Vr('s')}·${Vr('R', 'f')}·${Vr('C', 'in')}`, `1 + ${Vr('s')}·${Vr('R', 'in')}·${Vr('C', 'in')}`)}`],
+    ['Kesim frekansı ve kazanç', `${fcs} = ${fr('1', `2π·${Vr('R', 'in')}·${Vr('C', 'in')}`)} = <b>${fmtF(m.f0)}</b> &nbsp;&nbsp; |${Vr('K')}| = ${fr(Vr('R', 'f'), Vr('R', 'in'))} = <b>${num3(v.Rf / v.Rin)}</b>`],
+    ['Tasarım', `${Vr('R', 'in')} = ${fr('1', `2π·${fcs}·${Vr('C', 'in')}`)} &nbsp;&nbsp; ${Vr('R', 'f')} = |${Vr('K')}|·${Vr('R', 'in')}`]],
+};
+function ladderMath(v, m, dv) {
+  const n = +dv.order, { g, gl } = ladderG(n, dv.approx, dv.ripple), hp = dv.type === 'hp';
+  const rows = [];
+  rows.push(['Prototip (g) değerleri', g.map((x, i) => `${Vr('g', i + 1)} = ${num3(x)}`).join(' &nbsp; ') + ` &nbsp; ${Vr('g', n + 1)} = ${num3(gl)}`]);
+  rows.push([dv.approx === 'but' ? 'Butterworth' : 'Chebyshev (' + num(dv.ripple) + ' dB dalga)',
+    dv.approx === 'but'
+      ? `${Vr('g', 'k')} = 2·sin${fr('(2k − 1)π', '2n')}`
+      : `β = ln coth${fr(Vr('L', 'r'), '17.37')} &nbsp; γ = sinh${fr('β', '2n')} &nbsp; ${Vr('g', 1)} = ${fr('2·a<sub>1</sub>', 'γ')} &nbsp; ${Vr('g', 'k')} = ${fr('4·a<sub>k−1</sub>·a<sub>k</sub>', `b<sub>k−1</sub>·${Vr('g', 'k−1')}`)}`]);
+  rows.push(["Elemanları ölçekleme",
+    `${"ω<sub>c</sub> = 2π·"+fcs+" = <b>"+num3(TAU * dv.fc)+" rad/s</b> &nbsp;&nbsp;"}` + (hp ? `paralel ${Vr('L')} = ${fr(Vr('R', 0), `${Vr('g')}·ω<sub>c</sub>`)} &nbsp;&nbsp; seri ${Vr('C')} = ${fr('1', `${Vr('g')}·ω<sub>c</sub>·${Vr('R', 0)}`)}`
+       : `seri ${Vr('L')} = ${fr(`${Vr('g')}·${Vr('R', 0)}`, 'ω<sub>c</sub>')} &nbsp;&nbsp; paralel ${Vr('C')} = ${fr(Vr('g'), `${Vr('R', 0)}·ω<sub>c</sub>`)}`)]);
+  rows.push(['Yük direnci', `seri başlayan yapıda ${Vr('R', 'L')} = ${Vr('R', 0)}·${Vr('g', n + 1)}, paralel başlayanda ${Vr('R', 'L')} = ${Vr('R', 0)} / ${Vr('g', n + 1)} &nbsp; → <b>${fmtSI(v.RL, 'R')}</b>`]);
+  rows.push(['Kesim frekansı', `Butterworth: −3 dB noktası ${fcs}; Chebyshev: ${fcs} dalga bandının kenarıdır (−3 dB noktası biraz farklıdır, sonuç kartındaki hesaplanan değere bakın).`]);
+  return rows;
+}
+function renderMath(v, m) {
+  const box = $('#math'); box.innerHTML = '';
+  const rows = MATH[S.v.id] ? MATH[S.v.id](v, m) : ladderMath(v, m, S.dv);
+  for (const [t, h] of rows) {
+    const d = document.createElement('div'); d.className = 'mrow';
+    d.innerHTML = '<div class="mt"></div><div class="mf"></div>'; d.firstChild.innerHTML = t; d.lastChild.innerHTML = h; box.appendChild(d);
+  }
+}
+
+/* ----------------------------------------------------------------- charts */
+let range = { lo: 1, hi: 1e6, auto: true };
+function autoRange(force) {
+  const m = S.model; if (!m) return;
+  const manualLo = Number($('#fmin').value.replace(',', '.')) * Number($('#fminu').value);
+  const manualHi = Number($('#fmax').value.replace(',', '.')) * Number($('#fmaxu').value);
+  const manual = !force && $('#fmin').value.trim() !== '' && $('#fmax').value.trim() !== '' && manualLo > 0 && manualHi > manualLo * 1.5;
+  if (manual) { range = { lo: manualLo, hi: manualHi, auto: false }; return; }
+  const c = S.res && S.res.f3 ? S.res.f3 : m.f0, span = m.els && m.els.length >= 4 ? 30 : 100;
+  range = { lo: c / span, hi: c * span, auto: true };
+  if (force) { $('#fmin').value = ''; $('#fmax').value = ''; }
+}
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function curve() {
+  const m = S.model, N = 500, fs = logspace(range.lo, range.hi, N), mag = [], ph = [];
+  let prev = 0;
+  for (const f of fs) {
+    const h = m.H(TAU * f); mag.push(dB(h));
+    let p = carg(h) * 180 / Math.PI;
+    while (p - prev > 180) p -= 360; while (p - prev < -180) p += 360;
+    ph.push(p); prev = p;
+  }
+  return { fs, mag, ph };
+}
+function sizeCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = +cv.getAttribute('height');
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); return { g, w, h };
+}
+function niceStep(span, target) { const raw = span / target, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p; return (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p; }
+function plot(cv, fs, ys, o) {
+  const { g, w, h } = sizeCanvas(cv), L = 52, R = 12, T = 12, B = 28, pw = w - L - R, ph = h - T - B;
+  g.clearRect(0, 0, w, h);
+  const lx = Math.log10(range.lo), hx = Math.log10(range.hi), X = (f) => L + (Math.log10(f) - lx) / (hx - lx) * pw;
+  let y0 = Math.min(...ys), y1 = Math.max(...ys);
+  if (o.fixedMax != null) { y1 = o.fixedMax; y0 = Math.max(y0, y1 - o.maxSpan); }
+  const step = niceStep(y1 - y0 || 1, 6); y0 = Math.floor(y0 / step) * step; y1 = Math.ceil(y1 / step) * step; if (y1 === y0) y1 = y0 + step;
+  const Y = (v) => T + (1 - (v - y0) / (y1 - y0)) * ph;
+  g.font = '11px system-ui,sans-serif'; g.lineWidth = 1; g.strokeStyle = cssVar('--grid'); g.fillStyle = cssVar('--axis');
+  g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = y0; v <= y1 + 1e-9; v += step) { const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); g.fillText(num(v), L - 6, y); }
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (let d = Math.floor(lx); d <= Math.ceil(hx); d++) for (let k = 1; k < 10; k++) {
+    const f = k * Math.pow(10, d); if (f < range.lo || f > range.hi) continue;
+    const x = Math.round(X(f)) + .5; g.strokeStyle = cssVar('--grid'); g.globalAlpha = k === 1 ? 1 : .35; g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke(); g.globalAlpha = 1;
+    if (k === 1 || (k === 2 || k === 5) && (hx - lx) < 3.2) g.fillText(fmtSI(f, 'F'), x, T + ph + 6);
+  }
+  g.strokeStyle = cssVar('--axis'); g.strokeRect(L + .5, T + .5, pw, ph);
+  g.save(); g.beginPath(); g.rect(L, T, pw, ph); g.clip();
+  // markers
+  const mark = (f, col, dash) => { if (!f || f < range.lo || f > range.hi) return; g.strokeStyle = col; g.setLineDash(dash); g.beginPath(); g.moveTo(X(f), T); g.lineTo(X(f), T + ph); g.stroke(); g.setLineDash([]); };
+  mark(S.model.f0, cssVar('--mute'), [3, 4]); mark(S.res && S.res.f3, cssVar('--g2'), [6, 3]);
+  if (o.ref3 != null) { g.strokeStyle = cssVar('--g2'); g.globalAlpha = .6; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(L, Y(o.ref3)); g.lineTo(L + pw, Y(o.ref3)); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+  g.strokeStyle = cssVar('--g1'); g.lineWidth = 2; g.beginPath();
+  fs.forEach((f, i) => { const x = X(f), y = Y(ys[i]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  if (S.hoverF) { const x = X(S.hoverF); g.strokeStyle = cssVar('--ink'); g.lineWidth = 1; g.globalAlpha = .6; g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke(); g.globalAlpha = 1; }
+  g.restore();
+  g.save(); g.translate(12, T + ph / 2); g.rotate(-Math.PI / 2); g.fillStyle = cssVar('--axis'); g.textAlign = 'center'; g.textBaseline = 'top'; g.fillText(o.label, 0, 0); g.restore();
+  cv._geom = { L, pw, lx, hx };
+}
+function draw() {
+  if (!S.model) return;
+  const c = curve(), r = S.res;
+  plot($('#cm'), c.fs, c.mag, { label: 'Genlik (dB)', fixedMax: Math.max(...c.mag) + 3, maxSpan: 90, ref3: r.f3 ? r.ref - 3.0103 : null });
+  plot($('#cp'), c.fs, c.ph, { label: 'Faz (°)' });
+  S.curve = c;
+}
+function hover(e) {
+  const cv = e.currentTarget, gm = cv._geom; if (!gm) return;
+  const rect = cv.getBoundingClientRect(), x = e.clientX - rect.left;
+  const t = (x - gm.L) / gm.pw; if (t < 0 || t > 1) return;
+  const f = Math.pow(10, gm.lx + t * (gm.hx - gm.lx)); S.hoverF = f;
+  const h = S.model.H(TAU * f);
+  $('#readout').textContent = `f = ${fmtF(f)}   |H| = ${num(dB(h))} dB (${num(cabs(h))})   faz = ${num(carg(h) * 180 / Math.PI)}°`;
+  draw();
+}
+function leave() { S.hoverF = null; draw(); }
+
+/* ----------------------------------------------------------------- boot */
+buildTabs();
+['#cm', '#cp'].forEach((s) => { const c = $(s); c.addEventListener('pointermove', hover); c.addEventListener('pointerleave', leave); });
+$('#eser').onchange = onDesign;
+['#fq', '#fqu'].forEach((s) => $(s).addEventListener('input', queryProbe));
+['#fmin', '#fminu', '#fmax', '#fmaxu'].forEach((s) => $(s).addEventListener('input', () => { autoRange(false); draw(); }));
+$('#fauto').onclick = () => { autoRange(true); draw(); };
+window.addEventListener('resize', draw);
+window.addEventListener('et-theme-change', draw);
+(function () {
+  const tb = $('#btnTheme'), sync = () => tb.setAttribute('aria-pressed', window.etTheme.get() === 'dark' ? 'true' : 'false');
+  tb.onclick = () => { window.etTheme.set(window.etTheme.get() === 'dark' ? 'light' : 'dark'); sync(); };
+  window.addEventListener('storage', sync); sync();
+})();
+// design-field change handler needs the ripple visibility refresh before recalculation
+selectFamily(FAMILIES[0]);
+</script>
+</body>
+</html>

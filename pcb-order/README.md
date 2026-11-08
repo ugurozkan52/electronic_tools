@@ -16,7 +16,7 @@ Klasör yapısını bozmayın: `index.html` ile `lib/` aynı yerde kalmalıdır.
 ## Kullanım seçenekleri
 
 **1. Bilgisayarda doğrudan açma (sunucusuz)**
-`index.html` dosyasına çift tıklayın. Gerber yükleme, 3D ve PDF indirme çalışır. Yalnızca IBM Plex yazı tipi internet yoksa sistem yazı tipine düşer.
+`index.html` dosyasına çift tıklayın. Gerber yükleme, 3D ve PDF indirme çalışır. 
 
 **2. Şirket içi ağ (intranet) — IIS / nginx / Apache**
 Klasörü web sunucusunun kök dizinine ya da bir alt dizinine kopyalayın, ör. `C:\inetpub\wwwroot\pcb-siparis\`. Ek yapılandırma gerekmez; yalnızca `.js`, `.html`, `.md` dosyalarının sunulması yeterlidir.
@@ -38,7 +38,7 @@ Netlify Drop sayfasına klasörü sürükleyin; size bir adres verir. Kendi alan
 ## Notlar
 - Seçimler ve dil tercihi tarayıcının `localStorage` alanında saklanır (kullanıcı başına, cihaz başına). Açık/koyu tema `et-theme` anahtarıyla sitedeki diğer araçlarla paylaşılır.
 - Gizli tasarımlar için 1. veya 2. seçenek önerilir; dosyalar zaten tarayıcıdan çıkmaz, ancak sayfanın kendisinin herkese açık olması istenmeyebilir.
-- Harici bağlantı yalnızca Google Fonts içindir (`fonts.googleapis.com`). Tamamen çevrimdışı/izole ağ için `index.html` içindeki iki `<link ... fonts.googleapis.com ...>` satırını silebilirsiniz.
+- Dış bağlantı yoktur: Google Fonts kaldırıldı, IBM Plex yüklü değilse sistem yazı tipi kullanılır. Sayfa çevrimdışı çalışır.
 
 ---
 

@@ -31,6 +31,17 @@
   <link rel="stylesheet" crossorigin href="./circuitjs/circuitjs--wuhdAF1.css">
 </head>
 <body>
-
+<button id="etThemeBtn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema"
+  style="position:fixed;top:1px;right:6px;z-index:2147483000;height:20px;min-width:28px;padding:0 6px;border:1px solid #777;border-radius:4px;background:#3a3f47;color:#fff;font:14px/1 system-ui,sans-serif;cursor:pointer">◐</button>
+<script>
+/* Toggles the shared theme; CircuitJS reads its colours at start-up, so the page must reload
+   and an unsaved circuit would be lost: ask first. */
+document.getElementById('etThemeBtn').onclick=function(){
+  if(!confirm('Tema değişince sayfa yeniden yüklenir; kaydedilmemiş devre değişiklikleri kaybolur. Devam edilsin mi?\nThe page reloads when the theme changes; unsaved circuit changes are lost. Continue?'))return;
+  var next=localStorage.getItem('et-theme')==='dark'?'light':'dark';
+  try{localStorage.setItem('et-theme',next);localStorage.setItem('whiteBackground',next==='light'?'true':'false')}catch(e){}
+  location.reload();
+};
+</script>
 </body>
 </html>
