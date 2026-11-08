@@ -27,7 +27,7 @@ Sonraki her `git push` siteyi yeniden derleyip yayınlar.
 ## Yerelde deneme
 ```
 cd assembly-src && npm ci && cd ..
-mkdir _site && cp index.html .nojekyll _site/ && cp -r simulation pcb-order filters wire _site/
+mkdir _site && cp index.html gate.js .nojekyll _site/ && cp -r simulation pcb-order filters wire _site/
 (cd assembly-src && node web/build.js ../_site/assembly)
 python -m http.server -d _site 8000
 ```

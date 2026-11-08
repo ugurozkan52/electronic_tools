@@ -30,10 +30,12 @@ async function main() {
   copy(path.join(ROOT, 'src', 'core', 'testplan.js'), path.join(OUT, 'src', 'core', 'testplan.js'));
 
   const API = '<script src="../../../web/asm-web.js"></script>';
+  // login screen of the combined site: gate.js sits at the site root, four levels above these pages (only when built inside the repo)
+  const GATE = fs.existsSync(path.join(ROOT, '..', 'gate.js')) ? '<script src="../../../../gate.js"></script>\n  ' : '';
   // home: API first, then the page scripts as usual
   const homeFile = path.join(OUT, 'src', 'renderer', 'home', 'home.html');
   let home = fs.readFileSync(homeFile, 'utf8');
-  home = home.replace('<script src="../../i18n/i18n.js"></script>', API + '\n  <script src="../../i18n/i18n.js"></script>');
+  home = home.replace('<script src="../../i18n/i18n.js"></script>', GATE + API + '\n  <script src="../../i18n/i18n.js"></script>');
   if (!home.includes('asm-web.js')) throw new Error('home.html: i18n script tag not found');
   fs.writeFileSync(homeFile, home);
   // viewer: its scripts need the data synchronously → loaded by viewer-boot.js once storage is ready
@@ -42,7 +44,7 @@ async function main() {
   const scripts = [];
   viewer = viewer.replace(/\n?\s*<script src="([^"]+)"><\/script>/g, (m, src) => { scripts.push(src); return ''; });
   if (scripts.length < 10) throw new Error('viewer.html: scripts not found');
-  viewer = viewer.replace('</head>', `  <meta name="asm-scripts" content="${scripts.join(',')}">\n  ${API}\n  <script src="../../../web/viewer-boot.js"></script>\n</head>`);
+  viewer = viewer.replace('</head>', `  ${GATE}<meta name="asm-scripts" content="${scripts.join(',')}">\n  ${API}\n  <script src="../../../web/viewer-boot.js"></script>\n</head>`);
   fs.writeFileSync(viewerFile, viewer);
 
   // 2. bundles

@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<script src="gate.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Elektronik Araçlar</title>
 <meta name="description" content="Devre simülasyonu, PCB sipariş hazırlayıcı ve montaj görüntüleyici — tarayıcıda çalışan elektronik tasarım araçları.">
@@ -71,6 +72,7 @@ footer a{color:var(--mute)}
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="logoutBtn" type="button" title="Çıkış yap" style="right:64px;width:auto;padding:0 14px;font-size:13px" onclick="window.etLogout&&window.etLogout()">Çıkış</button>
 <button class="theme-toggle" id="themeBtn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema">◐</button>
 <header>
   <div class="mark" aria-hidden="true">
