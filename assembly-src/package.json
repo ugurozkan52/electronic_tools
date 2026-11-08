@@ -8,6 +8,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
+    "check": "node test/check_repo.js",
     "test": "node test/run_tests.js test/data",
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux",

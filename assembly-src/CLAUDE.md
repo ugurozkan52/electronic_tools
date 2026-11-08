@@ -15,6 +15,7 @@ Kullanıcı: Türkçe konuşan donanım mühendisi (Anova Ar-Ge). **Arayüz ve y
 ```bash
 npm ci                                   # (web için: ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci)
 npm start                                # Electron
+npm run check                            # veri gerektirmeyen tutarlılık denetimi (asm API eşliği, sürüm eşliği, sözdizimi) — CI’da çalışır
 npm test                                 # çekirdek testler (test/data gerekir, aşağıya bakın)
 npm run build:web                        # dist-web/ (GitHub Pages çıktısı)
 npm run test:web                         # web derle + Playwright uçtan uca (Chromium)
@@ -47,7 +48,7 @@ src/renderer/viewer/  iBOM tabanlı görüntüleyici
 web/             tarayıcı sürümü: vfs.js (IndexedDB üstünde senkron fs), backend.js (main.js karşılığı → window.asm),
                  step-worker.js, report-pdf.js (pdfmake), viewer-boot.js, build.js (esbuild), shims/
 ```
-- **Tek API sınırı:** renderer yalnızca `window.asm` (src/main/preload.js) kullanır. Yeni bir ana süreç özelliği = `preload.js` + `main.js` işleyicisi + **`web/backend.js` karşılığı**. Üçünü birlikte güncelle.
+- **Tek API sınırı:** renderer yalnızca `window.asm` (src/main/preload.js) kullanır. Yeni bir ana süreç özelliği = `preload.js` + `main.js` işleyicisi + **`web/backend.js` karşılığı**. Üçünü birlikte güncelle (`npm run check` eşliği doğrular).
 - Görüntüleyici veriyi senkron alır (`asm.viewerInit()` → `__asmInit`); web'de `viewer-boot.js` betikleri depolama hazır olduktan sonra yükler.
 - Proje verisi: `<veri>/projects/<id>/{project.json, pcbdata.json, settings.json, boards/<seri>.json, log.jsonl, model3d.bin, sources/, test-reports/}`.
 - Test sonuçları kart bazında `boards/<seri>.json` → `kv.testResults` (∞ = `'OL'`). Test ayarları proje bazında `settings.testConfig` (`rails`, `nets`, `phases`, toleranslar).
@@ -61,7 +62,8 @@ Prob seçimi `probeScore`: TP > konnektör > montaj deliği > 2 pinli pasif; TH 
 
 ## Kurallar
 - Değişiklikten sonra ilgili testleri çalıştır; UI değişikliğinde ekran görüntüsü alıp bak (SHOTS klasörü). Erişilebilirlik (axe, WCAG 2.1 AA) hem açık hem koyu temada temiz kalmalı.
-- Sürüm: `package.json` `version` ve `kicad-plugin/montaj_kicad/exporter.py` `VERSION` birlikte artırılır. Teslim paketleri: `MontajGoruntuleyici-<v>-KiCad-eklenti.zip` (PCM: metadata.json + plugins/ + resources/, `plugins/app` = win-unpacked), `-masaustu-win-x64.zip`, GitHub deposu.
+- Sürüm: `package.json` `version` ve `kicad-plugin/montaj_kicad/exporter.py` `VERSION` birlikte artırılır (`npm run check` doğrular).
+- Tema: web sürümünde açık/koyu seçim `localStorage['et-theme']` ile siteyle paylaşılır (`web/backend.js` `readDark/writeDark`); Electron’da `store` durumu kullanılır. Teslim paketleri: `MontajGoruntuleyici-<v>-KiCad-eklenti.zip` (PCM: metadata.json + plugins/ + resources/, `plugins/app` = win-unpacked), `-masaustu-win-x64.zip`, GitHub deposu.
 - Üçüncü taraf: three r147, occt-import-js (LGPL, WASM dinamik), pdfmake (MIT), xlsx, DejaVu fontları — lisans dosyaları korunur. Kart/şirket tasarım verisi depoya konmaz.
 - Yeni metin → `i18n.js` sözlüğüne (`'Kayıtlı teknisyenler'` satırından sonra) TR→EN ekle; `asmEl({text})` otomatik çevirir, `raw: 1` çevirmez.
 - `src/renderer/viewer/ibom/*` üst akım koduna yapılan değişiklikleri küçük ve yorumlu tut. (Değişenler: `util.js` highlightRowOnClick varsayılanı **true** — BOM satırı fareyle üzerine gelince değil tıklayınca seçilir; `render.js` yerleştirilen rengi hemen çizer.)

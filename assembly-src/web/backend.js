@@ -35,6 +35,26 @@ const ready = vfs.load().then((s) => {
   if (!st.lang) store.setState({ lang: I18N.getLang() });
 });
 
+// ---------------------------------------------------------------- theme
+// The light/dark choice is shared with the other tools of the site (same origin on GitHub Pages)
+// through localStorage 'et-theme'. If nothing is stored yet the system preference decides, and
+// that first value is kept so every tool continues in the same theme.
+const THEME_KEY = 'et-theme';
+function readDark() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    if (t === 'dark' || t === 'light') return t === 'dark';
+  } catch (e) { /* storage blocked */ }
+  const st = store && store.getState();
+  const dark = st && typeof st.dark === 'boolean' ? st.dark
+    : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  writeDark(dark);
+  return dark;
+}
+function writeDark(dark) {
+  try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) { /* storage blocked */ }
+}
+
 // ---------------------------------------------------------------- session
 function getSession() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; } }
 function setSession(s) { try { if (s) sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)); else sessionStorage.removeItem(SESSION_KEY); } catch (e) { /* private mode */ } }
@@ -289,9 +309,9 @@ const call = (fn) => (...a) => ready.then(() => fn(...a));
 const api = {
   ready,
   info: call(() => ({ version: VERSION, dataDir: t('Bu tarayıcı (IndexedDB)'), platform: 'web', storage, usage: vfs.usage(), kicad: null })),
-  state: call(() => Object.assign({ lang: I18N.getLang() }, store.getState())),
+  state: call(() => Object.assign({ lang: I18N.getLang() }, store.getState(), { dark: readDark() })),
   setLang: call(async (l) => { I18N.setLang(l); store.setState({ lang: I18N.getLang() }); await vfs.flush(); location.reload(); return I18N.getLang(); }),
-  setDark: call((v) => { store.setState({ dark: !!v }); return !!v; }),
+  setDark: call((v) => { store.setState({ dark: !!v }); writeDark(!!v); return !!v; }),
   openDataDir: call(() => null),
   chooseDataDir: call(() => null),
   open: (opts) => pickFiles(opts),                                     // must stay synchronous for the user gesture
@@ -371,7 +391,7 @@ const api = {
     const board = store.getBoard(session.projectId, session.serial) || { kv: {} };
     const s = store.getSettings(session.projectId);
     return JSON.stringify({
-      lang: I18N.getLang(), dark: !!store.getState().dark, pcbdata: pcb, config: viewerConfig(p),
+      lang: I18N.getLang(), dark: readDark(), pcbdata: pcb, config: viewerConfig(p),
       settings: Object.assign({}, s, s.bomCheckboxes != null ? { bomCheckboxes: dropPicked(s.bomCheckboxes) } : {}), boardKv: board.kv || {},
       session: Object.assign({}, session, { projectName: p.name, revision: p.revision }),
       operators: store.getState().operators || [],

@@ -8,7 +8,23 @@
 <meta name="description" content="PCB sipariş hazırlayıcı: Gerber görüntüleyici, 3D önizleme, üretim seçenekleri ve PDF sipariş raporu / PCB order builder with Gerber viewer, 3D preview and PDF report.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+/* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
+(function(){var K='et-theme',r=document.documentElement,t;
+try{t=localStorage.getItem(K)}catch(e){}
+if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark')}
+ap(t);
+window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
+window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'||e.newValue==='light'))ap(e.newValue)});
+})();
+</script>
 <style>
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#0f1216; --card:#181d24; --line:#2a313b; --line2:#222831; --ink:#e7ebf0; --mute:#98a1ae; --accent:#5c8bff; --accent-bg:#1b2742;
+  --warn:#f2b45a; --warn-bg:#33270f;
+}
+.theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
 :root{
   --bg:#f3f4f6; --card:#fff; --line:#e2e5ea; --line2:#eef0f3; --ink:#161a20; --mute:#646c78; --accent:#2457d6; --accent-bg:#edf2ff;
   --warn:#9a5b00; --warn-bg:#fff6e5; --dark:#14171c; --dark2:#1b1f26; --dark3:#262b34; --dink:#d6dbe2; --dmute:#8b939f;
@@ -18,14 +34,14 @@ html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif}
 button,input,select,textarea{font:inherit;color:inherit}
 .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--line)}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--card);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:12px}
 .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
 .brand p{margin:0;color:var(--mute);font-size:13px}
 .logo{width:36px;height:36px;border-radius:8px;background:#1f6b3a;display:grid;place-items:center}
 main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px}
-.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
 .btn:hover{border-color:#c4cad3}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:#1d49b8}
@@ -88,14 +104,14 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 .flab{font-weight:500;padding-top:5px}
 .flab small{display:block;color:var(--mute);font-weight:400;font-size:12px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.chip{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px solid #d3d8df;background:#fff;border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;line-height:1.3;overflow:hidden}
+.chip{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:13px;line-height:1.3;overflow:hidden}
 .chip:hover:not(:disabled){border-color:#9fb1d6}
 .chip.on{border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:600}
 .chip.on::after{content:"";position:absolute;right:0;bottom:0;border:6px solid transparent;border-right-color:var(--accent);border-bottom-color:var(--accent)}
-.chip:disabled{opacity:.35;cursor:not-allowed;background:#f6f7f9}
+.chip:disabled{opacity:.35;cursor:not-allowed;background:var(--line2)}
 .sw{width:13px;height:13px;border-radius:3px;border:1px solid #0003;display:inline-block}
 .unit{color:var(--mute);font-size:12.5px;margin-left:4px}
-.fctl input[type=text],.fctl input[type=number],.fctl select,.fctl textarea{border:1px solid #d3d8df;border-radius:6px;padding:6px 9px;background:#fff;outline:none}
+.fctl input[type=text],.fctl input[type=number],.fctl select,.fctl textarea{border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--card);outline:none}
 .fctl input:focus,.fctl select:focus,.fctl textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #2457d61f}
 .fctl input[type=text]{width:min(100%,360px)}
 .fctl input[type=number]{width:96px}
@@ -107,9 +123,9 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 .summary{position:sticky;top:16px;display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
 .sumhead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
 .sumhead h2{margin:0;font-size:16px}
-.summary .seg{background:#f1f3f6;border-color:var(--line)}
+.summary .seg{background:var(--line2);border-color:var(--line)}
 .summary .seg button{color:var(--mute)}
-.summary .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px #0001}
+.summary .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0001}
 #warn{padding:0 16px}
 .w{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:6px 9px;font-size:12.5px;margin-bottom:6px}
 .w.info{background:#f1f4f9;color:var(--mute)}
@@ -118,7 +134,7 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 #sumTable td{padding:5px 6px;border-bottom:1px solid var(--line2);vertical-align:top}
 #sumTable td:first-child{color:var(--mute);width:46%}
 #sumTable td:last-child{font-weight:500}
-#sumTable tr.sh td{background:#f6f7f9;color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:8px}
+#sumTable tr.sh td{background:var(--line2);color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding-top:8px}
 .sumact{display:flex;gap:8px;padding:12px 16px 4px;flex-wrap:wrap;border-top:1px solid var(--line)}
 .fine{margin:4px 16px 14px;color:var(--mute);font-size:12px}
 
@@ -126,7 +142,7 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 .toast.show{opacity:1;transform:translateX(-50%)}
 .modal{position:fixed;inset:0;background:#0007;display:none;place-items:center;z-index:40}
 .modal.show{display:grid}
-.modal .mbox{background:#fff;border-radius:10px;padding:16px;width:min(680px,92vw)}
+.modal .mbox{background:var(--card);border-radius:10px;padding:16px;width:min(680px,92vw)}
 .modal textarea{width:100%;height:320px;font:12px "IBM Plex Mono",monospace;border:1px solid var(--line);border-radius:6px;padding:8px}
 .modal .mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 
@@ -178,11 +194,11 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 
 /* dil, yardım ikonları */
 .hdr-r{display:flex;align-items:center;gap:10px}
-.seg.light{background:#f1f3f6;border-color:var(--line)}
+.seg.light{background:var(--line2);border-color:var(--line)}
 .seg.light button{color:var(--mute)}
-.seg.light button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px #0001}
+.seg.light button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0001}
 .flab .ltxt{display:inline}
-.help{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid #b9c1cc;background:#fff;color:#5b6573;font-size:10.5px;font-weight:700;line-height:1;margin-left:6px;cursor:help;padding:0;vertical-align:1px;font-family:inherit}
+.help{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1px solid #b9c1cc;background:var(--card);color:#5b6573;font-size:10.5px;font-weight:700;line-height:1;margin-left:6px;cursor:help;padding:0;vertical-align:1px;font-family:inherit}
 .help:hover,.help.pinned{background:var(--accent);border-color:var(--accent);color:#fff}
 .tip{position:fixed;z-index:60;left:0;top:0;background:#161a20;color:#eef1f5;font-size:12.5px;line-height:1.5;padding:9px 11px;border-radius:8px;box-shadow:0 8px 24px #0004;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s}
 .tip.show{opacity:1;visibility:visible}
@@ -210,6 +226,7 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
   </div>
   <div class="hdr-r">
     <div class="seg light" id="segLang" title="Dil / Language"><button data-v="tr" class="on" type="button">Türkçe</button><button data-v="en" type="button">English</button></div>
+    <button id="btnTheme" class="btn theme-btn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema">◐</button>
     <button id="btnReset" class="btn ghost" type="button" data-i18n="reset">Formu sıfırla</button>
   </div>
 </header>
@@ -219,7 +236,6 @@ main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
     <div class="vside">
       <div class="vhead">
         <label class="btn primary"><span data-i18n="load">Gerber yükle</span><input type="file" id="fileIn" multiple hidden></label>
-        <button id="btnDemo" class="btn" type="button" data-i18n="demo">Örnek kart</button>
       </div>
       <div id="fileInfo" class="fileinfo" data-i18n="fileHint">.zip ya da tek tek Gerber/Excellon dosyaları</div>
       <details id="detect" class="detect" hidden></details>
@@ -297,7 +313,7 @@ const T=(tr,en)=>LANG==='en'?en:tr;
 const I18N={
   appTitle:['PCB Sipariş Hazırlayıcı','PCB Order Builder'],
   appSub:["Gerber'i incele, üretim seçeneklerini işaretle, özet tabloyu üreticiye gönder.",'Inspect your Gerbers, pick the fabrication options and send the summary to your manufacturer.'],
-  reset:['Formu sıfırla','Reset form'], load:['Gerber yükle','Load Gerber'], demo:['Örnek kart','Sample board'],
+  reset:['Formu sıfırla','Reset form'], load:['Gerber yükle','Load Gerber'],
   fileHint:['.zip ya da tek tek Gerber/Excellon dosyaları','.zip or individual Gerber/Excellon files'],
   tLayers:['Katmanlar','Layers'], tHL:['Vurgula','Highlight'], lAll:['Tümü','All'], lAct:['Yalnız aktif','Active only'], lNone:['Hiçbiri','None'],
   hlNet:['Neti vurgula','Highlight net'], cmpLbl:['Bileşen','Component'], hlCmp:['Bileşeni vurgula','Highlight component'],
@@ -1766,92 +1782,10 @@ const vEl=$('#viewer');
 ['dragenter','dragover'].forEach(t=>vEl.addEventListener(t,e=>{ e.preventDefault(); vEl.classList.add('over'); }));
 ['dragleave','drop'].forEach(t=>vEl.addEventListener(t,e=>{ e.preventDefault(); if(t==='dragleave'&&vEl.contains(e.relatedTarget)) return; vEl.classList.remove('over'); }));
 vEl.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files]); });
-$('#btnDemo').onclick=()=>loadEntries(demoFiles(),T('Örnek kart (demo)','Sample board (demo)'));
 
-/* =====================================================================
-   ÖRNEK KART (KiCad tarzı X2 Gerber + Excellon üretir)
-   ===================================================================== */
-function demoFiles(){
-  const c=v=>Math.round(v*1e6), P=(x,y)=>`X${c(x)}Y${c(y)}`;
-  const mk=fn=>{ const a=['%TF.GenerationSoftware,PCB-Siparis-Demo*%',`%TF.FileFunction,${fn}*%`,'%FSLAX46Y46*%','%MOMM*%','%LPD*%','G75*','G01*'];
-    const o={a, s:t=>(a.push(t),o), ap:n=>o.s(`D${n}*`), mv:(x,y)=>o.s(`${P(x,y)}D02*`), ln:(x,y)=>o.s(`G01${P(x,y)}D01*`), fl:(x,y)=>o.s(`${P(x,y)}D03*`),
-      arc:(x,y,i,j,ccw)=>o.s(`${ccw?'G03':'G02'}${P(x,y)}I${c(i)}J${c(j)}D01*`),
-      path:pts=>{ o.mv(...pts[0]); pts.slice(1).forEach(p=>o.ln(...p)); return o; },
-      region:pts=>{ o.s('G36*'); o.mv(...pts[0]); pts.slice(1).forEach(p=>o.ln(...p)); o.ln(...pts[0]); o.s('G37*'); return o; },
-      done:()=>(a.push('M02*'),a.join('\n')) }; return o; };
-  const RR='%AMRoundRect*\n0 Rectangle with rounded corners*\n0 $1 Rounding radius*\n0 $2 $3 $4 $5 $6 $7 $8 $9 X,Y pos of 4 corners*\n4,1,4,$2,$3,$4,$5,$6,$7,$8,$9,$2,$3,0*\n1,1,$1+$1,$2,$3*\n1,1,$1+$1,$4,$5*\n1,1,$1+$1,$6,$7*\n1,1,$1+$1,$8,$9*\n20,1,$1+$1,$2,$3,$4,$5,0*\n20,1,$1+$1,$4,$5,$6,$7,0*\n20,1,$1+$1,$6,$7,$8,$9,0*\n20,1,$1+$1,$8,$9,$2,$3,0*%';
-  const rr=(n,w,h,r)=>{ const x=w/2-r, y=h/2-r; return `%ADD${n}RoundRect,${r}X${-x}X${-y}X${x}X${-y}X${x}X${y}X${-x}X${y}X0*%`; };
-  const soic=[]; for(let k=0;k<4;k++){ const y=23.905-k*1.27; soic.push([19.3,y]); } for(let k=0;k<4;k++){ const y=20.095+k*1.27; soic.push([24.7,y]); }
-  const caps=[[29.2,14],[30.8,14],[29.2,17],[30.8,17],[35.2,22],[36.8,22],[12.2,29],[13.8,29]];
-  const conn=[[6,13],[6,15.54],[6,18.08],[6,20.62]];
-  const vias=[[16,10],[34,25.6],[40,30],[44,33],[27,31],[52,22],[12,24]];
-  const obr=[[48,10],[48,14]];
-  const npth=[[4,4],[56,4],[4,36],[56,36]];
-
-  // dış hat
-  const ol=mk('Profile,NP'); ol.s('%ADD10C,0.100000*%').ap(10);
-  ol.mv(3,0).ln(57,0).arc(60,3,0,3,true).ln(60,37).arc(57,40,-3,0,true).ln(3,40).arc(0,37,0,-3,true).ln(0,3).arc(3,0,3,0,true);
-  ol.mv(54,30).arc(54,30,-2,0,true);
-
-  // üst bakır
-  const tc=mk('Copper,L1,Top'); tc.s(RR);
-  tc.s('%ADD10C,0.250000*%').s('%ADD11C,0.500000*%').s('%ADD12C,1.700000*%').s('%ADD13R,1.700000X1.700000*%').s(rr(14,1.95,0.6,0.15)).s('%ADD15R,0.900000X0.950000*%').s('%ADD16C,0.600000*%').s('%ADD17O,1.600000X2.400000*%').s('%ADD18C,1.300000*%').s(rr(19,1.0,1.0,0.25));
-  tc.region([[33,24],[47,24],[47,37],[33,37]]);
-  tc.s('%LPC*%').ap(18); vias.filter(v=>v[0]>33&&v[0]<47&&v[1]>24).forEach(v=>tc.fl(...v)); tc.s('D11*'); tc.path([[33,28],[47,35.5]]);
-  tc.s('%LPD*%');
-  tc.ap(16); vias.forEach(v=>tc.fl(...v));
-  tc.ap(14); soic.forEach(p=>tc.fl(...p));
-  tc.ap(15); caps.forEach(p=>tc.fl(...p));
-  tc.ap(13); tc.fl(...conn[0]); tc.ap(12); conn.slice(1).forEach(p=>tc.fl(...p));
-  tc.ap(17); obr.forEach(p=>tc.fl(...p));
-  tc.ap(19); tc.fl(30,30); tc.fl(30,33);
-  tc.ap(11); tc.path([[6,13],[11,13],[14,16],[17.2,16],[19.3,18.1],[19.3,23.905]]); tc.path([[6,15.54],[9,15.54],[12.2,18.7],[12.2,24],[12.2,29]]);
-  tc.mv(48,14).ln(48,18).arc(52,22,4,0,false);
-  tc.ap(10); tc.path([[24.7,20.095],[27,20.095],[29.2,17]]); tc.path([[24.7,21.365],[27.4,21.365],[28,22]]); tc.s('G01*');
-  tc.mv(28,22).arc(31,25,0,3,true); tc.ln(31,29).ln(30,30);
-  tc.path([[24.7,22.635],[33,22.635],[35.2,22]]); tc.path([[36.8,22],[40,22],[40,30]]); tc.path([[6,18.08],[10,18.08],[16,10]]);
-  tc.path([[30.8,14],[38,14],[46,10],[48,10]]); tc.path([[19.3,22.635],[16,22.635],[12,24]]); tc.path([[6,20.62],[9,23.62],[9,27],[12.2,29]]);
-  tc.path([[13.8,29],[22,29],[27,31]]); tc.path([[30,33],[30,36],[25,36]]);
-
-  // alt bakır
-  const bc=mk('Copper,L2,Bot');
-  bc.s('%ADD20C,1.700000*%').s('%ADD21R,1.700000X1.700000*%').s('%ADD22C,2.300000*%').s('%ADD23C,0.600000*%').s('%ADD24C,1.200000*%').s('%ADD25O,2.200000X3.000000*%').s('%ADD26O,1.600000X2.400000*%').s('%ADD27C,4.400000*%').s('%ADD28C,0.900000*%').s('%ADD29C,0.300000*%').s('%ADD30C,5.000000*%');
-  bc.region([[1,2],[2,1],[58,1],[59,2],[59,38],[58,39],[2,39],[1,38]]);
-  bc.s('%LPC*%'); bc.ap(22); conn.forEach(p=>bc.fl(...p)); bc.ap(25); obr.forEach(p=>bc.fl(...p)); bc.ap(27); npth.forEach(p=>bc.fl(...p)); bc.ap(30); bc.fl(52,30);
-  bc.ap(24); vias.slice(1).forEach(v=>bc.fl(...v)); bc.ap(28); bc.path([[34,25.6],[44,25.6],[44,33]]); bc.path([[27,31],[27,36],[52,36],[56,32]]);
-  bc.s('%LPD*%'); bc.ap(21); bc.fl(...conn[0]); bc.ap(20); conn.slice(1).forEach(p=>bc.fl(...p)); bc.ap(26); obr.forEach(p=>bc.fl(...p));
-  bc.ap(23); vias.forEach(v=>bc.fl(...v)); bc.ap(29); bc.path([[34,25.6],[44,25.6],[44,33]]); bc.path([[27,31],[27,36],[52,36],[56,32]]);
-
-  // maskeler
-  const tm=mk('Soldermask,Top'); tm.s('%ADD40R,2.050000X0.700000*%').s('%ADD41R,1.000000X1.050000*%').s('%ADD42C,1.800000*%').s('%ADD43R,1.800000X1.800000*%').s('%ADD44O,1.700000X2.500000*%').s('%ADD45R,1.100000X1.100000*%');
-  tm.ap(40); soic.forEach(p=>tm.fl(...p)); tm.ap(41); caps.forEach(p=>tm.fl(...p)); tm.ap(43); tm.fl(...conn[0]); tm.ap(42); conn.slice(1).forEach(p=>tm.fl(...p)); tm.ap(44); obr.forEach(p=>tm.fl(...p)); tm.ap(45); tm.fl(30,30); tm.fl(30,33);
-  const bm=mk('Soldermask,Bot'); bm.s('%ADD42C,1.800000*%').s('%ADD43R,1.800000X1.800000*%').s('%ADD44O,1.700000X2.500000*%'); bm.ap(43); bm.fl(...conn[0]); bm.ap(42); conn.slice(1).forEach(p=>bm.fl(...p)); bm.ap(44); obr.forEach(p=>bm.fl(...p));
-  const tp=mk('Paste,Top'); tp.s(RR).s(rr(50,1.95,0.6,0.15)).s('%ADD51R,0.900000X0.950000*%'); tp.ap(50); soic.forEach(p=>tp.fl(...p)); tp.ap(51); caps.forEach(p=>tp.fl(...p));
-
-  // silkscreen
-  const ts=mk('Legend,Top'); ts.s('%ADD60C,0.150000*%').s('%ADD61C,0.500000*%').ap(60);
-  ts.path([[20.6,25.2],[23.4,25.2]]).path([[20.6,18.8],[23.4,18.8]]); ts.path([[4.6,11.6],[7.4,11.6],[7.4,22],[4.6,22],[4.6,11.6]]);
-  [[30,14],[30,17],[36,22]].forEach(([x,y])=>{ ts.path([[x-0.2,y+0.75],[x+0.2,y+0.75]]); ts.path([[x-0.2,y-0.75],[x+0.2,y-0.75]]); });
-  ts.path([[46.4,7.8],[49.6,7.8],[49.6,16.2],[46.4,16.2],[46.4,7.8]]);
-  ts.path([[36,6],[36,9],[37.3,9],[38,8.3],[38,6.7],[37.3,6],[36,6]]).path([[41,9],[39,9],[39,6],[41,6]]).path([[39,7.5],[40.6,7.5]]).path([[42,6],[42,9],[43,7.5],[44,9],[44,6]]);
-  ts.mv(48,7.5).arc(48,7.5,-1.5,0,true); ts.s('G01*');
-  ts.path([[8.5,25],[8.5,27],[9.3,27],[9.7,26.6],[9.7,26.4],[9.3,26],[8.5,26]]).path([[9.3,26],[9.8,25]]);
-  ts.ap(61); ts.fl(18.4,25.2); ts.fl(3.6,13);
-  const bs=mk('Legend,Bot'); bs.s('%ADD60C,0.150000*%').ap(60); bs.path([[8,30],[24,30],[24,37],[8,37],[8,30]]); bs.path([[10,32],[22,32]]).path([[10,35],[18,35]]);
-
-  // delikler
-  const f3=v=>v.toFixed(3);
-  const pth=['M48','; DRILL file {PCB-Siparis-Demo}','; FORMAT={-:-/ absolute / metric / decimal}','; #@! TF.FileFunction,Plated,1,2,PTH','FMAT,2','METRIC','T1C0.300','T2C1.000','T3C0.900','%','G90','G05',
-    'T1',...vias.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'T2',...conn.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'T3',...obr.map(v=>`X${f3(v[0])}Y${f3(v[1]-0.4)}G85X${f3(v[0])}Y${f3(v[1]+0.4)}`),'M30'].join('\n');
-  const np=['M48','; #@! TF.FileFunction,NonPlated,1,2,NPTH','FMAT,2','METRIC','T1C3.200','%','G90','G05','T1',...npth.map(v=>`X${f3(v[0])}Y${f3(v[1])}`),'M30'].join('\n');
-
-  return [
-    {name:'DEMO-F_Cu.gbr',text:tc.done()},{name:'DEMO-B_Cu.gbr',text:bc.done()},
-    {name:'DEMO-F_Mask.gbr',text:tm.done()},{name:'DEMO-B_Mask.gbr',text:bm.done()},
-    {name:'DEMO-F_Paste.gbr',text:tp.done()},{name:'DEMO-F_Silkscreen.gbr',text:ts.done()},{name:'DEMO-B_Silkscreen.gbr',text:bs.done()},
-    {name:'DEMO-Edge_Cuts.gbr',text:ol.done()},{name:'DEMO-PTH.drl',text:pth},{name:'DEMO-NPTH.drl',text:np},{name:'DEMO-job.gbrjob',text:null}
-  ];
-}
+{ const tb=$('#btnTheme'), sync=()=>tb.setAttribute('aria-pressed',window.etTheme.get()==='dark'?'true':'false');
+  tb.onclick=()=>{ window.etTheme.set(window.etTheme.get()==='dark'?'light':'dark'); sync(); };
+  window.addEventListener('storage',sync); sync(); }
 
 /* =====================================================================
    BAŞLAT

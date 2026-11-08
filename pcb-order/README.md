@@ -30,15 +30,13 @@ location /pcb-siparis/ {
 ```
 
 **3. GitHub Pages (ücretsiz, herkese açık)**
-1. Yeni bir depo oluşturun, bu klasörün içeriğini depoya yükleyin.
-2. *Settings → Pages → Source: Deploy from a branch*, dal `main`, klasör `/ (root)`.
-3. Birkaç dakika sonra `https://<kullanıcı>.github.io/<depo>/` adresinde yayında olur.
+Bu klasör tek başına yayınlanacaksa: yeni bir depo oluşturup içeriği yükleyin, *Settings → Pages → Source: Deploy from a branch* (dal `main`, klasör `/ (root)`) seçin; birkaç dakika sonra `https://<kullanıcı>.github.io/<depo>/` adresinde yayında olur. Elektronik Araçlar sitesinin parçası olarak ise kök `README.md` içindeki GitHub Actions akışı kullanılır (Source: GitHub Actions) ve bu klasör olduğu gibi `/pcb-order/` altına kopyalanır.
 
 **4. Netlify / Cloudflare Pages (sürükle-bırak)**
 Netlify Drop sayfasına klasörü sürükleyin; size bir adres verir. Kendi alan adınızı bağlayabilirsiniz.
 
 ## Notlar
-- Seçimler ve dil tercihi tarayıcının `localStorage` alanında saklanır (kullanıcı başına, cihaz başına).
+- Seçimler ve dil tercihi tarayıcının `localStorage` alanında saklanır (kullanıcı başına, cihaz başına). Açık/koyu tema `et-theme` anahtarıyla sitedeki diğer araçlarla paylaşılır.
 - Gizli tasarımlar için 1. veya 2. seçenek önerilir; dosyalar zaten tarayıcıdan çıkmaz, ancak sayfanın kendisinin herkese açık olması istenmeyebilir.
 - Harici bağlantı yalnızca Google Fonts içindir (`fonts.googleapis.com`). Tamamen çevrimdışı/izole ağ için `index.html` içindeki iki `<link ... fonts.googleapis.com ...>` satırını silebilirsiniz.
 
