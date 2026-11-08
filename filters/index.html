@@ -10,7 +10,7 @@
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark');window.dispatchEvent(new Event('et-theme-change'))}
 r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
@@ -68,7 +68,11 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
 .seg button{border:1px solid var(--line);background:var(--line2);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:13px}
 .seg button[aria-pressed=true]{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
 .fld{display:block;margin:0 0 9px}
-.fld>span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.fld>span,.fld>label{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.qm{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--line2);color:var(--mute);font-size:10.5px;font-weight:700;line-height:1;cursor:help;vertical-align:1px}
+.qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--acc);border-color:var(--acc);color:#fff;outline:none}
+.tipbox{margin:2px 0 6px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--acc);background:var(--line2);color:var(--ink);font-size:12.5px;line-height:1.5}
+.tipbox[hidden]{display:none}
 .fin{display:flex;gap:6px}
 .fin input,.fin select{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:6px 9px;min-width:0}
 .fin input{flex:1}
@@ -191,9 +195,71 @@ function fmtSI(v, kind) {
   return num(v / pick[1]) + ' ' + pick[0];
 }
 // field: {id,label,kind:'R'|'L'|'C'|'F'|'N'|'sel', def, opts, open, min}
+/* "?" help buttons: click or hover shows a short explanation under the label */
+let tipN = 0;
+function addHelp(host, labelEl, before, text) {
+  if (!text) return;
+  const tip = document.createElement('div'); tip.className = 'tipbox'; tip.hidden = true; tip.id = 'tip' + (++tipN); tip.textContent = text;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'qm'; btn.textContent = '?';
+  btn.setAttribute('aria-label', 'Bilgi'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-describedby', tip.id);
+  btn.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (tip.dataset.hover) { delete tip.dataset.hover; return; } // pin what the hover opened
+    tip.hidden = !tip.hidden; btn.setAttribute('aria-expanded', tip.hidden ? 'false' : 'true');
+  };
+  btn.onmouseenter = () => { if (tip.hidden) { tip.hidden = false; tip.dataset.hover = '1'; } };
+  btn.onmouseleave = () => { if (tip.dataset.hover) { delete tip.dataset.hover; tip.hidden = true; } };
+  labelEl.appendChild(btn); host.insertBefore(tip, before);
+}
+const HELP = {
+  solve: 'Hangi değerin hesaplanacağını seçin. Diğer iki değeri siz girersiniz; hesaplanan değer sağdaki büyük sonuç kutusunda görünür.',
+  fc: 'Kesim frekansı: çıkış genliğinin girişe göre −3 dB (yaklaşık %70,7) düştüğü frekans. Alçak geçirende bunun üstündeki, yüksek geçirende altındaki frekanslar bastırılır.',
+  Rx: 'Tasarımda sabit tutacağınız direnç. Çok küçük değerler kaynağı yükler, çok büyük değerler gürültüyü artırır; 1 kΩ – 100 kΩ arası yaygındır.',
+  Xx: 'Seçtiğiniz bileşenin değeri (kondansatör veya bobin). Standart bir değer seçerseniz diğer bileşen buna göre hesaplanır.',
+  Cx: 'Tasarımda önce seçtiğiniz kondansatör. Diğer bileşenler buna göre hesaplanır; standart bir değer (ör. 10 nF, 100 nF) seçmek işi kolaylaştırır.',
+  Lx: 'Tasarımda seçtiğiniz bobin değeri; direnç buna göre hesaplanır.',
+  Q: 'Q (kalite faktörü) kesim çevresindeki keskinliği belirler. 0,5 kritik sönümlü (aşım yok), 0,577 Bessel (en düz grup gecikmesi), 0,707 Butterworth (en düz geçiş bandı); daha yüksek değerlerde Chebyshev: kesim daha dik ama geçiş bandında dalga/tepe oluşur.',
+  Gk: 'Kazanç (mutlak değer, V/V). Ters çeviren devrelerde çıkış girişten ters işaretlidir; burada yalnızca büyüklüğü girilir. 1 = birim kazanç, 10 = 20 dB.',
+  type: 'Alçak geçiren (LP) düşük frekansları geçirir, yükseklerini bastırır. Yüksek geçiren (HP) tersini yapar.',
+  approx: 'Butterworth: geçiş bandı olabildiğince düz, kesim yumuşak. Chebyshev: kesim daha dik, ama geçiş bandında seçtiğiniz kadar dalga (ripple) olur.',
+  ripple: 'Chebyshev geçiş bandı dalgası (dB). 0,1 – 1 dB yaygındır. Büyüdükçe kesim dikleşir; dalga ve faz bozulması artar.',
+  order: 'Derece (eleman sayısı). Her derece yaklaşık −20 dB/dekad eğim ekler; yüksek derece daha dik kesim ama daha çok bileşen demektir. Tek derecede kaynak ve yük direnci eşit çıkar.',
+  topo: 'Pi filtre paralel elemanla başlar ve biter (kaynağı ve yükü kapasitif görür). T filtre seri elemanla başlar ve biter (endüktif görür). 2. derecede seri veya paralel elemanla başlayabilirsiniz.',
+  R0: 'Kaynak/referans direnci. Filtre bu dirence uyumlu tasarlanır (RF devrelerde genellikle 50 Ω). Kaynak direnci Rs ve yük RL başlangıçta buna eşit alınır.',
+  Rs: 'Kaynak direnci: girişi süren devrenin çıkış direnci. 0 = ideal gerilim kaynağı. Kesim frekansını ve kazancı etkiler.',
+  RL: 'Yük direnci: filtre çıkışına bağlı direnç. Boş bırakırsanız açık devre (yük yok) kabul edilir. Yük, pasif filtrelerde kesimi kaydırabilir.',
+  R: 'Direnç değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  C: 'Kondansatör değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  L: 'Bobin değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  Rin: 'Giriş direnci. Kazanç −Rf/Rin ile belirlenir.',
+  Rf: 'Geri besleme direnci (op-amp çıkışından eviren girişe).',
+  Cf: 'Geri besleme kondansatörü, Rf ile paralel. Kesim frekansını belirler: fc = 1/(2π·Rf·Cf).',
+  Cin: 'Giriş kondansatörü; düşük frekansları (ve DC\'yi) engeller.',
+  fq: 'Bu frekanstaki genlik (dB) ve faz (derece) hesaplanır.',
+  fmin: 'Grafiğin başlangıç frekansı. Boş bırakılırsa kesim frekansına göre otomatik seçilir.',
+  fmax: 'Grafiğin bitiş frekansı. Boş bırakılırsa kesim frekansına göre otomatik seçilir.',
+  eser: 'Hesaplanan değerleri en yakın standart seriye yuvarlar (E12: %10, E24: %5 toleranslı parça değerleri). Yuvarlama kesim frekansını bir miktar kaydırır; gerçek değer sonuç kartında görünür.',
+};
+const HELP_V = { // meaning of the same component name differs per circuit
+  sk_lp: { R1: 'Girişten gelen ilk seri direnç.', R2: 'İkinci seri direnç; op-amp\'ın + girişine bağlanır.', C1: 'Geri besleme kondansatörü (ilk düğümden çıkışa).', C2: 'Toprak kondansatörü (op-amp + girişi ile toprak arası).', Cx: 'C2: toprağa bağlı kondansatör. Önce bunu seçersiniz (ör. 10 nF); C1 ve dirençler buna göre çıkar.' },
+  sk_hp: { C1: 'Giriş kondansatörü.', C2: 'İkinci seri kondansatör; op-amp\'ın + girişine gider.', R1: 'Geri besleme direnci (ilk düğümden çıkışa).', R2: 'Toprak direnci (op-amp + girişi ile toprak arası).', Cx: 'C1 ve C2 aynı değerde alınır; seçtiğiniz değer ikisine de uygulanır.' },
+  mfb_lp: { R1: 'Giriş direnci; kazanç = −R3/R1.', R2: 'Op-amp eviren girişine giden direnç.', R3: 'İlk düğümden çıkışa geri besleme direnci.', C1: 'Toprağa bağlı kondansatör.', C2: 'Geri besleme kondansatörü (eviren giriş ile çıkış arası).', Cx: 'C2: geri besleme kondansatörü. Önce bunu seçersiniz; C1 ve dirençler buna göre çıkar.' },
+  ia_lp: { Cx: 'Cf: geri besleme kondansatörü; Rf ve Rin buna göre hesaplanır.' },
+  ia_hp: { Cx: 'Cin: giriş kondansatörü; Rin ve Rf buna göre hesaplanır.', Rin: 'Cin ile seri giriş direnci: fc = 1/(2π·Rin·Cin).', Rf: 'Geri besleme direnci; yüksek frekans kazancı = −Rf/Rin.' },
+};
+function helpText(f) {
+  if (f.help) return f.help;
+  const v = S.v && S.v.id, vs = HELP_V[v] || {};
+  if (vs[f.id]) return vs[f.id];
+  if (/^e\d+$/.test(f.id)) {
+    const series = /^Seri/.test(f.label), ind = f.kind === 'L';
+    return (series ? 'Kaynakla yük arasına seri bağlanan ' : 'Sinyal hattından toprağa (paralel) bağlanan ') + (ind ? 'bobin' : 'kondansatör') + '. Numara kaynaktan yüke doğru sırayı gösterir. Elle değiştirirseniz sonuçlar anında güncellenir.';
+  }
+  return HELP[f.id] || null;
+}
 function mkField(f, onchange) {
-  const wrap = document.createElement('label'); wrap.className = 'fld';
-  const sp = document.createElement('span'); sp.textContent = f.label; wrap.appendChild(sp);
+  const wrap = document.createElement('div'); wrap.className = 'fld';
+  const sp = document.createElement('label'); sp.textContent = f.label; wrap.appendChild(sp);
   const row = document.createElement('div'); row.className = 'fin'; wrap.appendChild(row);
   let inp = null, sel = null;
   if (f.kind === 'sel') {
@@ -208,6 +274,8 @@ function mkField(f, onchange) {
       row.appendChild(sel);
     }
   }
+  const ctl = inp || sel; ctl.id = 'fld' + (++tipN); sp.htmlFor = ctl.id;
+  addHelp(wrap, sp, row, helpText(f));
   const fire = () => onchange && onchange(f.id);
   if (inp) inp.addEventListener('input', fire);
   if (sel) sel.addEventListener('change', fire);
@@ -847,6 +915,10 @@ function leave() { S.hoverF = null; draw(); }
 buildTabs();
 ['#cm', '#cp'].forEach((s) => { const c = $(s); c.addEventListener('pointermove', hover); c.addEventListener('pointerleave', leave); });
 $('#eser').onchange = onDesign;
+['eser', 'fq', 'fmin', 'fmax'].forEach((id) => { // static fields of the page get a "?" too
+  const lab = $('#' + id).closest('label'); lab.htmlFor = id;
+  addHelp(lab, lab.querySelector('span'), lab.querySelector('.fin'), HELP[id]);
+});
 $('#copyBtn').onclick = async () => {
   const txt = (S.summary || []).join('\n') + '\n' + Object.entries(S.vals || {}).map(([k, x]) => k + ' = ' + (isFinite(x) ? num(x) : '∞')).join(', ');
   try { await navigator.clipboard.writeText(txt); $('#copyMsg').textContent = 'Kopyalandı.'; } catch (e) { $('#copyMsg').textContent = 'Kopyalanamadı (tarayıcı izni).'; }

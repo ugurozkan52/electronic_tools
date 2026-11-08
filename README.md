@@ -33,7 +33,7 @@ python -m http.server -d _site 8000
 ```
 
 ## Ortak tema (açık / koyu)
-Beş uygulama aynı tema seçimini kullanır: `localStorage['et-theme']` (`dark` | `light`). Anahtar yoksa sistem tercihi (`prefers-color-scheme`) kullanılır ve ilk açılan sayfa bunu kaydeder; sonraki tüm araçlar aynı temayla devam eder. Giriş sayfası, PCB Order, Filters, Wire, Assembly ve Simulation'da ◐ düğmesi temayı değiştirir. CircuitJS kendi `whiteBackground` ayarını bu anahtarla eşler (`simulation/circuitjs.html`). Üç uygulama aynı kaynakta (origin) yayınlandığı için seçim paylaşılır; dosyadan (`file://`) ayrı açılırsa paylaşılmaz.
+Beş uygulama aynı tema seçimini kullanır: `localStorage['et-theme']` (`dark` | `light`). Anahtar yoksa varsayılan koyu temadır ve ilk açılan sayfa bunu kaydeder; sonraki tüm araçlar aynı temayla devam eder. Giriş sayfası, PCB Order, Filters, Wire, Assembly ve Simulation'da ◐ düğmesi temayı değiştirir. CircuitJS kendi `whiteBackground` ayarını bu anahtarla eşler (`simulation/circuitjs.html`). Üç uygulama aynı kaynakta (origin) yayınlandığı için seçim paylaşılır; dosyadan (`file://`) ayrı açılırsa paylaşılmaz.
 
 ## Denetimler (CI)
 `.github/workflows/pages.yml` her push ve pull request'te `npm run check` (asm API eşliği: `preload.js` ↔ `main.js` ↔ `web/backend.js`, sürüm eşliği, sözdizimi) çalıştırır; test verisi (`test/data/ipc/testcase3.xml`) mevcutsa `npm test` de çalışır. Yayın yalnızca `main` dalından yapılır.

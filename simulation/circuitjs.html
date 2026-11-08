@@ -17,7 +17,7 @@
      CircuitJS keeps its own choice in 'whiteBackground' (true = light), so the two are kept in step. */
   (function(){var K='et-theme',t;
   try{t=localStorage.getItem(K)}catch(e){}
-  if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+  if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
   try{localStorage.setItem('whiteBackground',t==='light'?'true':'false')}catch(e){}
   document.documentElement.style.setProperty('--sb',t==='light'?'#fff':'#000');
   document.documentElement.setAttribute('data-theme',t);

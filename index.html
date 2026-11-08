@@ -10,7 +10,7 @@
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark');var m=document.querySelector('meta[name=color-scheme]');if(m)m.content=v}
 ap(t);
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};

@@ -10,7 +10,7 @@
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark')}
 ap(t);
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
@@ -79,6 +79,10 @@ tbody tr:hover{background:var(--line2)}
 tbody tr.sel{background:var(--hl)}
 .about p{margin:0 0 10px;line-height:1.6}
 .msg{color:var(--err);font-size:13px;min-height:18px}
+.qm{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--line2);color:var(--mute);font-size:10.5px;font-weight:700;line-height:1;cursor:help;vertical-align:1px}
+.qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--acc);border-color:var(--acc);color:#fff;outline:none}
+.tipbox{margin:2px 0 6px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--acc);background:var(--line2);color:var(--ink);font-size:12.5px;line-height:1.5}
+.tipbox[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -282,6 +286,41 @@ function update() {
   }
 }
 
+/* "?" help buttons: click or hover shows a short explanation under the label */
+let tipN = 0;
+function addHelp(labelEl, host, before, text) {
+  const tip = document.createElement('div'); tip.className = 'tipbox'; tip.hidden = true; tip.id = 'tip' + (++tipN); tip.textContent = text;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'qm'; btn.textContent = '?';
+  btn.setAttribute('aria-label', 'Bilgi'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-describedby', tip.id);
+  btn.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (tip.dataset.hover) { delete tip.dataset.hover; return; }
+    tip.hidden = !tip.hidden; btn.setAttribute('aria-expanded', tip.hidden ? 'false' : 'true');
+  };
+  btn.onmouseenter = () => { if (tip.hidden) { tip.hidden = false; tip.dataset.hover = '1'; } };
+  btn.onmouseleave = () => { if (tip.dataset.hover) { delete tip.dataset.hover; tip.hidden = true; } };
+  labelEl.appendChild(btn); host.insertBefore(tip, before);
+}
+const HELP = {
+  f_awg: 'American Wire Gauge. Numara büyüdükçe tel incelir: 0000 (4/0) en kalın, 40 en ince tablo ölçüsüdür. Ondalık değer de girebilirsiniz; en yakın standart ölçü sağda gösterilir.',
+  f_mm: 'Telin çıplak iletken çapı (yalıtım hariç), milimetre cinsinden.',
+  f_mm2: 'Kesit alanı. Direnç ve akım kapasitesi buna bağlıdır; Avrupa\'da tel kalınlığı genellikle mm² ile verilir.',
+  f_in: 'İletken çapı, inç cinsinden (1 inç = 25,4 mm).',
+  f_in2: 'Kesit alanı, inç kare cinsinden (1 in² = 645,16 mm²).',
+  f_kcmil: 'Dairesel mil alanı. 1 kcmil = 1000 dairesel mil; 1 dairesel mil, çapı 1 mil (0,0254 mm) olan dairenin alanıdır. 1 kcmil ≈ 0,5067 mm².',
+  v_i: 'Telden geçecek sürekli akım (amper). Sonuçlardaki akım kapasitesiyle karşılaştırın.',
+  v_l: 'Tek yöndeki tel boyu (metre). "Gidiş ve dönüş" işaretliyse hesapta iki katı alınır.',
+  v_v: 'Besleme gerilimi (volt). Gerilim düşümünün yüzdesini ve yükteki gerilimi hesaplamak için kullanılır; isteğe bağlıdır.',
+  v_t: 'Telin bulunduğu ortamın sıcaklığı (°C). Ortam ısındıkça telin taşıyabileceği akım azalır; sıcaklığa göre değerler aşağıdaki tabloda.',
+  v_c: 'Yalıtımın dayanabileceği en yüksek iletken sıcaklığı: eski PVC 60 °C, XLPE/THHN 90 °C, PVC 105 °C, silikon 150 °C, PTFE 200 °C. Sınıf yükseldikçe aynı tel daha fazla akım taşıyabilir.',
+  v_rt: 'İşaretliyse gidiş ve dönüş hattı birlikte hesaba katılır (tel boyu ×2). Doğru akım (DC) yüklerinde genellikle böyledir.',
+  v_p: 'İzin verilen en büyük gerilim düşümü (besleme geriliminin yüzdesi). Tel önerisi bu sınırı da sağlayacak şekilde yapılır; 0 yazarsanız yalnızca akıma göre öneri verilir.',
+};
+Object.entries(HELP).forEach(([id, text]) => {
+  const el = $('#' + id), lab = el.closest('label');
+  if (lab.classList.contains('chk')) { addHelp(lab, lab.parentNode, lab.nextSibling, text); return; } // checkbox: control comes first, so the label association stays
+  lab.htmlFor = id; addHelp(lab.querySelector('span'), lab, lab.querySelector('.fin'), text);
+});
 for (const k in FIELDS) $('#f_' + k).addEventListener('input', () => onField(k));
 ['v_i', 'v_l', 'v_v', 'v_t', 'v_p', 'v_rt', 'v_c'].forEach((id) => { $('#' + id).addEventListener('input', update); $('#' + id).addEventListener('change', update); });
 (function () {
