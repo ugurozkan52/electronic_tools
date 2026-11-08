@@ -1,6 +1,6 @@
 # Elektronik Araçlar
 
-Tek GitHub Pages sitesinde dört tarayıcı uygulaması. Giriş sayfasından seçilir.
+Tek GitHub Pages sitesinde beş tarayıcı uygulaması. Giriş sayfasından seçilir.
 
 | Yol | Uygulama | Kaynak |
 |---|---|---|
@@ -8,6 +8,7 @@ Tek GitHub Pages sitesinde dört tarayıcı uygulaması. Giriş sayfasından se�
 | `/simulation/` | CircuitJS devre simülatörü (iPad PWA) | `simulation/` (hazır, olduğu gibi yayınlanır) |
 | `/pcb-order/` | PCB Sipariş Hazırlayıcı | `pcb-order/` (hazır, olduğu gibi yayınlanır) |
 | `/filters/` | Filtre Hesaplayıcı (RC, RL, LC, Pi/T, aktif) | `filters/` (tek dosya, olduğu gibi yayınlanır) |
+| `/wire/` | Tel / AWG Hesaplayıcı (dönüştürücü, akım, gerilim düşümü) | `wire/` (tek dosya, olduğu gibi yayınlanır) |
 | `/assembly/` | Montaj Görüntüleyici (web sürümü) | `assembly-src/` (GitHub Actions'ta `web/build.js` ile derlenir) |
 
 ## Yayınlama (bir kez)
@@ -26,13 +27,13 @@ Sonraki her `git push` siteyi yeniden derleyip yayınlar.
 ## Yerelde deneme
 ```
 cd assembly-src && npm ci && cd ..
-mkdir _site && cp index.html .nojekyll _site/ && cp -r simulation pcb-order filters _site/
+mkdir _site && cp index.html .nojekyll _site/ && cp -r simulation pcb-order filters wire _site/
 (cd assembly-src && node web/build.js ../_site/assembly)
 python -m http.server -d _site 8000
 ```
 
 ## Ortak tema (açık / koyu)
-Dört uygulama aynı tema seçimini kullanır: `localStorage['et-theme']` (`dark` | `light`). Anahtar yoksa sistem tercihi (`prefers-color-scheme`) kullanılır ve ilk açılan sayfa bunu kaydeder; sonraki tüm araçlar aynı temayla devam eder. Giriş sayfası, PCB Order, Filters, Assembly ve Simulation'da ◐ düğmesi temayı değiştirir. CircuitJS kendi `whiteBackground` ayarını bu anahtarla eşler (`simulation/circuitjs.html`). Üç uygulama aynı kaynakta (origin) yayınlandığı için seçim paylaşılır; dosyadan (`file://`) ayrı açılırsa paylaşılmaz.
+Beş uygulama aynı tema seçimini kullanır: `localStorage['et-theme']` (`dark` | `light`). Anahtar yoksa sistem tercihi (`prefers-color-scheme`) kullanılır ve ilk açılan sayfa bunu kaydeder; sonraki tüm araçlar aynı temayla devam eder. Giriş sayfası, PCB Order, Filters, Wire, Assembly ve Simulation'da ◐ düğmesi temayı değiştirir. CircuitJS kendi `whiteBackground` ayarını bu anahtarla eşler (`simulation/circuitjs.html`). Üç uygulama aynı kaynakta (origin) yayınlandığı için seçim paylaşılır; dosyadan (`file://`) ayrı açılırsa paylaşılmaz.
 
 ## Denetimler (CI)
 `.github/workflows/pages.yml` her push ve pull request'te `npm run check` (asm API eşliği: `preload.js` ↔ `main.js` ↔ `web/backend.js`, sürüm eşliği, sözdizimi) çalıştırır; test verisi (`test/data/ipc/testcase3.xml`) mevcutsa `npm test` de çalışır. Yayın yalnızca `main` dalından yapılır.

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tel / AWG Hesaplayıcı</title>
+<meta name="description" content="AWG, mm çap, mm² kesit, inç ve kcmil dönüştürücü; tel direnci, akım kapasitesi, gerilim düşümü ve tel kalınlığı önerisi.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314171c'/%3E%3Ccircle cx='12' cy='12' r='6' fill='none' stroke='%23ff7a59' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='2' fill='%23ff7a59'/%3E%3C/svg%3E">
+<script>
+/* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
+(function(){var K='et-theme',r=document.documentElement,t;
+try{t=localStorage.getItem(K)}catch(e){}
+if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark')}
+ap(t);
+window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
+window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'||e.newValue==='light'))ap(e.newValue)});
+})();
+</script>
+<style>
+:root{
+  --bg:#f3f4f6; --card:#fff; --line:#dfe3e8; --line2:#eef0f3; --ink:#161a20; --mute:#5b6470;
+  --acc:#c2410c; --acc-bg:#fff0e8; --err:#b3261e; --hl:#fff3cd;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1216; --card:#181d24; --line:#2a313b; --line2:#222831; --ink:#e7ebf0; --mute:#98a1ae;
+  --acc:#ff8a65; --acc-bg:#2b1d17; --err:#ff8a80; --hl:#3a3017;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button,input,select{font:inherit;color:inherit}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand strong{font-size:17px}
+.brand p{margin:0;color:var(--mute);font-size:13px}
+.logo{width:36px;height:36px;border-radius:8px;background:var(--acc-bg);color:var(--acc);display:grid;place-items:center}
+.hdr-r{display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap;text-decoration:none;color:var(--ink)}
+.btn:hover,.btn:focus-visible{border-color:var(--acc);outline:none}
+.theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
+main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
+.hero{padding:26px 0 18px;border-left:4px solid var(--acc);padding-left:18px;margin:14px 0 18px}
+.hero h1{margin:0 0 6px;font-size:30px;line-height:1.2;letter-spacing:-.01em}
+.hero p{margin:0;color:var(--mute);font-size:15px;max-width:820px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}main{padding:8px 12px 32px}.hero h1{font-size:24px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.layout .card{margin-bottom:0}
+.card h2{margin:0 0 12px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);font-weight:700}
+.fld{display:block;margin:0 0 10px}
+.fld>span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.fin{display:flex;gap:6px;align-items:center}
+.fin input,.fin select{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:7px 10px;min-width:0;flex:1}
+.fin input:focus,.fin select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.fin input.bad{border-color:var(--err)}
+.fin i{font-style:normal;color:var(--mute);min-width:44px;font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:520px){.grid2{grid-template-columns:1fr}}
+.hint{color:var(--mute);font-size:12px;margin:2px 0 8px}
+.hero-res{border:2px solid var(--acc);border-radius:14px;padding:18px 16px;text-align:center;margin-bottom:12px;background:var(--acc-bg)}
+.hero-res small{display:block;color:var(--mute);font-size:12px}
+.hero-res #hl{letter-spacing:.08em;text-transform:uppercase}
+.hero-res #hv{font-size:40px;font-weight:800;color:var(--acc);line-height:1.15;margin:4px 0;word-break:break-word}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:6px}
+.res div{background:var(--line2);border-radius:8px;padding:8px 10px}
+.res b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.res small{color:var(--mute);font-size:11.5px}
+.sub-h{margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.chk{display:flex;gap:8px;align-items:center;margin:4px 0 10px}
+.tbl-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);color:var(--mute);font-weight:600;font-size:12px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;font-weight:600}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--line2)}
+tbody tr.sel{background:var(--hl)}
+.about p{margin:0 0 10px;line-height:1.6}
+.msg{color:var(--err);font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></svg></div>
+    <div><strong>Wire</strong><p>Elektronik Araçlar</p></div>
+  </div>
+  <div class="hdr-r">
+    <a class="btn" href="../index.html">← Araçlar</a>
+    <button id="btnTheme" class="btn theme-btn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema">◐</button>
+  </div>
+</header>
+
+<main>
+  <div class="hero"><h1>Tel / AWG Hesaplayıcı</h1><p>AWG, çap, kesit ve kcmil değerlerini birbirine çevirin; telin direncini, taşıyabileceği akımı ve gerilim düşümünü hesaplayın.</p></div>
+
+  <div class="layout">
+    <section class="card" aria-label="Dönüştürücü">
+      <h2>Dönüştürücü</h2>
+      <p class="hint">Bildiğiniz değeri girin; diğerleri otomatik hesaplanır. AWG için 0000, 000, 00 veya 4/0, 3/0, 2/0 yazabilirsiniz.</p>
+      <div class="grid2">
+        <label class="fld"><span>AWG</span><div class="fin"><input id="f_awg" inputmode="decimal" autocomplete="off"></div></label>
+        <label class="fld"><span>Çap</span><div class="fin"><input id="f_mm" inputmode="decimal" autocomplete="off"><i>mm</i></div></label>
+        <label class="fld"><span>Kesit alanı</span><div class="fin"><input id="f_mm2" inputmode="decimal" autocomplete="off"><i>mm²</i></div></label>
+        <label class="fld"><span>Çap (inç)</span><div class="fin"><input id="f_in" inputmode="decimal" autocomplete="off"><i>in</i></div></label>
+        <label class="fld"><span>Kesit alanı (inç²)</span><div class="fin"><input id="f_in2" inputmode="decimal" autocomplete="off"><i>in²</i></div></label>
+        <label class="fld"><span>Dairesel mil alanı</span><div class="fin"><input id="f_kcmil" inputmode="decimal" autocomplete="off"><i>kcmil</i></div></label>
+      </div>
+      <div class="msg" id="msg" role="alert"></div>
+      <div class="sub-h">Gerilim düşümü ve tel seçimi (bakır tel)</div>
+      <div class="grid2">
+        <label class="fld"><span>Akım</span><div class="fin"><input id="v_i" inputmode="decimal" value="5"><i>A</i></div></label>
+        <label class="fld"><span>Tel uzunluğu (tek yön)</span><div class="fin"><input id="v_l" inputmode="decimal" value="10"><i>m</i></div></label>
+        <label class="fld"><span>Besleme gerilimi (isteğe bağlı)</span><div class="fin"><input id="v_v" inputmode="decimal" value="12"><i>V</i></div></label>
+        <label class="fld"><span>Ortam sıcaklığı</span><div class="fin"><input id="v_t" inputmode="decimal" value="30"><i>°C</i></div></label>
+        <label class="fld"><span>Yalıtım sıcaklık sınıfı (en yüksek tel sıcaklığı)</span><div class="fin"><select id="v_c"><option value="60">60 °C (eski PVC)</option><option value="75">75 °C</option><option value="90" selected>90 °C (XLPE, THHN)</option><option value="105">105 °C (PVC 105)</option><option value="125">125 °C</option><option value="150">150 °C (silikon)</option><option value="200">200 °C (PTFE / Teflon)</option></select></div></label>
+      </div>
+      <label class="chk"><input type="checkbox" id="v_rt" checked> Gidiş ve dönüş hattı (tel boyu ×2)</label>
+      <label class="fld"><span>İzin verilen gerilim düşümü (isteğe bağlı)</span><div class="fin"><input id="v_p" inputmode="decimal" value="3"><i>%</i></div></label>
+    </section>
+
+    <section class="card" aria-label="Sonuç">
+      <h2>Sonuç</h2>
+      <div class="hero-res" aria-live="polite"><small id="hl">En yakın AWG</small><div id="hv"></div><small id="hs"></small></div>
+      <div class="res" id="res"></div>
+      <div class="sub-h">Gerilim düşümü</div>
+      <div class="res" id="vres"></div>
+      <div class="sub-h">Tel seçimi önerisi</div>
+      <div class="res" id="sres"></div>
+      <p class="hint" id="snote"></p>
+    </section>
+  </div>
+
+  <section class="card"><h2>Sıcaklığa göre akım kapasitesi (seçili tel)</h2>
+    <p class="hint" id="ttnote"></p>
+    <div class="tbl-wrap"><table id="ttbl"><thead><tr><th>Ortam sıcaklığı</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card"><h2>AWG tablosu (satıra tıklayınca seçilir)</h2>
+    <div class="tbl-wrap"><table id="tbl"><thead><tr><th>AWG</th><th>Çap (mm)</th><th>Çap (in)</th><th>Alan (mm²)</th><th>Alan (kcmil)</th><th>Direnç (mΩ/m)</th><th>Direnç (mΩ/ft)</th><th id="th_i">Akım (A)</th><th>Tam deri derinliği</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="card about"><h2>Formüller ve notlar</h2>
+    <p><b>Çap:</b> <i>d</i><sub>mm</sub> = 0,127 · 92<sup>(36 − n)/39</sup> (n = AWG numarası; 0000 = −3, 000 = −2, 00 = −1). Kesit: <i>A</i> = π·<i>d</i>²/4. kcmil = (çap mil)² / 1000; 1 mil = 0,0254 mm.</p>
+    <p><b>Direnç:</b> <i>R</i> = ρ·<i>L</i>/<i>A</i>; bakır için ρ = 1,724·10⁻⁸ Ω·m (20 °C), sıcaklık katsayısı 0,393 %/°C. Gerilim düşümü <i>ΔV</i> = <i>I</i>·<i>R</i>, kayıp güç <i>P</i> = <i>I</i>²·<i>R</i>.</p>
+    <p><b>Akım kapasitesi:</b> 30 °C ortamda kılavuz değer <i>I</i><sub>30</sub> = kcmil / 0,7 (700 kcmil/A kuralı). Başka ortam sıcaklıkları için düzeltme: <i>I</i> = <i>I</i><sub>30</sub> · √((<i>T</i><sub>c</sub> − <i>T</i><sub>a</sub>) / (<i>T</i><sub>c</sub> − 30)); burada <i>T</i><sub>c</sub> yalıtımın izin verdiği en yüksek tel sıcaklığı, <i>T</i><sub>a</sub> ortam sıcaklığıdır. Tahmini tel sıcaklığı <i>T</i><sub>w</sub> = <i>T</i><sub>a</sub> + (<i>T</i><sub>c</sub> − <i>T</i><sub>a</sub>)·(<i>I</i>/<i>I</i><sub>max</sub>)² ile bulunur ve gerilim düşümü hesabında bakırın sıcaklığa bağlı direnci bu değere göre alınır.</p>
+    <p><b>Uyarı:</b> Bu değerler serbest havadaki tek tel için kabaca bir üst sınırdır. Demet içinde, kanalda, kapalı muhafazada veya çok telli kabloda kapasite çok daha düşük olabilir; azaltma katsayılarını ayrıca uygulayın. Güvenlik gerektiren işlerde ilgili standart (ör. IEC 60364, NEC) tablolarını kullanın.</p>
+    <p><b>Tam deri derinliği:</b> tel yarıçapının deri derinliğine eşit olduğu frekanstır (<i>f</i> = ρ / (π·μ₀·<i>r</i>²)); bu frekansın üzerinde akım telin yüzeyinde yoğunlaşır ve direnç artar.</p>
+    <p class="hint">Hesaplar tarayıcıda yapılır; hiçbir veri gönderilmez. Değerler nominal tel ölçüleridir; üreticiye göre küçük farklar olabilir.</p>
+  </section>
+</main>
+
+<script>
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const MIL = 0.0254, RHO20 = 1.724e-8, ALPHA = 0.00393, MU0 = 4e-7 * Math.PI, FT = 0.3048;
+const dmm = (n) => 0.127 * Math.pow(92, (36 - n) / 39);
+const nOfD = (d) => 36 - 39 * Math.log(d / 0.127) / Math.log(92);
+const areaOfD = (d) => Math.PI / 4 * d * d;           // mm² from mm
+const dOfArea = (a) => Math.sqrt(4 * a / Math.PI);
+const kcmilOfD = (d) => { const mil = d / MIL; return mil * mil / 1000; };
+const dOfKcmil = (k) => Math.sqrt(k * 1000) * MIL;
+const rhoAt = (t) => RHO20 * (1 + ALPHA * (t - 20));
+const sig = (x, n = 4) => (x === 0 ? '0' : String(parseFloat(Number(x).toPrecision(n))));
+function fmtOhmPerM(rm) { return rm < 1 ? sig(rm * 1000) + ' mΩ/m' : sig(rm) + ' Ω/m'; }
+function fmtFreq(f) { return f >= 1e6 ? sig(f / 1e6, 3) + ' MHz' : f >= 1e3 ? sig(f / 1e3, 3) + ' kHz' : sig(f, 3) + ' Hz'; }
+const NAMES = { '-3': '0000 (4/0)', '-2': '000 (3/0)', '-1': '00 (2/0)', '0': '0 (1/0)' };
+const awgLabel = (n) => (Number.isInteger(n) && NAMES[n] ? NAMES[n] : sig(n, 4));
+function parseAwg(t) {
+  t = t.trim().split(/\s+/)[0].replace(',', '.'); if (!t) return NaN;
+  const map = { '0000': -3, '4/0': -3, '000': -2, '3/0': -2, '00': -1, '2/0': -1, '1/0': 0 };
+  if (t in map) return map[t];
+  return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
+}
+const num = (id) => Number(($('#' + id).value || '').replace(',', '.'));
+
+let D = 0.8118; // master value: wire diameter in mm (AWG 20)
+const FIELDS = {
+  awg: { from: (t) => { const n = parseAwg(t); return n >= -3 && n <= 60 ? dmm(n) : NaN; } },
+  mm: { from: (t) => Number(t.replace(',', '.')) },
+  mm2: { from: (t) => dOfArea(Number(t.replace(',', '.'))) },
+  in: { from: (t) => Number(t.replace(',', '.')) * 25.4 },
+  in2: { from: (t) => dOfArea(Number(t.replace(',', '.')) * 645.16) },
+  kcmil: { from: (t) => dOfKcmil(Number(t.replace(',', '.'))) },
+};
+function writeFields(skip) {
+  const n = nOfD(D);
+  const vals = { awg: awgLabel(Math.round(n * 100) / 100), mm: sig(D, 5), mm2: sig(areaOfD(D), 5), in: sig(D / 25.4, 5), in2: sig(areaOfD(D) / 645.16, 5), kcmil: sig(kcmilOfD(D), 5) };
+  for (const k in vals) if (k !== skip) $('#f_' + k).value = vals[k];
+}
+function onField(k) {
+  const el = $('#f_' + k), t = el.value.trim();
+  const d = FIELDS[k].from(t);
+  const bad = !(d > 0 && isFinite(d));
+  el.classList.toggle('bad', bad);
+  $('#msg').textContent = bad && t !== '' ? 'Geçerli bir sayı girin (AWG −3…60 arası).' : '';
+  if (bad) return;
+  D = d; writeFields(k); update();
+}
+
+// Ampacity model: guide value kcmil/0.7 A at 30 C ambient with the insulation at its rated temperature Tc;
+// other ambient temperatures use the NEC-style correction  I = I30 * sqrt((Tc - Ta) / (Tc - 30)).
+const CLASSES = [60, 75, 90, 105, 125, 150, 200];
+const ampac = (k, Tc, Ta) => { const f = (Tc - Ta) / (Tc - 30); return f > 0 ? k / 0.7 * Math.sqrt(f) : 0; };
+const aSig = (x) => (x >= 100 ? String(Math.round(x)) : sig(x, 3));
+function table(Ta, Tc) {
+  $('#th_i').textContent = 'Akım (A) @ ' + sig(Ta, 3) + ' °C, ' + Tc + ' °C sınıfı';
+  const body = $('#tbl tbody'); body.innerHTML = '';
+  for (let n = -3; n <= 40; n++) {
+    const d = dmm(n), a = areaOfD(d), r = rhoAt(20) / (a * 1e-6), k = kcmilOfD(d), f = RHO20 / (Math.PI * MU0 * Math.pow(d / 2000, 2));
+    const tr = document.createElement('tr'); tr.dataset.n = n;
+    const cells = [awgLabel(n), sig(d, 4), sig(d / 25.4, 3), sig(a, 3), sig(k, 3), sig(r * 1000, 4), sig(r * FT * 1000, 4), aSig(ampac(k, Tc, Ta)), fmtFreq(f)];
+    cells.forEach((c) => { const td = document.createElement('td'); td.textContent = c; tr.appendChild(td); });
+    tr.onclick = () => { D = dmm(n); writeFields(); update(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    body.appendChild(tr);
+  }
+}
+const TEMPS = [-20, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 125, 150, 175];
+function tempTable(k, Ta, Tc) {
+  const head = $('#ttbl thead tr'), body = $('#ttbl tbody'); head.innerHTML = '<th>Ortam sıcaklığı</th>'; body.innerHTML = '';
+  CLASSES.forEach((c) => { const th = document.createElement('th'); th.textContent = c + ' °C sınıfı (A)'; if (c === Tc) th.style.color = 'var(--acc)'; head.appendChild(th); });
+  const temps = TEMPS.concat(Number.isFinite(Ta) && !TEMPS.includes(Ta) ? [Ta] : []).sort((a, b) => a - b);
+  for (const t of temps) {
+    const tr = document.createElement('tr'); if (t === Ta) tr.className = 'sel';
+    const td0 = document.createElement('td'); td0.textContent = t + ' °C'; tr.appendChild(td0);
+    CLASSES.forEach((c) => { const td = document.createElement('td'); const v = ampac(k, c, t); td.textContent = v > 0 ? aSig(v) : '—'; if (c === Tc) td.style.fontWeight = '700'; tr.appendChild(td); });
+    body.appendChild(tr);
+  }
+  $('#ttnote').textContent = 'Kılavuz değer 30 °C ortamda yalıtım sınıfı sıcaklığına kadar ısınan, serbest havadaki tek tel içindir (kcmil / 0,7). Ortam sıcaklığı yükseldikçe kapasite azalır; ortam sıcaklığı sınıf sıcaklığına eşit veya yüksekse tel akım taşıyamaz (—).';
+}
+function addTo(box, big, small) { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); }
+
+function update() {
+  const n = nOfD(D), nr = Math.round(n), A = areaOfD(D), k = kcmilOfD(D);
+  const I = num('v_i'), L = num('v_l'), V = num('v_v'), Ta = num('v_t'), Tc = +$('#v_c').value, rt = $('#v_rt').checked, lim = num('v_p');
+  const taOk = Number.isFinite(Ta), Imax = taOk ? ampac(k, Tc, Ta) : 0;
+  table(taOk ? Ta : 30, Tc); tempTable(k, Ta, Tc);
+  const inTable = nr >= -3 && nr <= 40;
+  $('#hv').textContent = inTable ? 'AWG ' + awgLabel(nr) : 'tablo dışı (AWG ≈ ' + sig(n, 3) + ')';
+  $('#hs').textContent = 'Ø ' + sig(D, 4) + ' mm · ' + sig(A, 4) + ' mm² · ' + sig(k, 4) + ' kcmil' + (inTable && Math.abs(n - nr) > 0.05 ? ' · girilen değer AWG ' + sig(n, 3) : '');
+  document.querySelectorAll('#tbl tbody tr').forEach((tr) => tr.classList.toggle('sel', inTable && +tr.dataset.n === nr));
+  const rm = rhoAt(20) / (A * 1e-6), box = $('#res'); box.innerHTML = '';
+  addTo(box, Imax > 0 ? aSig(Imax) + ' A' : 'Taşıyamaz', 'Akım kapasitesi @ ' + (taOk ? sig(Ta, 3) : '?') + ' °C ortam, ' + Tc + ' °C sınıfı');
+  addTo(box, aSig(k / 0.7) + ' A', 'Kılavuz akım (30 °C, 700 kcmil/A)');
+  addTo(box, fmtOhmPerM(rm), 'Direnç (20 °C, bakır)');
+  addTo(box, sig(rm * FT * 1000) + ' mΩ/ft', 'Direnç, fit başına');
+  addTo(box, fmtFreq(RHO20 / (Math.PI * MU0 * Math.pow(D / 2000, 2))), 'Tam deri derinliği frekansı');
+  addTo(box, sig(A * 8.96, 4) + ' g/m', 'Bakır ağırlığı (8,96 g/cm³)');
+  // voltage drop: the wire temperature follows from the load (Tw = Ta + (Tc - Ta)(I/Imax)^2)
+  const vb = $('#vres'); vb.innerHTML = '';
+  const ok = I > 0 && L > 0 && taOk && Ta < Tc;
+  if (ok) {
+    const ratio = Imax > 0 ? I / Imax : Infinity, Tw = Imax > 0 ? Ta + (Tc - Ta) * ratio * ratio : Infinity;
+    const Tuse = Number.isFinite(Tw) ? Tw : Tc, R = rhoAt(Tuse) * L * (rt ? 2 : 1) / (A * 1e-6), dv = I * R;
+    addTo(vb, Number.isFinite(Tw) ? sig(Tw, 3) + ' °C' : '—', 'Tahmini tel sıcaklığı' + (Tw > Tc ? ' (sınıfı aşıyor!)' : ''));
+    addTo(vb, sig(R * 1000) + ' mΩ', 'Toplam tel direnci' + (rt ? ' (gidiş + dönüş)' : ''));
+    addTo(vb, sig(dv, 3) + ' V', 'Gerilim düşümü ΔV');
+    if (V > 0) addTo(vb, sig(dv / V * 100, 3) + ' %', 'Besleme gerilimine oranı');
+    addTo(vb, sig(I * I * R, 3) + ' W', 'Telde harcanan güç');
+    if (V > 0) addTo(vb, sig(V - dv, 4) + ' V', 'Yükteki gerilim');
+    if (I > Imax) addTo(vb, 'Uyarı', 'Akım, bu sıcaklıktaki kapasiteyi aşıyor');
+  } else addTo(vb, '—', taOk && Ta >= Tc ? 'Ortam sıcaklığı yalıtım sınıfına eşit/yüksek' : 'Akım, uzunluk ve sıcaklık girin');
+  // recommendation: thinnest standard size that carries I at this ambient/insulation and (optionally) keeps the drop limit
+  const sb = $('#sres'); sb.innerHTML = ''; $('#snote').textContent = '';
+  if (ok) {
+    let byI = null, byV = null;
+    for (let m = 40; m >= -3; m--) if (ampac(kcmilOfD(dmm(m)), Tc, Ta) >= I) { byI = m; break; }
+    if (lim > 0 && V > 0) {
+      const maxDrop = V * lim / 100, aReq = rhoAt(Tc) * L * (rt ? 2 : 1) * I / maxDrop * 1e6; // mm2, wire assumed at its rated temperature (worst case)
+      for (let m = 40; m >= -3; m--) if (areaOfD(dmm(m)) >= aReq) { byV = m; break; }
+      addTo(sb, sig(aReq, 3) + ' mm²', 'Gerilim düşümü sınırı için gereken alan');
+    }
+    const pick = [byI, byV].filter((x) => x != null);
+    if (pick.length) {
+      addTo(sb, 'AWG ' + awgLabel(Math.min(...pick)), 'Önerilen en ince tel');
+      addTo(sb, byI != null ? 'AWG ' + awgLabel(byI) : 'tablo dışı', 'Yalnızca akıma göre (' + sig(Ta, 3) + ' °C, ' + Tc + ' °C sınıfı)');
+      if (lim > 0 && V > 0) addTo(sb, byV != null ? 'AWG ' + awgLabel(byV) : 'tablo dışı', 'Yalnızca gerilim düşümüne göre');
+      $('#snote').textContent = 'Öneri tablodaki en ince standart ölçüdür; pratikte bir üst ölçü seçmek, demet ve kanal içi azaltma katsayılarını ayrıca uygulamak gerekir.';
+    } else addTo(sb, 'Yok', 'Bu akım için tablodaki ölçüler yetersiz');
+  }
+}
+
+for (const k in FIELDS) $('#f_' + k).addEventListener('input', () => onField(k));
+['v_i', 'v_l', 'v_v', 'v_t', 'v_p', 'v_rt', 'v_c'].forEach((id) => { $('#' + id).addEventListener('input', update); $('#' + id).addEventListener('change', update); });
+(function () {
+  const tb = $('#btnTheme'), sync = () => tb.setAttribute('aria-pressed', window.etTheme.get() === 'dark' ? 'true' : 'false');
+  tb.onclick = () => { window.etTheme.set(window.etTheme.get() === 'dark' ? 'light' : 'dark'); sync(); };
+  window.addEventListener('storage', sync); sync();
+})();
+D = dmm(20); writeFields(); update();
+</script>
+</body>
+</html>
