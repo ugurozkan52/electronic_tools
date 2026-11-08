@@ -12,7 +12,20 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" href="icon128.png">
   <link rel="manifest" href="manifest.json">
-  <style>html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:#000}</style>
+  <script>
+  /* Shared light/dark theme (localStorage 'et-theme', common to all tools on this site).
+     CircuitJS keeps its own choice in 'whiteBackground' (true = light), so the two are kept in step. */
+  (function(){var K='et-theme',t;
+  try{t=localStorage.getItem(K)}catch(e){}
+  if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+  try{localStorage.setItem('whiteBackground',t==='light'?'true':'false')}catch(e){}
+  document.documentElement.style.setProperty('--sb',t==='light'?'#fff':'#000');
+  try{var set=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){set.apply(this,arguments);
+      if(k==='whiteBackground'&&this===window.localStorage){set.call(this,K,v==='true'?'light':'dark')}};}catch(e){}
+  })();
+  </script>
+  <style>html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:var(--sb,#000)}</style>
   <link rel="stylesheet" href="circuitjs/font/fontello.css">
   <script type="module" crossorigin src="./circuitjs/circuitjs-CSQhaj88.js"></script>
   <link rel="stylesheet" crossorigin href="./circuitjs/circuitjs--wuhdAF1.css">

@@ -9,6 +9,7 @@ name: GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -35,6 +36,16 @@ jobs:
         run: npm ci
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      # Consistency checks (asm API parity, version parity, syntax): no test data needed.
+      - name: Repository checks
+        working-directory: assembly-src
+        run: npm run check
+      # Core regression tests need the IPC-2581 sample that is not kept in the repository
+      # (.gitignore); they run only where the data is present.
+      - name: Core tests
+        if: hashFiles('assembly-src/test/data/ipc/testcase3.xml') != ''
+        working-directory: assembly-src
+        run: npm test
       - name: Assemble site
         run: |
           mkdir -p _site
@@ -48,6 +59,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
