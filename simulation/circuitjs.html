@@ -20,19 +20,51 @@
   if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
   try{localStorage.setItem('whiteBackground',t==='light'?'true':'false')}catch(e){}
   document.documentElement.style.setProperty('--sb',t==='light'?'#fff':'#000');
+  document.documentElement.setAttribute('data-theme',t);
   try{var set=Storage.prototype.setItem;
     Storage.prototype.setItem=function(k,v){set.apply(this,arguments);
       if(k==='whiteBackground'&&this===window.localStorage){set.call(this,K,v==='true'?'light':'dark')}};}catch(e){}
   })();
   </script>
-  <style>html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:var(--sb,#000)}</style>
+  <style>
+  /* Dark theme for the CircuitJS menu bar, toolbar and buttons (the canvas itself is already dark) */
+  html[data-theme="dark"] .gwt-MenuBar,html[data-theme="dark"] .gwt-MenuBar-horizontal{background:#1b2027!important;color:#e7ebf0!important;border-color:#2a313b!important}
+  html[data-theme="dark"] td.gwt-MenuItem{color:#e7ebf0!important}
+  html[data-theme="dark"] td.gwt-MenuItem.open,html[data-theme="dark"] td.gwt-MenuItem:hover{background:#2e3947!important}
+  html[data-theme="dark"] .menuDropdown{background:#1b2027!important;color:#e7ebf0!important;border-color:#3a424d!important;box-shadow:2px 2px 8px #0008!important}
+  html[data-theme="dark"] .menuDropdown .menuDropdown{background:#222831!important;border-color:#3a424d!important}
+  html[data-theme="dark"] .menuItem{color:#e7ebf0}
+  html[data-theme="dark"] .menuItem:hover{background:#2e3947!important}
+  html[data-theme="dark"] .menuItem.menuItemDisabled,html[data-theme="dark"] .menuItem.menuItemDisabled:hover{color:#6c7480!important;background:transparent!important}
+  html[data-theme="dark"] .menuSeparator{background:#3a424d!important}
+  html[data-theme="dark"] .tb-bar,html[data-theme="dark"] .mainToolbar{background:#14181e!important;color:#e7ebf0!important;border-color:#2a313b!important}
+  html[data-theme="dark"] .tb-btn{color:#e7ebf0}
+  html[data-theme="dark"] .tb-btn:hover{background:#2e3947!important}
+  html[data-theme="dark"] .tb-esc,html[data-theme="dark"] .tb-mode{background:#222831!important;color:#e7ebf0!important;border-color:#3a424d!important}
+  html[data-theme="dark"] .tb-del{background:#222831!important;border-color:#8a3a3a!important}
+  html[data-theme="dark"] .tb-sep{background:#3a424d!important}
+  html[data-theme="dark"] .tb-bar svg,html[data-theme="dark"] .mainToolbar svg{color:#e7ebf0}
+  html[data-theme="dark"] .topButton{background:#262c35!important;color:#e7ebf0!important;border-color:#3a424d!important}
+  html[data-theme="dark"] .palette-container,html[data-theme="dark"] .subcircuitBar{background:#1b2027!important;color:#e7ebf0!important}
+  html[data-theme="dark"] .topSpace,html[data-theme="dark"] .verticalPanel{color:#e7ebf0!important}
+  /* Simulation's own colour: green (matches its card on the launcher) */
+  :root{--ac:#1f8f4f;--ac-hv:#cdebd8;--bar:#e6f4ea;--tool:#f0f8f3}
+  html[data-theme="dark"]{--ac:#46c37b;--ac-hv:#1f3a2b;--bar:#12201a;--tool:#0f1914}
+  html[data-theme] .gwt-MenuBar,html[data-theme] .gwt-MenuBar-horizontal{background:var(--bar)!important}
+  html[data-theme] .tb-bar,html[data-theme] .mainToolbar{background:var(--tool)!important}
+  html[data-theme] td.gwt-MenuItem.open,html[data-theme] td.gwt-MenuItem:hover,html[data-theme] .menuItem:hover,html[data-theme] .tb-btn:hover{background:var(--ac-hv)!important}
+  html[data-theme] .tb-active{background:var(--ac)!important}
+  html[data-theme] .tb-esc{border-color:var(--ac)!important}
+  html[data-theme] .topButton{border-color:var(--ac)!important}
+  html[data-theme="dark"] .menuDropdown{background:#14221b!important}
+  html,body{overscroll-behavior:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%;background:var(--sb,#000)}</style>
   <link rel="stylesheet" href="circuitjs/font/fontello.css">
   <script type="module" crossorigin src="./circuitjs/circuitjs-CSQhaj88.js"></script>
   <link rel="stylesheet" crossorigin href="./circuitjs/circuitjs--wuhdAF1.css">
 </head>
 <body>
 <button id="etThemeBtn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema"
-  style="position:fixed;top:1px;right:6px;z-index:2147483000;height:20px;min-width:28px;padding:0 6px;border:1px solid #777;border-radius:4px;background:#3a3f47;color:#fff;font:14px/1 system-ui,sans-serif;cursor:pointer">◐</button>
+  style="position:fixed;top:1px;right:6px;z-index:2147483000;height:20px;min-width:28px;padding:0 6px;border:1px solid var(--ac,#777);border-radius:4px;background:var(--ac,#3a3f47);color:#fff;font:14px/1 system-ui,sans-serif;cursor:pointer">◐</button>
 <script>
 /* Toggles the shared theme; CircuitJS reads its colours at start-up, so the page must reload
    and an unsaved circuit would be lost: ask first. */
