@@ -61,13 +61,48 @@ function createWindow() {
 }
 
 function loadHome(view) {
+  closePanes();
   win.setTitle(appTitle());
   win.loadFile(path.join(__dirname, '..', 'renderer', 'home', 'home.html'), view ? { query: { view } } : undefined);
 }
 function loadViewer() {
+  closePanes();
   const p = store.getProject(session.projectId);
   win.setTitle(`${appTitle()} — ${p ? p.name : ''} — SN ${session.serial}`);
   win.loadFile(path.join(__dirname, '..', 'renderer', 'viewer', 'viewer.html'));
+}
+
+// ------------------------------------------------------- pop-out pane windows
+const paneWins = new Map();   // 'bom' | 'board' -> BrowserWindow
+function closePanes() {
+  for (const w of paneWins.values()) { try { if (!w.isDestroyed()) w.destroy(); } catch (e) { /* ignore */ } }
+  paneWins.clear();
+}
+function openPane(pane) {
+  if (!session || !win || !/^(bom|board)$/.test(pane)) return false;
+  const old = paneWins.get(pane);
+  if (old && !old.isDestroyed()) { old.focus(); return true; }
+  // prefer another monitor than the one the main window is on
+  const { screen } = require('electron');
+  const cur = screen.getDisplayMatching(win.getBounds());
+  const other = screen.getAllDisplays().find((d) => d.id !== cur.id);
+  const wa = (other || cur).workArea;
+  const w = new BrowserWindow({
+    x: other ? wa.x : wa.x + 40, y: other ? wa.y : wa.y + 40,
+    width: other ? wa.width : Math.min(1280, wa.width - 80), height: other ? wa.height : Math.min(800, wa.height - 80),
+    minWidth: 500, minHeight: 400, title: win.getTitle(), backgroundColor: '#f4f5f7',
+    icon: path.join(__dirname, '..', '..', 'build', 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false },
+  });
+  w.removeMenu && process.platform !== 'darwin' && w.setMenuBarVisibility(false);
+  w.webContents.session.webRequest.onBeforeRequest((d, cb) => cb({ cancel: !/^(file|devtools|data|blob|chrome-extension):/.test(d.url) }));
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  w.on('page-title-updated', (e) => e.preventDefault());
+  w.on('closed', () => { if (paneWins.get(pane) === w) paneWins.delete(pane); });
+  paneWins.set(pane, w);
+  if (other) w.maximize();
+  w.loadFile(path.join(__dirname, '..', 'renderer', 'viewer', 'viewer.html'), { query: { pane } });
+  return true;
 }
 
 function endSession(reason) {
@@ -537,6 +572,11 @@ function registerIpc() {
     session = { projectId, serial, operator };
     loadViewer();
     return true;
+  });
+
+  ipcMain.handle('pane:open', (e, pane) => openPane(pane));
+  ipcMain.on('pane:send', (e, msg) => {
+    for (const w of [win, ...paneWins.values()]) if (w && !w.isDestroyed() && w.webContents.id !== e.sender.id) w.webContents.send('pane:msg', msg);
   });
 
   ipcMain.handle('app:about', () => { endSession(t('projelere dönüldü')); loadHome('about'); return true; });

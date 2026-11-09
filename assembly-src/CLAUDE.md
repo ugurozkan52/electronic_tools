@@ -68,6 +68,12 @@ Prob seçimi `probeScore`: TP > konnektör > montaj deliği > 2 pinli pasif; TH 
 - Yeni metin → `i18n.js` sözlüğüne (`'Kayıtlı teknisyenler'` satırından sonra) TR→EN ekle; `asmEl({text})` otomatik çevirir, `raw: 1` çevirmez.
 - `src/renderer/viewer/ibom/*` üst akım koduna yapılan değişiklikleri küçük ve yorumlu tut. (Değişenler: `util.js` highlightRowOnClick varsayılanı **true** — BOM satırı fareyle üzerine gelince değil tıklayınca seçilir; `render.js` yerleştirilen rengi hemen çizer.)
 
+## Test hat grupları
+`laterPhases` (testplan.js) hat adından grubu çıkarır; her adımda `group` alanı (kart başında rozet) vardır: **comm** = I²C, UART, SPI, RS-422/485 (+DE/RE yön hatları), CAN · **sens** = ADC / sensör / referans · **pwm** = PWM, Timer (TIMx_CHy, watchdog, RTC) · **gpio** = GPIO, LED, düğme, IRQ/INT, RST, EN, PG · **io** = konnektöre çıkan diğer hatlar. Ad kalıpları `RX_*` sabitleri; yeni grup/kalıp eklenince `phases` varsayılanı (`CFG`), `viewer-test.js` `phaseNames` ve i18n birlikte güncellenir. Boşta seviyesi belli olanlar (I²C, UART, SPI CS, aktif-düşük GPIO) pull-up varsa aralıkla, yoksa/ belirsizse kaydedilerek (`manual`) test edilir.
+
+## Pencere ayırma (ikinci monitör)
+`viewer-panes.js`: "Görünüm ▾" menüsünden BOM listesi ya da kart görünümü ayrı pencerede açılır (`?pane=bom|board`; ana pencere araç çubuğunu ve diğer paneli tutar). Eşitleme `asm.paneOpen/paneSend/onPane` ile (Electron: main süreci aktarır ve pencereyi başka monitöre yerleştirir; web: `window.open` + BroadcastChannel). Mesajlar: `kv` (depolama değişimi), `hl` (vurgu), `hello/bye/close/leader-bye`, `rpc` (web: yazma yalnızca ana pencerede, çünkü her pencerenin kendi vfs kopyası var). Web'de pencere engelleyici açılır pencereye izin vermelidir. Ana ekrana dön (`Ana ekran`) düğmesi yalnızca web sürümünde görünür (`asm.ready`).
+
 ## Arayüz kararları (v7.6, tasarım değerlendirmesi sonrası)
 - Bildirimler tek seferde bir tane, sol altta (`asmToastPush`); hata (`role=alert`) korunur. Kart görünümünün üstüne bildirim konmaz.
 - Kart bitince bildirim yerine özet kartı (`asmCompleteCard`): süre, teknisyen, "Kaydı indir / Teste geç / Sonraki kart".

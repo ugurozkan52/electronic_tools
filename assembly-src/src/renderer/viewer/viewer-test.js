@@ -367,6 +367,7 @@ var TEST = (function () {
     var r = S.res.steps[st.id];
     var box = asmEl('section', { class: 'tp-card', 'aria-labelledby': 'tp-title' });
     box.appendChild(asmEl('div', { class: 'tp-no', raw: 1, text: T('Adım {i} / {n} · {phase}', { i: st.no, n: S.steps.length, phase: st.phase.title }) }));
+    if (st.group) box.appendChild(asmEl('span', { class: 'tp-grp', text: st.group, raw: 1 }));
     box.appendChild(asmEl('h3', { id: 'tp-title', class: 'tp-title', text: st.title, raw: 1 }));
     if (st.phase.powered) {
       var unpoweredFails = S.steps.filter(function (x) { return !x.phase.powered && S.res.steps[x.id] && S.res.steps[x.id].status === 'fail'; });
@@ -583,7 +584,7 @@ var TEST = (function () {
       return asmEl('label', { class: 'ts-f' }, [asmEl('span', { text: label }), asmEl('span', { class: 'ts-in' }, [
         asmEl('input', { id: id, class: 'asm-input', type: 'text', inputmode: 'decimal', value: String(val) }), unit ? asmEl('small', { text: unit, raw: 1 }) : null])]);
     };
-    var phaseNames = { pwr: 'Güç hatları – GND / şase kısa devre', volt: 'Gerilim kanalları', comm: 'Haberleşme hatları', sens: 'Sensör hatları', io: 'I/O hatları' };
+    var phaseNames = { pwr: 'Güç hatları – GND / şase kısa devre', volt: 'Gerilim kanalları', comm: 'Haberleşme hatları', sens: 'Sensör / ADC hatları', pwm: 'PWM / Timer hatları', gpio: 'GPIO hatları', io: 'I/O hatları' };
     var phases = asmEl('fieldset', { class: 'ts-ph' }, [asmEl('legend', { text: 'Aşamalar' })].concat(Object.keys(phaseNames).map(function (k) {
       return asmEl('label', { class: 'ts-chk' }, [asmEl('input', { type: 'checkbox', id: 'ts-ph-' + k, checked: C.phases[k] !== false ? 'checked' : null }), asmEl('span', { text: phaseNames[k] })]);
     })));

@@ -511,7 +511,7 @@ var settings = {
   renderValues: true,
   renderSilkscreen: true,
   renderFabrication: true,
-  renderDnpOutline: false,
+  renderDnpOutline: true,
   renderTracks: true,
   renderZones: true,
   columnOrder: [],
@@ -578,13 +578,13 @@ function initDefaults() {
   initBooleanSetting("valuesVisible", true, "valuesCheckbox", valuesVisible);
   if ("tracks" in pcbdata) {
     initBooleanSetting("tracksVisible", true, "tracksCheckbox", tracksVisible);
-    initBooleanSetting("zonesVisible", config.show_zones !== undefined ? config.show_zones : true, "zonesCheckbox", zonesVisible);
+    initBooleanSetting("zonesVisible", true, "zonesCheckbox", zonesVisible);
   } else {
     document.getElementById("tracksAndZonesCheckboxes").style.display = "none";
     tracksVisible(false);
     zonesVisible(false);
   }
-  initBooleanSetting("dnpOutline", false, "dnpOutlineCheckbox", dnpOutline);
+  initBooleanSetting("dnpOutline", true, "dnpOutlineCheckbox", dnpOutline);
   initBooleanSetting("redrawOnDrag", config.redraw_on_drag, "dragCheckbox", setRedrawOnDrag);
   initBooleanSetting("highlightRowOnClick", true, "highlightRowOnClickCheckbox", setHighlightRowOnClick);   // Montaj: a row is selected by clicking it, not by hovering
   initBooleanSetting("darkmode", config.dark_mode, "darkmodeCheckbox", setDarkMode);

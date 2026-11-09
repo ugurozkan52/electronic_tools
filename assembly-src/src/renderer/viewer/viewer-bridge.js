@@ -579,6 +579,7 @@ window.onload = function (e) {
   asmRenderProgress();
   asmCheckboxNames().forEach(asmSnapshot);
   document.getElementById('asm-home').onclick = function () { asm.goHome(); };
+  if (asm.ready) document.getElementById('asm-launcher').hidden = false;   // web build only
   document.getElementById('asm-operator-btn').onclick = asmOperatorModal;
   document.getElementById('asm-board-btn').onclick = asmBoardModal;
   document.getElementById('asm-log-btn').onclick = asmLogModal;

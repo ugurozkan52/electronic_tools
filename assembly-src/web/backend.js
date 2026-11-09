@@ -305,6 +305,8 @@ async function reportPdf(rep) {
 }
 
 // ---------------------------------------------------------------- API (window.asm)
+let paneCb = null;
+const paneChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('asm-panes') : null;
 const call = (fn) => (...a) => ready.then(() => fn(...a));
 const api = {
   ready,
@@ -399,6 +401,17 @@ const api = {
       has3d: fs.existsSync(store.model3dFile(session.projectId)),
     });
   },
+  // pop-out panes: a second browser window of the same viewer; windows talk over a BroadcastChannel
+  paneOpen: async (pane) => {
+    const w = window.open(location.pathname + '?pane=' + encodeURIComponent(pane), 'asm-pane-' + pane, 'popup=yes,width=1280,height=800');
+    if (w) {
+      // a closed window does not always get to say goodbye: poll it
+      const t = setInterval(() => { if (w.closed) { clearInterval(t); if (paneCb) paneCb({ t: 'bye', pane }); } }, 1000);
+    }
+    return !!w;
+  },
+  paneSend: (msg) => { try { if (paneChannel) paneChannel.postMessage(msg); } catch (e) { /* closed */ } },
+  onPane: (cb) => { paneCb = cb; if (paneChannel) paneChannel.onmessage = (e) => cb(e.data); },
   kvSet: (scope, key, value) => {
     const session = getSession();
     if (!store || !session) return;
