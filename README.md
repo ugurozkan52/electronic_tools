@@ -1,5 +1,4 @@
 # Elektronik Araçlar
-
 Tek GitHub Pages sitesinde altı tarayıcı uygulaması. Giriş sayfasından seçilir.
 
 | Yol | Uygulama | Kaynak |
