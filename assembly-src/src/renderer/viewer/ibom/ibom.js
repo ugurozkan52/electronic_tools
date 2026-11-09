@@ -375,7 +375,8 @@ function getSelectedBomList() {
   if (settings.bommode == "netlist") {
     return pcbdata.nets.slice();
   }
-  var out = getBomListByLayer(settings.canvaslayout);
+  // Montaj: in the 3D view the board is shown as a whole, so the list is always the full BOM (both sides)
+  var out = getBomListByLayer(typeof V3D !== 'undefined' && V3D.isOn() ? 'FB' : settings.canvaslayout);
 
   if (settings.bommode == "ungrouped") {
     // expand bom table

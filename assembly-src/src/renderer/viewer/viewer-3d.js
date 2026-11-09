@@ -31,7 +31,7 @@ var V3D = (function () {
     if (persist) writeStorage('view3d', S.on ? 'true' : 'false');
     var bot = el('bot');
     if (!S.on && bot.classList.contains('asm-max-asm3d')) asmToggleMax('asm3d');
-    if (S.on) { ensureLoaded(); setTimeout(resize, 0); }
+    if (S.on) { ensureLoaded(); setTimeout(resize, 0); if (typeof asmRefreshBom === 'function') asmRefreshBom(); } // 3D shows the full BOM
     else if (typeof changeCanvasLayout === 'function') changeCanvasLayout(settings.canvaslayout || 'FB');
   }
 

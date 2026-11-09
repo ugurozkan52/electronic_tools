@@ -3,15 +3,15 @@
    white silkscreen, ENIG-gold pads. Colour carries assembly state:
    gold = bare pad, blue = placed, magenta = the line you are working on. */
 :root {
-  --paper: #edf0ec;
-  --bench: #dfe5e0;
+  --paper: #f6f0e4;
+  --bench: #ece3d0;
   --panel: #ffffff;
-  --ink: #15201a;
-  --muted: #5b6a61;
-  --line: #d3dbd5;
-  --line-strong: #b9c5bd;
-  --mask: #17402f;
-  --mask-2: #22573f;
+  --ink: #2b2113;
+  --muted: #7a6a52;
+  --line: #e4d8bd;
+  --line-strong: #cdbd9c;
+  --mask: #b86b00;
+  --mask-2: #9a5a00;
   --mask-ink: #f4f7f4;
   --enig: #c9a132;
   --enig-deep: #9c7a1c;
@@ -45,8 +45,8 @@
 html, body { font-family: var(--font); font-feature-settings: "tnum" 1; }
 .topmostdiv { background-color: var(--paper); color: var(--ink); }
 .dark.topmostdiv {
-  --paper: #0e1712; --bench: #0a120e; --panel: #15211b; --ink: #e6ede8; --muted: #95a59b;
-  --line: #26362d; --line-strong: #34493d;
+  --paper: #17130d; --bench: #100d08; --panel: #211a10; --ink: #f3ece0; --muted: #b7a88f;
+  --line: #3a2f1d; --line-strong: #55452a;
   --board-color: #173d2c; --pcb-edge-color: #cfdcd3; --pad-color: #c9a132;
   --track-color: #2a6248; --zone-color: #225640;
   --pin1-outline-color: #ffffff; --pin1-outline-color-highlight: #ffffff;
@@ -286,40 +286,40 @@ button.depressed::before { background: #ffffff; }
 .asm-operator { white-space: nowrap; }
 .filter { width: calc(60% - 110px); }
 
-/* ======================= Theme: Arctic Frost ======================= */
+/* ======================= Theme: Amber ======================= */
 :root {
-  --paper: #eef3f9; --bench: #e2eaf4; --panel: #fafafa; --ink: #1d2b3e; --muted: #5b6b80;
-  --line: #d4e4f7; --line-strong: #c0c0c0; --mask: #4a6fa5; --mask-2: #3c5d8e; --mask-ink: #fafafa;
+  --paper: #f6f0e4; --bench: #ece3d0; --panel: #fafafa; --ink: #2b2113; --muted: #7a6a52;
+  --line: #f1e2c4; --line-strong: #c0c0c0; --mask: #b86b00; --mask-2: #9a5a00; --mask-ink: #fafafa;
   --font: "DejaVu Sans", "Segoe UI", sans-serif;
   --font-cond: "DejaVu Sans Condensed", "DejaVu Sans", "Segoe UI", sans-serif;
 }
-.dark.topmostdiv { --paper: #111a26; --bench: #0c131c; --panel: #18222f; --ink: #e8eef6; --muted: #9aaabb; --line: #26354a; --line-strong: #3a4b62; }
+.dark.topmostdiv { --paper: #17130d; --bench: #100d08; --panel: #211a10; --ink: #f3ece0; --muted: #b7a88f; --line: #3a2f1d; --line-strong: #55452a; }
 html, body { font-size: 14px; }
 .job-proj { font-family: var(--font); font-weight: 700; font-size: 1.25rem; letter-spacing: -.01em; }
 .job-sn { font-family: var(--font); font-weight: 700; font-size: 1.35rem; letter-spacing: -.02em; }
 .job-rev { color: var(--mask); }
-.dark .job-rev { color: #8fb1df; }
-.asm-pads i { background: #d4e4f7; }
+.dark .job-rev { color: #f2a33a; }
+.asm-pads i { background: #f1e2c4; }
 .asm-pads i.on { background: var(--mask); }
-.asm-pads.full i.on { background: #2a4673; }
+.asm-pads.full i.on { background: #8a5200; }
 #bomcontrols button.depressed, .dark #bomcontrols button.depressed { background-color: var(--mask); border-color: var(--mask); }
 button.depressed::before, .dark #bomcontrols button.depressed::before { background: #fafafa; }
 .asm-swatch.on { border-color: var(--mask) !important; box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--mask); }
 .asm-maxed .asm-max { background: var(--mask) !important; border-color: var(--mask) !important; }
 .asm-maxed .asm-max::before { background: #fafafa; }
 .asm-max:hover { border-color: var(--mask) !important; }
-input[type=text]:focus, .dark input[type=text]:focus, .asm-input:focus { box-shadow: 0 0 0 3px rgba(74,111,165,.25); border-color: var(--mask); }
+input[type=text]:focus, .dark input[type=text]:focus, .asm-input:focus { box-shadow: 0 0 0 3px rgba(184,107,0,.25); border-color: var(--mask); }
 :focus-visible { outline-color: var(--mask); }
 .bom { font-size: 13px; }
-.bom th { background-color: #d4e4f7; color: var(--ink); }
-.dark .bom th { background-color: #22324a; }
-.bom tr.checked, .dark .bom tr.checked { color: #3c5d8e; }
-.dark .bom tr.checked { color: #8fb1df; }
+.bom th { background-color: #f1e2c4; color: var(--ink); }
+.dark .bom th { background-color: #3a2f1d; }
+.bom tr.checked, .dark .bom tr.checked { color: #9a5a00; }
+.dark .bom tr.checked { color: #f2a33a; }
 .asm-btn.primary { background: var(--mask); border-color: var(--mask); }
-.asm-toast { background: #1d2b3e; }
-.asm-toast.ok { border-left-color: #8fb1df; } .asm-toast.warn, .asm-toast.done { border-left-color: #ffd400; }
-.asm-toast.info { background: #3c5d8e; }
-table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
+.asm-toast { background: #2b2113; }
+.asm-toast.ok { border-left-color: #f2a33a; } .asm-toast.warn, .asm-toast.done { border-left-color: #ffd400; }
+.asm-toast.info { background: #9a5a00; }
+table.asm-log th { background: #f1e2c4; color: #2b2113; }
 
 /* ======================= v1.9 usability ======================= */
 /* bigger, easier checkbox targets */
@@ -356,8 +356,8 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 #fl-btn, #fb-btn, #bl-btn { width: auto !important; padding: 0 10px; font: 600 13px var(--font) !important; }
 /* undo toast */
 .asm-toast { display: flex; align-items: center; gap: 12px; pointer-events: auto; }
-.asm-undo { font: 600 13px var(--font); background: transparent; color: #d4e4f7; border: 1px solid rgba(212,228,247,.6); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
-.asm-undo:hover { background: rgba(212,228,247,.15); }
+.asm-undo { font: 600 13px var(--font); background: transparent; color: #f1e2c4; border: 1px solid rgba(241,226,196,.6); border-radius: 4px; padding: 3px 8px; cursor: pointer; }
+.asm-undo:hover { background: rgba(241,226,196,.15); }
 .asm-select { font: 13px var(--font); padding: 3px 6px; border-radius: var(--r); border: 1px solid var(--line-strong); background: var(--panel); color: var(--ink); }
 
 /* header: row 1 = job | nav | view controls ; row 2 = full-width "Now" bar */
@@ -393,7 +393,7 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 .job-prog { align-self: end; padding-bottom: 7px; padding-right: 22px !important; }
 .dark button#copy, .dark .button-container button:not(.depressed) { background-color: var(--panel) !important; }
 .dark .asm-pads i { background: #26354a; }
-.dark .asm-pads i.on { background: #8fb1df; }
+.dark .asm-pads i.on { background: #f2a33a; }
 .job-cell.job-prog { padding-right: 30px !important; } #asm-session.asm-nav { margin-left: 4px; }
 /* v1.10.1 type hierarchy: project > serial no > technician */
 .job-proj { font-size: 1.7rem !important; line-height: 1.15; font-weight: 700; }
@@ -409,7 +409,7 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 .now-refs { font: 700 1.35rem var(--font) !important; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .now-val { font-size: 1.15rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
 .now-qty { font-size: 1.15rem; font-weight: 700; color: var(--mask); white-space: nowrap; }
-.dark .now-qty { color: #8fb1df; }
+.dark .now-qty { color: #f2a33a; }
 .asm-color-row { flex-wrap: wrap; row-gap: 8px; white-space: nowrap; }
 .asm-color-row .asm-swatches { flex: 1 0 100%; justify-content: flex-start; }
 /* v1.10.3: no overlaps in the job panel — fixed column grid, stacked progress */
@@ -434,14 +434,14 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 
 /* ======================================================= v2.0 accessibility
    WCAG 2.1 AA: contrast, keyboard menus, focus, targets, reflow. */
-:root { --muted: #4f5e72; --line-strong: #7d8a9c; --focus: #1f4f8f; }
-.dark.topmostdiv { --muted: #a9b7c6; --line-strong: #5a6d88; --focus: #ffd400; }
+:root { --muted: #4f5e72; --line-strong: #9a8a6e; --focus: #8a5200; }
+.dark.topmostdiv { --muted: #a9b7c6; --line-strong: #8a7a5e; --focus: #ffd400; }
 /* 1.4.11 component borders >= 3:1; decorative separators keep the soft ice tone */
 #top { border-bottom-color: var(--line) !important; }
 .asm-bar-label { color: var(--muted); }
 /* 2.4.7 a strong, theme-aware focus ring everywhere (iBOM removed some) */
 :focus-visible, .dark :focus-visible { outline: 3px solid var(--focus) !important; outline-offset: 2px !important; }
-#asm-modal-root :focus-visible { outline: 3px solid #1f4f8f !important; }
+#asm-modal-root :focus-visible { outline: 3px solid #8a5200 !important; }
 #asm-modal-root.dark :focus-visible { outline-color: #ffd400 !important; }
 .a11y-canvas:focus-visible { outline-offset: -4px !important; }
 .bom td input[type=checkbox]:focus-visible { outline-offset: 1px !important; }
@@ -488,13 +488,13 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
    (theme vars from the board pane did not reach it → dark-on-dark text). */
 #asm-modal-root {
   --m-bg: #ffffff; --m-ink: #15202e; --m-sub: #4f5e72; --m-line: #d9e2ee; --m-head: #f3f7fc;
-  --m-field: #ffffff; --m-field-line: #7d8a9c; --m-pri: #4a6fa5; --m-pri-ink: #ffffff; --m-pri-hover: #3d5d8c;
-  --m-chip: #eef3fa; --m-focus: #1f4f8f; --m-sel: #d4e4f7;
+  --m-field: #ffffff; --m-field-line: #9a8a6e; --m-pri: #b86b00; --m-pri-ink: #ffffff; --m-pri-hover: #9a5a00;
+  --m-chip: #fbf5ea; --m-focus: #8a5200; --m-sel: #f1e2c4;
 }
 #asm-modal-root.dark {
   --m-bg: #18222f; --m-ink: #e8eef6; --m-sub: #a9b7c6; --m-line: #2b3a4f; --m-head: #141d29;
-  --m-field: #0f1620; --m-field-line: #5a6d88; --m-pri: #8fb1df; --m-pri-ink: #0f1620; --m-pri-hover: #a9c4e8;
-  --m-chip: #223044; --m-focus: #ffd400; --m-sel: #3d5d8c;
+  --m-field: #0f1620; --m-field-line: #8a7a5e; --m-pri: #f2a33a; --m-pri-ink: #0f1620; --m-pri-hover: #f7bf6b;
+  --m-chip: #223044; --m-focus: #ffd400; --m-sel: #9a5a00;
 }
 #asm-modal-root .asm-backdrop { background: rgba(8, 14, 22, .55); }
 #asm-modal-root .asm-modal, #asm-modal-root.dark .asm-modal {
@@ -611,7 +611,7 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 }
 #asm-nowbar button.asm-mode + button.asm-mode { border-left: 1px solid var(--line-strong) !important; }
 #asm-nowbar button.asm-mode[aria-pressed="true"] { background: var(--mask) !important; color: #fafafa !important; }
-.dark #asm-nowbar button.asm-mode[aria-pressed="true"] { background: #8fb1df !important; color: #0f1620 !important; }
+.dark #asm-nowbar button.asm-mode[aria-pressed="true"] { background: #f2a33a !important; color: #0f1620 !important; }
 .asm-testmode #asm-now, .asm-testmode .now-btns, .asm-testmode .now-k { display: none !important; }
 .asm-testmode #bomdiv > :not(#asm-test):not(.asm-max) { display: none !important; }
 .asm-test { padding: 12px 14px 24px; font-family: var(--font); color: var(--ink); }
@@ -780,7 +780,7 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 .ns-row.preview { outline: 2px solid var(--net-same, #ffb300); outline-offset: -2px; }
 .ns-name { background: none; border: 0; padding: 4px 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; text-align: left; }
 .ns-name:hover { text-decoration: underline; }
-.ns-name:focus-visible { outline: 2px solid var(--accent, #4a6fa5); outline-offset: 2px; }
+.ns-name:focus-visible { outline: 2px solid var(--accent, #b86b00); outline-offset: 2px; }
 .ns-role { width: 100%; min-width: 0; padding-top: 2px; padding-bottom: 2px; }
 .ns-table .ns-nom { width: 70px; height: 30px; min-height: 0; padding: 2px 6px; font-size: 13px; }
 .ns-table .ns-role { height: 30px; }
@@ -843,3 +843,6 @@ table.asm-log th { background: #d4e4f7; color: #1d2b3e; }
 #asm-session .asm-moremenu > .morebtn { font: 500 14px var(--font) !important; padding: 5px 12px !important; height: auto !important; line-height: 1.2 !important; }
 .dark .asm-hint-toggle, .asm-hint-toggle { background: transparent !important; color: var(--muted) !important; }
 .tp-warns:empty { display: none; } .tp-warns .tp-warn { margin: 0 0 8px; }
+
+/* BOM summary line (grouped line count) above the table */
+.asm-bomcount { clear: both; margin: 4px 8px 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
