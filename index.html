@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<script src="gate.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Elektronik Araçlar</title>
 <meta name="description" content="Devre simülasyonu, PCB sipariş hazırlayıcı ve montaj görüntüleyici — tarayıcıda çalışan elektronik tasarım araçları.">
@@ -10,7 +11,7 @@
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark');var m=document.querySelector('meta[name=color-scheme]');if(m)m.content=v}
 ap(t);
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
@@ -21,11 +22,11 @@ window.addEventListener('storage',function(e){if(e.key===K&&(e.newValue==='dark'
 <style>
 :root{
   --bg:#0f1216; --bg2:#151a20; --card:#181d24; --line:#262d37; --ink:#e7ebf0; --mute:#8b94a1; --dot:#1f252e;
-  --sim:#46c37b; --pcb:#3d7dff; --asm:#f2a33a; --flt:#a98bff;
+  --sim:#46c37b; --pcb:#3d7dff; --asm:#f2a33a; --flt:#a98bff; --wir:#ff7a59; --cmp:#2dd4bf;
 }
 :root[data-theme="light"]{
   --bg:#f3f4f6; --bg2:#ffffff; --card:#ffffff; --line:#dfe3e8; --ink:#161a20; --mute:#56606c; --dot:#dde1e7;
-  --sim:#1f8f4f; --pcb:#2457d6; --asm:#b86b00; --flt:#6a45d6;
+  --sim:#1f8f4f; --pcb:#2457d6; --asm:#b86b00; --flt:#6a45d6; --wir:#c2410c; --cmp:#0f766e;
 }
 .theme-toggle{position:fixed;top:16px;right:16px;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
@@ -55,7 +56,7 @@ a.app{
 }
 a.app::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
 a.app:hover,a.app:focus-visible{transform:translateY(-3px);border-color:var(--c);box-shadow:0 10px 30px -12px var(--c);outline:none}
-a.app.pcb{--c:var(--pcb)} a.app.asm{--c:var(--asm)} a.app.flt{--c:var(--flt)}
+a.app.pcb{--c:var(--pcb)} a.app.asm{--c:var(--asm)} a.app.flt{--c:var(--flt)} a.app.wir{--c:var(--wir)} a.app.cmp{--c:var(--cmp)}
 .icon{width:56px;height:56px;border-radius:12px;display:grid;place-items:center;
   background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
 .icon svg{width:30px;height:30px}
@@ -71,6 +72,7 @@ footer a{color:var(--mute)}
 </style>
 </head>
 <body>
+<button class="theme-toggle" id="logoutBtn" type="button" title="Çıkış yap" style="right:64px;width:auto;padding:0 14px;font-size:13px" onclick="window.etLogout&&window.etLogout()">Çıkış</button>
 <button class="theme-toggle" id="themeBtn" type="button" title="Açık / koyu tema" aria-label="Açık / koyu tema">◐</button>
 <header>
   <div class="mark" aria-hidden="true">
@@ -108,6 +110,26 @@ footer a{color:var(--mute)}
     <h2>Filters</h2>
     <p class="sub">Filtre hesaplayıcı</p>
     <p class="desc">RC, RL, LC, Pi/T ve aktif (Sallen-Key, MFB) filtreler: bileşen değerlerinden kesim frekansı ve Bode grafiği, kesim frekansından bileşen önerisi.</p>
+    <span class="go">Aç <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </a>
+
+  <a class="app wir" href="wire/index.html">
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <h2>Wire</h2>
+    <p class="sub">Tel / AWG hesaplayıcı</p>
+    <p class="desc">AWG, mm, mm² ve kcmil dönüştürücü; sıcaklığa göre akım kapasitesi, tel direnci, gerilim düşümü ve tel kalınlığı önerisi.</p>
+    <span class="go">Aç <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+  </a>
+
+  <a class="app cmp" href="components/index.html">
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-5 3 10 3-10 2 5h6"/></svg>
+    </div>
+    <h2>Components</h2>
+    <p class="sub">Komponent rehberi ve hesaplayıcılar</p>
+    <p class="desc">Direnç, kondansatör, bobin, diyot, transistör, MOSFET ve op-amp: parametre rehberi, türler, seçim sihirbazı, hesaplayıcılar ve devre şemaları (TR / EN).</p>
     <span class="go">Aç <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
   </a>
 

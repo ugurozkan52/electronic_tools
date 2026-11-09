@@ -2,15 +2,16 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<script src="../gate.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PCB Sipariş Hazırlayıcı</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Crect width=%2724%27 height=%2724%27 rx=%275%27 fill=%27%231f6b3a%27/%3E%3Cpath d=%27M7 8h4l2 2h4M7 16h3l3-3h4%27 stroke=%27%23e9f5ec%27 stroke-width=%271.6%27 fill=%27none%27/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Crect width=%2724%27 height=%2724%27 rx=%275%27 fill=%27%232457d6%27/%3E%3Cpath d=%27M7 8h4l2 2h4M7 16h3l3-3h4%27 stroke=%27%23e9f5ec%27 stroke-width=%271.6%27 fill=%27none%27/%3E%3C/svg%3E">
 <meta name="description" content="PCB sipariş hazırlayıcı: Gerber görüntüleyici, 3D önizleme, üretim seçenekleri ve PDF sipariş raporu / PCB order builder with Gerber viewer, 3D preview and PDF report.">
 <script>
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark')}
 ap(t);
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
@@ -36,7 +37,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:16p
 .brand{display:flex;align-items:center;gap:12px}
 .brand h1{font-size:18px;margin:0;font-weight:700;letter-spacing:-.01em}
 .brand p{margin:0;color:var(--mute);font-size:13px}
-.logo{width:36px;height:36px;border-radius:8px;background:#1f6b3a;display:grid;place-items:center}
+.logo{width:36px;height:36px;border-radius:8px;background:var(--accent);display:grid;place-items:center}
 main{padding:16px 24px 40px;max-width:1600px;margin:0 auto}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
@@ -621,6 +622,7 @@ function warnings(){
     if(det.cu&&String(det.cu)!==S.layers) w.push(['',T(`Gerber'de ${det.cu} bakır katman var, formda ${S.layers} seçili.`,`Gerbers have ${det.cu} copper layers but ${S.layers} is selected.`)]);
     if(isFinite(det.minPTH)){ const sel=parseFloat(S.minVia); if(det.minPTH<sel-1e-6) w.push(['',T(`En küçük kaplamalı delik ${num2(det.minPTH)} mm; seçilen min via deliği ${sel} mm.`,`Smallest plated hole is ${num2(det.minPTH)} mm; selected min via hole is ${sel} mm.`)]); }
     if(det.w&&(Math.abs(det.w-(+S.dims[0]))>0.3||Math.abs(det.h-(+S.dims[1]))>0.3)) w.push(['',T(`Formdaki boyut Gerber dış hattından (${num2(det.w)} × ${num2(det.h)} mm) farklı.`,`Form size differs from the Gerber outline (${num2(det.w)} × ${num2(det.h)} mm).`)]);
+    if(board&&board.openOutline) w.push(['',T("Dış hat çizgileri kapalı bir kontur oluşturmuyor (uçlar birleşmiyor); kart sınırı dış hat çizgilerinin kapladığı dikdörtgen olarak alındı. Üreticiye göndermeden CAD'de dış hattı kapatın.","The outline lines do not form a closed contour; the board edge was taken as the box around the outline lines. Close the outline in your CAD before sending.")]);
     if(det.noOutline) w.push(['',T('Dış hat (Edge.Cuts / outline) katmanı bulunamadı; boyut bakır sınırlarından tahmin edildi.','No outline (Edge.Cuts) layer found; size estimated from copper extents.')]);
   }
   if(S.impedance==='Yes'&&shown(FBY.impedance)&&!S.stackup.trim()) w.push(['',T('Empedans kontrolü seçili ama stackup / hedef empedans yazılmadı.','Impedance control is selected but no stack-up / target impedance is given.')]);
@@ -810,7 +812,7 @@ const polyArea=p=>{ let a=0; for(let i=0;i<p.length;i++){ const q=p[(i+1)%p.leng
 function boardShape(b){
   const T3=THREE; let outer=null, holes=[];
   const ol=layers.filter(l=>l.type==='outline'&&l.data&&l.data.kind==='gerber'); const segs=[]; ol.forEach(l=>segs.push(...l.data.segs));
-  if(segs.length&&!board.fallback){ const loops=chainLoops(segs).map(loopPts).filter(p=>p.length>2); loops.sort((x,y)=>Math.abs(polyArea(y))-Math.abs(polyArea(x))); outer=loops[0]; holes=loops.slice(1); }
+  if(segs.length&&!board.fallback){ const raw=outlineLoops(segs), loops=raw.map(loopPts).filter(p=>p.length>2); loops.sort((x,y)=>Math.abs(polyArea(y))-Math.abs(polyArea(x))); if(raw.openOuter){ outer=null; holes=loops; } else { outer=loops[0]; holes=loops.slice(1); } }
   if(!outer) outer=[[b.minx,b.miny],[b.maxx,b.miny],[b.maxx,b.maxy],[b.minx,b.maxy]];
   const sh=new T3.Shape(outer.map(p=>new T3.Vector2(p[0],p[1])));
   holes.forEach(h=>sh.holes.push(new T3.Path(h.map(p=>new T3.Vector2(p[0],p[1])))));
@@ -1297,8 +1299,8 @@ function parseJob(j){
   return o;
 }
 
-function chainLoops(segs){
-  const tol=0.02, used=new Uint8Array(segs.length), loops=[];
+function chainLoops(segs,tolMm){
+  const tol=tolMm||0.02, used=new Uint8Array(segs.length), loops=[], open=[];
   const near=(ax,ay,bx,by)=>Math.abs(ax-bx)<tol&&Math.abs(ay-by)<tol;
   for(let s=0;s<segs.length;s++){
     if(used[s]) continue; used[s]=1;
@@ -1309,18 +1311,32 @@ function chainLoops(segs){
         if(near(q.x0,q.y0,ex,ey)){ f=k; break; } if(near(q.x1,q.y1,ex,ey)){ f=k; rev=true; break; } }
       if(f<0) break; used[f]=1; loop.push({seg:segs[f],rev}); const q=segs[f]; if(rev){ ex=q.x0; ey=q.y0; } else { ex=q.x1; ey=q.y1; }
     }
-    if(near(ex,ey,sx,sy)) loops.push(loop);
+    if(near(ex,ey,sx,sy)) loops.push(loop); else open.push(...loop.map(e=>e.seg)); // an unclosed chain used to be dropped silently
   }
-  return loops;
+  loops.open=open; return loops;
+}
+const segBounds=(list)=>{ const bb=newB(); for(const s of list){ addB(bb,s.x0,s.y0); addB(bb,s.x1,s.y1); if(s.t!=='l') arcB(bb,s,0); } return bb; };
+// closed loops of the outline; gaps up to 0.3 mm are bridged. If a part of the outline stays open and reaches beyond the closed
+// loops (typical: only the round cut-outs close, the outer edge does not), the outer boundary is the box of the outline lines.
+function outlineLoops(segs){
+  let loops=chainLoops(segs);
+  if(loops.open.length){ const l2=chainLoops(segs,0.3); if(l2.open.length<loops.open.length||!l2.open.length) loops=l2; }
+  let openOuter=false;
+  if(loops.open.length){
+    const all=segBounds(segs), cl=newB(); loops.forEach(lp=>mergeB(cl,segBounds(lp.map(e=>e.seg))));
+    const e=0.05; openOuter=!loops.length||all.minx<cl.minx-e||all.miny<cl.miny-e||all.maxx>cl.maxx+e||all.maxy>cl.maxy+e;
+  }
+  loops.openOuter=openOuter; return loops;
 }
 function computeBoard(){
   board={path:null,bounds:null,fallback:false};
   const ol=layers.filter(l=>l.type==='outline'&&l.data&&l.data.kind==='gerber');
   const segs=[]; ol.forEach(l=>segs.push(...l.data.segs));
   if(segs.length){
-    const loops=chainLoops(segs);
-    if(loops.length){
+    const loops=outlineLoops(segs);
+    if(loops.length||loops.openOuter){
       const p=new Path2D(), bb=newB();
+      if(loops.openOuter){ const ob=segBounds(segs); mergeB(bb,ob); p.rect(ob.minx,ob.miny,ob.maxx-ob.minx,ob.maxy-ob.miny); } // closed loops then act as holes (even-odd fill)
       for(const lp of loops){ let first=true;
         for(const {seg:s,rev} of lp){
           const sx=rev?s.x1:s.x0, sy=rev?s.y1:s.y0, ex=rev?s.x0:s.x1, ey=rev?s.y0:s.y1;
@@ -1331,7 +1347,7 @@ function computeBoard(){
         }
         p.closePath();
       }
-      board={path:p,bounds:bb,fallback:false}; return;
+      board={path:p,bounds:bb,fallback:false,openOutline:!!loops.openOuter}; return;
     }
   }
   const bb=newB(); const src=ol.length?ol:layers.filter(l=>l.data&&/copper|drill|mask/.test(l.type));

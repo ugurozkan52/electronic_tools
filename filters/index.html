@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<script src="../gate.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Filtre Hesaplayıcı</title>
 <meta name="description" content="RC, RL, LC, Pi/T ve aktif (Sallen-Key, MFB) filtre hesaplayıcı: bileşen değerlerinden kesim frekansı, Q ve Bode grafiği; kesim frekansından bileşen önerisi.">
@@ -10,7 +11,7 @@
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
 try{t=localStorage.getItem(K)}catch(e){}
-if(t!=='dark'&&t!=='light'){t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';try{localStorage.setItem(K,t)}catch(e){}}
+if(t!=='dark'&&t!=='light'){t='dark';try{localStorage.setItem(K,t)}catch(e){}}
 function ap(v){r.setAttribute('data-theme',v);r.classList.toggle('dark',v==='dark');window.dispatchEvent(new Event('et-theme-change'))}
 r.setAttribute('data-theme',t);r.classList.toggle('dark',t==='dark');
 window.etTheme={get:function(){return r.getAttribute('data-theme')},set:function(v){ap(v);try{localStorage.setItem(K,v)}catch(e){}}};
@@ -37,25 +38,42 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:16p
 .brand{display:flex;align-items:center;gap:12px}
 .brand h1{font-size:18px;margin:0;font-weight:700}
 .brand p{margin:0;color:var(--mute);font-size:13px}
+.brand strong{font-size:17px}
 .logo{width:36px;height:36px;border-radius:8px;background:var(--acc-bg);color:var(--acc);display:grid;place-items:center}
 .hdr-r{display:flex;gap:8px;align-items:center}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap;text-decoration:none;color:var(--ink)}
 .btn:hover,.btn:focus-visible{border-color:var(--acc);outline:none}
 .theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
-main{max-width:1500px;margin:0 auto;padding:16px 24px 40px}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.tab{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600}
-.tab[aria-selected=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
+.hero{padding:26px 0 18px;border-left:4px solid var(--acc);padding-left:18px;margin:14px 0 18px}
+.hero h1{margin:0 0 6px;font-size:30px;line-height:1.2;letter-spacing:-.01em}
+.hero p{margin:0;color:var(--mute);font-size:15px;max-width:820px}
+.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:18px;padding:6px;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.tab{border:0;background:transparent;border-radius:8px;padding:11px 14px;cursor:pointer;font-weight:600;font-size:14px;color:var(--mute)}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{background:var(--acc);color:#fff}
 .tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.layout{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
-@media (max-width:900px){.layout{grid-template-columns:1fr}main{padding:12px}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
-.card h2{margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}main{padding:8px 12px 32px}.hero h1{font-size:24px}}
+.hero-res{border:2px solid var(--acc);border-radius:14px;padding:18px 16px;text-align:center;margin-bottom:12px;background:var(--acc-bg)}
+.hero-res small{display:block;color:var(--mute);font-size:12px}
+.hero-res #hl{letter-spacing:.08em;text-transform:uppercase}
+.hero-res #hv{font-size:40px;font-weight:800;color:var(--acc);line-height:1.15;margin:4px 0;font-variant-numeric:tabular-nums;word-break:break-word}
+.pill{border:1px solid var(--line);background:var(--line2);border-radius:999px;padding:8px 14px;text-align:center;font-size:13px;margin-bottom:12px}
+.sub-h{margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.layout .card{margin-bottom:0}
+.card h2{margin:0 0 12px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);font-weight:700}
+.about p{margin:0 0 10px;line-height:1.6}
 .seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
 .seg button{border:1px solid var(--line);background:var(--line2);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:13px}
 .seg button[aria-pressed=true]{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
 .fld{display:block;margin:0 0 9px}
-.fld>span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.fld>span,.fld>label{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.qm{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--line2);color:var(--mute);font-size:10.5px;font-weight:700;line-height:1;cursor:help;vertical-align:1px}
+.qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--acc);border-color:var(--acc);color:#fff;outline:none}
+.tipbox{margin:2px 0 6px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--acc);background:var(--line2);color:var(--ink);font-size:12.5px;line-height:1.5}
+.tipbox[hidden]{display:none}
 .fin{display:flex;gap:6px}
 .fin input,.fin select{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:6px 9px;min-width:0}
 .fin input{flex:1}
@@ -101,7 +119,7 @@ svg.sch .oa{font-size:16px;font-weight:700}
 <header class="top">
   <div class="brand">
     <div class="logo" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9c3 0 3 8 9 8"/></svg></div>
-    <div><h1>Filtre Hesaplayıcı</h1><p>RC · RL · LC · Pi/T · Aktif — bileşen değerlerinden analiz, kesim frekansından tasarım</p></div>
+    <div><strong>Filters</strong><p>Elektronik Araçlar</p></div>
   </div>
   <div class="hdr-r">
     <a class="btn" href="../index.html">← Araçlar</a>
@@ -110,33 +128,42 @@ svg.sch .oa{font-size:16px;font-weight:700}
 </header>
 
 <main>
+  <div class="hero"><h1 id="pageTitle">Filtre Hesaplayıcı</h1><p id="pageSub"></p></div>
   <div class="tabs" role="tablist" aria-label="Filtre türü" id="tabs"></div>
+
   <div class="layout">
-    <div>
-      <section class="card"><h2>Filtre</h2><div class="seg" id="variants" role="group" aria-label="Filtre çeşidi"></div>
-        <p class="hint" id="vdesc"></p></section>
-      <section class="card"><h2>Tasarım (fc → bileşen değerleri)</h2><div id="design"></div>
-        <label class="fld"><span>Standart değere yuvarla</span><div class="fin"><select id="eser"><option value="">Yok (hesaplanan değer)</option><option value="E12">E12</option><option value="E24" selected>E24</option></select></div></label>
-        <p class="hint">Tasarım alanları değişince bileşen değerleri yeniden hesaplanır.</p></section>
-      <section class="card"><h2>Bileşenler (elle değiştirilebilir)</h2><div id="comps"></div><div class="msg" id="msg" role="alert"></div></section>
-    </div>
-    <div>
-      <section class="card"><h2>Sonuçlar</h2><div class="res" id="res" aria-live="polite"></div>
-        <div class="grid2" style="max-width:420px"><label class="fld"><span>Sorgu frekansı</span><div class="fin"><input id="fq" inputmode="decimal" value="10"><select id="fqu"><option value="1">Hz</option><option value="1e3" selected>kHz</option><option value="1e6">MHz</option></select></div></label><div class="res" style="margin:0;align-self:end" id="qres"></div></div>
-      </section>
-      <section class="card"><h2>Frekans yanıtı</h2>
-        <div class="chart"><canvas id="cm" height="300" aria-label="Genlik grafiği (dB)" role="img"></canvas></div>
-        <div class="chart" style="margin-top:8px"><canvas id="cp" height="180" aria-label="Faz grafiği (derece)" role="img"></canvas></div>
-        <div class="readout" id="readout">Grafiğin üzerine gelerek frekansı okuyun.</div>
-        <div class="range"><label class="fld"><span>Başlangıç frekansı</span><div class="fin"><input id="fmin" inputmode="decimal" placeholder="otomatik"><select id="fminu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6">MHz</option></select></div></label>
-          <label class="fld"><span>Bitiş frekansı</span><div class="fin"><input id="fmax" inputmode="decimal" placeholder="otomatik"><select id="fmaxu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6" selected>MHz</option></select></div></label>
-          <button class="btn" id="fauto" type="button">Otomatik aralık</button></div>
-      </section>
-      <section class="card"><h2>Devre şeması</h2><div class="sch-wrap" id="sch"></div><p class="note" id="note"></p></section>
-      <section class="card"><h2>Formüller</h2><div id="math"></div></section>
-    </div>
+    <section class="card" aria-label="Girdi">
+      <h2>Girdi</h2>
+      <div class="seg" id="variants" role="group" aria-label="Filtre çeşidi"></div>
+      <p class="hint" id="vdesc"></p>
+      <div id="design"></div>
+      <label class="fld"><span>Standart değere yuvarla (hesaplanan bileşenler)</span><div class="fin"><select id="eser"><option value="">Yok (hesaplanan değer)</option><option value="E12">E12</option><option value="E24" selected>E24</option></select></div></label>
+      <div class="sub-h">Bileşen değerleri (elle değiştirilebilir)</div>
+      <div id="comps"></div><div class="msg" id="msg" role="alert"></div>
+    </section>
+    <section class="card" aria-label="Sonuç">
+      <h2>Sonuç</h2>
+      <div class="hero-res" aria-live="polite"><small id="hl"></small><div id="hv"></div><small id="hs"></small></div>
+      <div class="pill" id="hpill"></div>
+      <div class="res" id="res"></div>
+      <div class="sub-h" style="margin-top:6px">Belirli bir frekansta</div>
+      <div class="grid2"><label class="fld"><span>Frekans</span><div class="fin"><input id="fq" inputmode="decimal" value="10"><select id="fqu"><option value="1">Hz</option><option value="1e3" selected>kHz</option><option value="1e6">MHz</option></select></div></label><div class="res" style="margin:0;align-self:end" id="qres"></div></div>
+      <button class="btn" id="copyBtn" type="button" style="margin-top:6px">Sonucu kopyala</button> <span class="hint" id="copyMsg"></span>
+    </section>
   </div>
-  <p class="hint" style="margin-top:6px">Hesaplar tarayıcıda yapılır; hiçbir veri gönderilmez. Pasif devreler ideal bileşenlerle (ESR/ESL, bobin direnci yok), aktif devreler ideal işlemsel yükselteçle (sonlu GBW ve çıkış empedansı yok) modellenir; gerçek devrede kesim frekansı ve Q sapabilir.</p>
+
+  <section class="card"><h2>Transfer fonksiyonu ve formüller</h2><div id="math"></div></section>
+  <section class="card"><h2>Devre şeması</h2><div class="sch-wrap" id="sch"></div><p class="note" id="note"></p></section>
+  <section class="card"><h2>Bode grafikleri (genlik ve faz)</h2>
+    <div class="chart"><canvas id="cm" height="340" aria-label="Genlik grafiği (dB)" role="img"></canvas></div>
+    <div class="chart" style="margin-top:8px"><canvas id="cp" height="220" aria-label="Faz grafiği (derece)" role="img"></canvas></div>
+    <div class="readout" id="readout">Grafiğin üzerine gelerek frekansı okuyun.</div>
+    <div class="range"><label class="fld"><span>Başlangıç frekansı</span><div class="fin"><input id="fmin" inputmode="decimal" placeholder="otomatik"><select id="fminu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6">MHz</option></select></div></label>
+      <label class="fld"><span>Bitiş frekansı</span><div class="fin"><input id="fmax" inputmode="decimal" placeholder="otomatik"><select id="fmaxu"><option value="1">Hz</option><option value="1e3">kHz</option><option value="1e6" selected>MHz</option></select></div></label>
+      <button class="btn" id="fauto" type="button">Otomatik aralık</button></div>
+  </section>
+  <section class="card about"><h2 id="aboutT">Hakkında</h2><div id="about"></div></section>
+  <p class="hint">Hesaplar tarayıcıda yapılır; hiçbir veri gönderilmez. Pasif devreler ideal bileşenlerle (ESR/ESL, bobin direnci yok), aktif devreler ideal işlemsel yükselteçle (sonlu GBW ve çıkış empedansı yok) modellenir; gerçek devrede kesim frekansı ve Q sapabilir.</p>
 </main>
 
 <script>
@@ -169,9 +196,71 @@ function fmtSI(v, kind) {
   return num(v / pick[1]) + ' ' + pick[0];
 }
 // field: {id,label,kind:'R'|'L'|'C'|'F'|'N'|'sel', def, opts, open, min}
+/* "?" help buttons: click or hover shows a short explanation under the label */
+let tipN = 0;
+function addHelp(host, labelEl, before, text) {
+  if (!text) return;
+  const tip = document.createElement('div'); tip.className = 'tipbox'; tip.hidden = true; tip.id = 'tip' + (++tipN); tip.textContent = text;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'qm'; btn.textContent = '?';
+  btn.setAttribute('aria-label', 'Bilgi'); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-describedby', tip.id);
+  btn.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (tip.dataset.hover) { delete tip.dataset.hover; return; } // pin what the hover opened
+    tip.hidden = !tip.hidden; btn.setAttribute('aria-expanded', tip.hidden ? 'false' : 'true');
+  };
+  btn.onmouseenter = () => { if (tip.hidden) { tip.hidden = false; tip.dataset.hover = '1'; } };
+  btn.onmouseleave = () => { if (tip.dataset.hover) { delete tip.dataset.hover; tip.hidden = true; } };
+  labelEl.appendChild(btn); host.insertBefore(tip, before);
+}
+const HELP = {
+  solve: 'Hangi değerin hesaplanacağını seçin. Diğer iki değeri siz girersiniz; hesaplanan değer sağdaki büyük sonuç kutusunda görünür.',
+  fc: 'Kesim frekansı: çıkış genliğinin girişe göre −3 dB (yaklaşık %70,7) düştüğü frekans. Alçak geçirende bunun üstündeki, yüksek geçirende altındaki frekanslar bastırılır.',
+  Rx: 'Tasarımda sabit tutacağınız direnç. Çok küçük değerler kaynağı yükler, çok büyük değerler gürültüyü artırır; 1 kΩ – 100 kΩ arası yaygındır.',
+  Xx: 'Seçtiğiniz bileşenin değeri (kondansatör veya bobin). Standart bir değer seçerseniz diğer bileşen buna göre hesaplanır.',
+  Cx: 'Tasarımda önce seçtiğiniz kondansatör. Diğer bileşenler buna göre hesaplanır; standart bir değer (ör. 10 nF, 100 nF) seçmek işi kolaylaştırır.',
+  Lx: 'Tasarımda seçtiğiniz bobin değeri; direnç buna göre hesaplanır.',
+  Q: 'Q (kalite faktörü) kesim çevresindeki keskinliği belirler. 0,5 kritik sönümlü (aşım yok), 0,577 Bessel (en düz grup gecikmesi), 0,707 Butterworth (en düz geçiş bandı); daha yüksek değerlerde Chebyshev: kesim daha dik ama geçiş bandında dalga/tepe oluşur.',
+  Gk: 'Kazanç (mutlak değer, V/V). Ters çeviren devrelerde çıkış girişten ters işaretlidir; burada yalnızca büyüklüğü girilir. 1 = birim kazanç, 10 = 20 dB.',
+  type: 'Alçak geçiren (LP) düşük frekansları geçirir, yükseklerini bastırır. Yüksek geçiren (HP) tersini yapar.',
+  approx: 'Butterworth: geçiş bandı olabildiğince düz, kesim yumuşak. Chebyshev: kesim daha dik, ama geçiş bandında seçtiğiniz kadar dalga (ripple) olur.',
+  ripple: 'Chebyshev geçiş bandı dalgası (dB). 0,1 – 1 dB yaygındır. Büyüdükçe kesim dikleşir; dalga ve faz bozulması artar.',
+  order: 'Derece (eleman sayısı). Her derece yaklaşık −20 dB/dekad eğim ekler; yüksek derece daha dik kesim ama daha çok bileşen demektir. Tek derecede kaynak ve yük direnci eşit çıkar.',
+  topo: 'Pi filtre paralel elemanla başlar ve biter (kaynağı ve yükü kapasitif görür). T filtre seri elemanla başlar ve biter (endüktif görür). 2. derecede seri veya paralel elemanla başlayabilirsiniz.',
+  R0: 'Kaynak/referans direnci. Filtre bu dirence uyumlu tasarlanır (RF devrelerde genellikle 50 Ω). Kaynak direnci Rs ve yük RL başlangıçta buna eşit alınır.',
+  Rs: 'Kaynak direnci: girişi süren devrenin çıkış direnci. 0 = ideal gerilim kaynağı. Kesim frekansını ve kazancı etkiler.',
+  RL: 'Yük direnci: filtre çıkışına bağlı direnç. Boş bırakırsanız açık devre (yük yok) kabul edilir. Yük, pasif filtrelerde kesimi kaydırabilir.',
+  R: 'Direnç değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  C: 'Kondansatör değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  L: 'Bobin değeri. Elle değiştirirseniz sonuçlar ve grafik anında güncellenir.',
+  Rin: 'Giriş direnci. Kazanç −Rf/Rin ile belirlenir.',
+  Rf: 'Geri besleme direnci (op-amp çıkışından eviren girişe).',
+  Cf: 'Geri besleme kondansatörü, Rf ile paralel. Kesim frekansını belirler: fc = 1/(2π·Rf·Cf).',
+  Cin: 'Giriş kondansatörü; düşük frekansları (ve DC\'yi) engeller.',
+  fq: 'Bu frekanstaki genlik (dB) ve faz (derece) hesaplanır.',
+  fmin: 'Grafiğin başlangıç frekansı. Boş bırakılırsa kesim frekansına göre otomatik seçilir.',
+  fmax: 'Grafiğin bitiş frekansı. Boş bırakılırsa kesim frekansına göre otomatik seçilir.',
+  eser: 'Hesaplanan değerleri en yakın standart seriye yuvarlar (E12: %10, E24: %5 toleranslı parça değerleri). Yuvarlama kesim frekansını bir miktar kaydırır; gerçek değer sonuç kartında görünür.',
+};
+const HELP_V = { // meaning of the same component name differs per circuit
+  sk_lp: { R1: 'Girişten gelen ilk seri direnç.', R2: 'İkinci seri direnç; op-amp\'ın + girişine bağlanır.', C1: 'Geri besleme kondansatörü (ilk düğümden çıkışa).', C2: 'Toprak kondansatörü (op-amp + girişi ile toprak arası).', Cx: 'C2: toprağa bağlı kondansatör. Önce bunu seçersiniz (ör. 10 nF); C1 ve dirençler buna göre çıkar.' },
+  sk_hp: { C1: 'Giriş kondansatörü.', C2: 'İkinci seri kondansatör; op-amp\'ın + girişine gider.', R1: 'Geri besleme direnci (ilk düğümden çıkışa).', R2: 'Toprak direnci (op-amp + girişi ile toprak arası).', Cx: 'C1 ve C2 aynı değerde alınır; seçtiğiniz değer ikisine de uygulanır.' },
+  mfb_lp: { R1: 'Giriş direnci; kazanç = −R3/R1.', R2: 'Op-amp eviren girişine giden direnç.', R3: 'İlk düğümden çıkışa geri besleme direnci.', C1: 'Toprağa bağlı kondansatör.', C2: 'Geri besleme kondansatörü (eviren giriş ile çıkış arası).', Cx: 'C2: geri besleme kondansatörü. Önce bunu seçersiniz; C1 ve dirençler buna göre çıkar.' },
+  ia_lp: { Cx: 'Cf: geri besleme kondansatörü; Rf ve Rin buna göre hesaplanır.' },
+  ia_hp: { Cx: 'Cin: giriş kondansatörü; Rin ve Rf buna göre hesaplanır.', Rin: 'Cin ile seri giriş direnci: fc = 1/(2π·Rin·Cin).', Rf: 'Geri besleme direnci; yüksek frekans kazancı = −Rf/Rin.' },
+};
+function helpText(f) {
+  if (f.help) return f.help;
+  const v = S.v && S.v.id, vs = HELP_V[v] || {};
+  if (vs[f.id]) return vs[f.id];
+  if (/^e\d+$/.test(f.id)) {
+    const series = /^Seri/.test(f.label), ind = f.kind === 'L';
+    return (series ? 'Kaynakla yük arasına seri bağlanan ' : 'Sinyal hattından toprağa (paralel) bağlanan ') + (ind ? 'bobin' : 'kondansatör') + '. Numara kaynaktan yüke doğru sırayı gösterir. Elle değiştirirseniz sonuçlar anında güncellenir.';
+  }
+  return HELP[f.id] || null;
+}
 function mkField(f, onchange) {
-  const wrap = document.createElement('label'); wrap.className = 'fld';
-  const sp = document.createElement('span'); sp.textContent = f.label; wrap.appendChild(sp);
+  const wrap = document.createElement('div'); wrap.className = 'fld';
+  const sp = document.createElement('label'); sp.textContent = f.label; wrap.appendChild(sp);
   const row = document.createElement('div'); row.className = 'fin'; wrap.appendChild(row);
   let inp = null, sel = null;
   if (f.kind === 'sel') {
@@ -186,6 +275,8 @@ function mkField(f, onchange) {
       row.appendChild(sel);
     }
   }
+  const ctl = inp || sel; ctl.id = 'fld' + (++tipN); sp.htmlFor = ctl.id;
+  addHelp(wrap, sp, row, helpText(f));
   const fire = () => onchange && onchange(f.id);
   if (inp) inp.addEventListener('input', fire);
   if (sel) sel.addEventListener('change', fire);
@@ -288,49 +379,76 @@ const RS = { id: 'Rs', kind: 'R', label: 'Kaynak direnci Rs', def: 0 };
 const RLF = { id: 'RL', kind: 'R', label: 'Yük direnci RL (boş = açık devre)', def: Infinity, open: true };
 const FC = { id: 'fc', kind: 'F', label: 'Kesim frekansı fc', def: 1e3 };
 const QSEL = { id: 'Q', kind: 'sel', label: 'Yanıt (Q)', opts: [['0.5', 'Kritik sönümlü / Linkwitz-Riley (Q = 0.5)'], ['0.5774', 'Bessel (Q = 0.577)'], ['0.7071', 'Butterworth (Q = 0.707)'], ['0.8637', 'Chebyshev 0.5 dB (Q = 0.864)'], ['0.9565', 'Chebyshev 1 dB (Q = 0.957)']], def: '0.7071' };
-const passive1 = (id, label, desc, designIn, comps, designFn, els, f0, type, note) => ({
-  id, label, desc, type, design: designIn, comps, extras: [RS, RLF], designFn, note,
-  model: (v) => ({ els: els(v), Rs: v.Rs, RL: v.RL, type, f0: f0(v), H: (w) => ladderH(els(v), v.Rs, v.RL, w) }),
-});
+// First-order RC / RL with a "what to solve" selector (R, the reactive part, or fc), like common calculators.
+function firstOrder(id, label, desc, type, X, elsFn, f0Fn, note) {
+  const isRC = X.id === 'C';
+  const relR = (fc, x) => (isRC ? 1 / (TAU * fc * x) : TAU * fc * x);
+  const relX = (fc, R) => (isRC ? 1 / (TAU * fc * R) : R / (TAU * fc));
+  const sum = (v, m) => `fc = ${fmtF(m.f0)}, R = ${fmtSI(v.R, 'R')}, ${X.id} = ${fmtSI(v[X.id], X.kind)}`;
+  return {
+    id, label, desc, type, note, extras: [RS, RLF],
+    design: [
+      { id: 'solve', kind: 'sel', label: 'Neyi hesaplayalım?', opts: [['R', `Direnç R  (fc ve ${X.id} verilir)`], ['X', `${X.name} ${X.id}  (fc ve R verilir)`], ['fc', `Kesim frekansı fc  (R ve ${X.id} verilir)`]], def: 'R' },
+      Object.assign({}, FC, { vis: { solve: ['R', 'X'] } }),
+      { id: 'Rx', kind: 'R', label: 'Direnç R', def: 10e3, vis: { solve: ['X', 'fc'] } },
+      { id: 'Xx', kind: X.kind, label: `${X.name} ${X.id}`, def: X.def, vis: { solve: ['R', 'fc'] } },
+    ],
+    comps: [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: X.id, kind: X.kind, label: X.id, rounded: 1 }],
+    designFn: (d) => {
+      if (d.solve === 'R') return { R: relR(d.fc, d.Xx), [X.id]: d.Xx, _solved: 'R' };
+      if (d.solve === 'X') return { R: d.Rx, [X.id]: relX(d.fc, d.Rx), _solved: X.id };
+      return { R: d.Rx, [X.id]: d.Xx, _solved: '' };
+    },
+    hero: (v, m, dv) => dv.solve === 'R' ? ['Direnç R', fmtSI(v.R, 'R'), sum(v, m)]
+      : dv.solve === 'X' ? [`${X.name} ${X.id}`, fmtSI(v[X.id], X.kind), sum(v, m)]
+      : ['Kesim frekansı fc', fmtF(m.f0), sum(v, m)],
+    model: (v) => ({ els: elsFn(v), Rs: v.Rs, RL: v.RL, type, f0: f0Fn(v), H: (w) => ladderH(elsFn(v), v.Rs, v.RL, w) }),
+  };
+}
+const XC = { id: 'C', kind: 'C', name: 'Kondansatör', def: 100e-9 }, XL = { id: 'L', kind: 'L', name: 'Bobin', def: 10e-3 };
 const ladderIn = (orders, orderDef, topoOpts) => [
   { id: 'type', kind: 'sel', label: 'Tür', opts: [['lp', 'Alçak geçiren (LP)'], ['hp', 'Yüksek geçiren (HP)']], def: 'lp' },
   { id: 'approx', kind: 'sel', label: 'Yaklaşım', opts: [['but', 'Butterworth (düz geçiş bandı)'], ['cheb', 'Chebyshev (dalgalı, dik)']], def: 'but' },
-  { id: 'ripple', kind: 'N', label: 'Chebyshev dalgası (dB)', def: 0.5 },
+  { id: "ripple", kind: "N", label: "Chebyshev dalgası (dB)", def: 0.5, vis: { approx: ["cheb"] } },
   { id: 'order', kind: 'sel', label: 'Derece (eleman sayısı)', opts: orders, def: orderDef },
   { id: 'topo', kind: 'sel', label: 'Yapı', opts: topoOpts, def: topoOpts[0][0] },
   FC,
   { id: 'R0', kind: 'R', label: 'Kaynak / referans direnci R0', def: 50 },
 ];
 const FAMILIES = [
-  { id: 'rc', name: 'RC', variants: [
-    passive1('rc_lp', 'Alçak geçiren', 'R seri, C paralel. fc = 1 / (2π·R·C), −20 dB/dekad.',
-      [FC, { id: 'Cx', kind: 'C', label: 'Seçilen C', def: 100e-9 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'C', kind: 'C', label: 'C', rounded: 1 }],
-      (d) => ({ R: 1 / (TAU * d.fc * d.Cx), C: d.Cx }), (v) => [['S', 'R', v.R], ['P', 'C', v.C]], (v) => 1 / (TAU * v.R * v.C), 'lp'),
-    passive1('rc_hp', 'Yüksek geçiren', 'C seri, R paralel. fc = 1 / (2π·R·C), +20 dB/dekad.',
-      [FC, { id: 'Cx', kind: 'C', label: 'Seçilen C', def: 100e-9 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'C', kind: 'C', label: 'C', rounded: 1 }],
-      (d) => ({ R: 1 / (TAU * d.fc * d.Cx), C: d.Cx }), (v) => [['S', 'C', v.C], ['P', 'R', v.R]], (v) => 1 / (TAU * v.R * v.C), 'hp'),
+  { id: 'rc', name: 'RC', title: 'RC Filtre Hesaplayıcı', sub: 'Direnç ve kondansatörle 1. derece alçak ve yüksek geçiren filtre: kesim frekansını, R veya C değerini hesaplayın, Bode grafiğini görün.',
+    about: ['RC filtre bir direnç ve bir kondansatörden oluşur. Kesim frekansı −3 dB noktasıdır: çıkış genliği girişin yaklaşık %70,7\'sine (1/√2) düşer. Kesim frekansı <i>f</i><sub>c</sub> = 1/(2π·R·C) ile bulunur; kesimden sonra eğim −20 dB/dekad (−6 dB/oktav) olur.',
+      'Alçak geçirende direnç seri, kondansatör toprağa paraleldir; yüksek geçirende yer değiştirirler. Kaynak direnci (Rs) ve yük direnci (RL) girerseniz sonuçlar bunların etkisini de içerir; teorik fc yalnızca R ve C\'ye bağlıdır.'],
+    variants: [
+      firstOrder('rc_lp', 'Alçak geçiren', 'R seri, C paralel. fc = 1 / (2π·R·C), −20 dB/dekad.', 'lp', XC, (v) => [['S', 'R', v.R], ['P', 'C', v.C]], (v) => 1 / (TAU * v.R * v.C)),
+      firstOrder('rc_hp', 'Yüksek geçiren', 'C seri, R paralel. fc = 1 / (2π·R·C), +20 dB/dekad.', 'hp', XC, (v) => [['S', 'C', v.C], ['P', 'R', v.R]], (v) => 1 / (TAU * v.R * v.C)),
   ] },
-  { id: 'rl', name: 'RL', variants: [
-    passive1('rl_lp', 'Alçak geçiren', 'L seri, R paralel (yük). fc = R / (2π·L).',
-      [FC, { id: 'Lx', kind: 'L', label: 'Seçilen L', def: 10e-3 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'L', kind: 'L', label: 'L', rounded: 1 }],
-      (d) => ({ R: TAU * d.fc * d.Lx, L: d.Lx }), (v) => [['S', 'L', v.L], ['P', 'R', v.R]], (v) => v.R / (TAU * v.L), 'lp'),
-    passive1('rl_hp', 'Yüksek geçiren', 'R seri, L paralel. fc = R / (2π·L).',
-      [FC, { id: 'Lx', kind: 'L', label: 'Seçilen L', def: 10e-3 }], [{ id: 'R', kind: 'R', label: 'R', rounded: 1 }, { id: 'L', kind: 'L', label: 'L', rounded: 1 }],
-      (d) => ({ R: TAU * d.fc * d.Lx, L: d.Lx }), (v) => [['S', 'R', v.R], ['P', 'L', v.L]], (v) => v.R / (TAU * v.L), 'hp'),
+  { id: 'rl', name: 'RL', title: 'RL Filtre Hesaplayıcı', sub: 'Direnç ve bobinle 1. derece alçak ve yüksek geçiren filtre: kesim frekansını, R veya L değerini hesaplayın.',
+    about: ['RL filtre bir direnç ve bir bobinden oluşur. Kesim frekansı <i>f</i><sub>c</sub> = R/(2π·L); eğim −20 dB/dekad. Alçak geçirende bobin seri, direnç (yük) paraleldir; yüksek geçirende yer değiştirirler.',
+      'Güç devrelerinde ve bobinin DC\'yi geçirmesi istenen yerlerde kullanılır. Gerçek bobinin seri direnci ve doyması bu modelde yoktur.'],
+    variants: [
+      firstOrder('rl_lp', 'Alçak geçiren', 'L seri, R paralel (yük). fc = R / (2π·L).', 'lp', XL, (v) => [['S', 'L', v.L], ['P', 'R', v.R]], (v) => v.R / (TAU * v.L)),
+      firstOrder('rl_hp', 'Yüksek geçiren', 'R seri, L paralel. fc = R / (2π·L).', 'hp', XL, (v) => [['S', 'R', v.R], ['P', 'L', v.L]], (v) => v.R / (TAU * v.L)),
   ] },
-  { id: 'lc', name: 'LC (2. derece)', variants: [
+  { id: "lc", name: "LC (2. derece)", title: "LC Filtre Hesaplayıcı", sub: "Bobin ve kondansatörle 2. derece alçak veya yüksek geçiren filtre: kesim frekansından bobin ve kondansatör değerlerini bulun.",
+    about: ["LC filtre, bir bobin ve bir kondansatörden oluşan ve direnç gibi kayıp yaratmayan 2. derece bir filtredir. Kaynak ve yük direnci R0 ile uyumlu tasarlanır; Butterworth seçiminde eğim −40 dB/dekad olur.", "Eleman değerleri prototip g-değerlerinden ölçeklenir. Bobin kayıpları ve kondansatör ESR'si bu modelde yoktur; gerçek devrede kesim frekansı kayabilir."],
+    variants: [
     { id: 'lc2', label: 'LC bölümü', desc: 'İki elemanlı LC merdiven filtre; kaynak ve yük direnci R0 ile uyumlu tasarlanır.', type: 'var',
       design: ladderIn([['2', '2']], '2', [['S', 'Seri eleman önce (kaynağa seri)'], ['P', 'Paralel eleman önce (kaynağa paralel)']]),
       comps: ladderComps, extras: [RS, RLF], designFn: ladderDesign, model: ladderModel,
       note: 'Butterworth 2. derece: −40 dB/dekad. Chebyshev çift derecede yük direnci R0\'dan farklı çıkar (RL alanına bakın).' },
   ] },
-  { id: 'pit', name: 'Pi / T (3–7. derece)', variants: [
+  { id: "pit", name: "Pi / T (3–7. derece)", title: "Pi / T Filtre Hesaplayıcı", sub: "Pi (C–L–C) ve T (L–C–L) LC filtreler: 3 ila 7. derece, Butterworth veya Chebyshev, alçak veya yüksek geçiren.",
+    about: ["Pi filtre paralel elemanla başlar ve biter (örneğin C–L–C), T filtre seri elemanla başlar ve biter (L–C–L). Derece arttıkça kesimden sonraki eğim dikleşir: her derece için yaklaşık −20 dB/dekad.", "Butterworth geçiş bandını mümkün olduğunca düz tutar. Chebyshev daha dik bir kesim sağlar ama geçiş bandında dalga (ripple) bırakır; dalga miktarını dB olarak seçersiniz."],
+    variants: [
     { id: 'pit', label: 'Pi / T LC filtre', desc: 'Pi: paralel eleman ile başlar ve biter (C–L–C). T: seri eleman ile başlar ve biter (L–C–L). Butterworth veya Chebyshev.', type: 'var',
       design: ladderIn([['3', '3'], ['4', '4'], ['5', '5'], ['6', '6'], ['7', '7']], '3', [['P', 'Pi (paralel başlar)'], ['S', 'T (seri başlar)']]),
       comps: ladderComps, extras: [RS, RLF], designFn: ladderDesign, model: ladderModel,
       note: 'Tek derecede kaynak ve yük R0\'a eşittir. Pi filtre kaynak/yükü kapasitif, T filtre endüktif görür.' },
   ] },
-  { id: 'act', name: 'Aktif', variants: [
+  { id: "act", name: "Aktif", title: "Aktif Filtre Hesaplayıcı", sub: "Op-amp'lı Sallen-Key, MFB ve 1. derece aktif filtreler: Q seçeneklerini (Bessel, Butterworth, Chebyshev) ve bileşen değerlerini hesaplayın.",
+    about: ["Aktif filtreler direnç ve kondansatörün yanında bir işlemsel yükselteç kullanır; bobin gerekmez, düşük frekanslarda bile küçük bileşenlerle yüksek dereceli filtre kurulabilir.", "Q = 0,5 kritik sönümlü (aşım yok), 0,577 Bessel (en düz grup gecikmesi), 0,707 Butterworth (en düz geçiş bandı), 0,9 ve üzeri Chebyshev (daha dik kesim, geçiş bandında tepe). Sallen-Key birim kazançlıdır; MFB ters çevirir ve kazanç ayarlanabilir."],
+    variants: [
     { id: 'sk_lp', label: 'Sallen-Key LP', desc: 'Birim kazançlı 2. derece Sallen-Key alçak geçiren. C1 geri besleme, C2 toprak kondansatörü. f₀ = 1/(2π√(R1R2C1C2)).', type: 'lp',
       design: [FC, QSEL, { id: 'Cx', kind: 'C', label: 'Seçilen C2', def: 10e-9 }],
       comps: [{ id: 'R1', kind: 'R', label: 'R1', rounded: 1 }, { id: 'R2', kind: 'R', label: 'R2', rounded: 1 }, { id: 'C1', kind: 'C', label: 'C1 (geri besleme)', rounded: 1 }, { id: 'C2', kind: 'C', label: 'C2 (toprak)', rounded: 1 }], extras: [],
@@ -387,6 +505,8 @@ function selectFamily(f, variantId) {
     b.onclick = () => selectVariant(v); box.appendChild(b);
   });
   box.style.display = f.variants.length > 1 ? '' : 'none';
+  $("#pageTitle").textContent = f.title; $("#pageSub").textContent = f.sub; document.title = f.title;
+  $("#about").innerHTML = (f.about || []).map((p) => "<p>" + p + "</p>").join("");
   selectVariant(f.variants.find((v) => v.id === variantId) || f.variants[0]);
 }
 function selectVariant(v) {
@@ -399,26 +519,27 @@ function selectVariant(v) {
     const fld = mkField(Object.assign({}, f, { def: mem[f.id] != null ? mem[f.id] : f.def }), onDesign);
     S.dFields[f.id] = fld; box.appendChild(fld.el);
   }
-  syncRippleVisibility();
-  S.keep = null;
   onDesign();
 }
-function syncRippleVisibility() {
-  const a = S.dFields.approx, r = S.dFields.ripple;
-  if (a && r) r.el.style.display = a.get() === 'cheb' ? '' : 'none';
+function syncVis() { // a field with vis:{otherId:[values]} is shown only while that other field has one of the values
+  for (const f of S.v.design) {
+    if (!f.vis) continue;
+    const [k, list] = Object.entries(f.vis)[0], on = !!S.dFields[k] && list.includes(S.dFields[k].get());
+    S.dFields[f.id].el.style.display = on ? "" : "none"; S.dFields[f.id].hidden = !on;
+  }
 }
 function readDesign() {
   const dv = {}; let ok = true;
   for (const f of S.v.design) {
     const x = S.dFields[f.id].get();
-    const bad = f.kind !== 'sel' && !(x > 0 && isFinite(x));
+    const bad = !S.dFields[f.id].hidden && f.kind !== "sel" && !(x > 0 && isFinite(x));
     S.dFields[f.id].mark(bad); if (bad) ok = false;
     dv[f.id] = f.kind === 'sel' && /^[0-9.]+$/.test(x) && f.id !== 'order' && f.id !== 'topo' ? +x : x;
   }
   return ok ? dv : null;
 }
 function onDesign() {
-  syncRippleVisibility();
+  syncVis();
   const dv = readDesign();
   if (!dv) { setMsg('Tasarım alanlarına pozitif sayı girin.'); return; }
   S.dv = dv; store[S.v.id] = Object.fromEntries(Object.entries(S.dFields).map(([k, f]) => [k, f.get()]));
@@ -426,7 +547,7 @@ function onDesign() {
   for (const id of ['Rs', 'RL']) if (S.cFields[id]) keep[id] = S.cFields[id].get();
   let vals = S.v.designFn(dv);
   const ser = $('#eser').value, list = typeof S.v.comps === 'function' ? S.v.comps(dv) : S.v.comps;
-  for (const c of list) if (c.rounded) vals[c.id] = roundE(vals[c.id], ser);
+  for (const c of list) if (c.rounded && (vals._solved === undefined || c.id === vals._solved)) vals[c.id] = roundE(vals[c.id], ser);
   for (const id of ['Rs', 'RL']) if (vals[id] === undefined && keep[id] !== undefined && !(S.v.extras.length === 0)) vals[id] = keep[id];
   buildComps(list, vals);
   recompute();
@@ -479,14 +600,29 @@ function recompute() {
   $('#note').textContent = S.v.note || '';
 }
 function fmtF(f) { return f == null ? '—' : fmtSI(f, 'F'); }
+const fdb = (x) => (Math.abs(x) < 0.005 ? "0" : String(parseFloat(x.toFixed(2))));
+function fmtT(t) { const u = [["ns", 1e-9], ["µs", 1e-6], ["ms", 1e-3], ["s", 1]]; let p = u[0]; for (const x of u) if (t >= x[1] * 0.9995) p = x; return num(t / p[1]) + " " + p[0]; }
 function renderResults() {
-  const m = S.model, r = S.res, box = $('#res'); box.innerHTML = '';
-  const add = (big, small) => { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); };
+  const m = S.model, r = S.res, v = S.vals, box = $('#res'); box.innerHTML = '';
+  const lines = [];
+  const add = (big, small) => { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); lines.push(small + ': ' + big); };
+  // big result: the solved quantity for RC/RL, otherwise the -3 dB frequency
+  const hero = S.v.hero ? S.v.hero(v, m, S.dv) : ['−3 dB frekansı', fmtF(r.f3), 'Teorik / tasarım f₀ = ' + fmtF(m.f0)];
+  $('#hl').textContent = hero[0]; $('#hv').textContent = hero[1]; $('#hs').textContent = hero[2];
+  const sl = r.slope == null ? null : Math.abs(r.slope);
+  $('#hpill').textContent = S.v.label + (sl != null ? ' — kesimden sonra ' + (m.type === 'hp' ? '+' : '−') + num(parseFloat(sl.toFixed(1))) + " dB/dekad eğim" : '');
   add(fmtF(r.f3), '−3 dB frekansı (hesaplanan)');
   add(fmtF(m.f0), m.Q != null ? 'Kutup frekansı f₀' : 'Tasarım / teorik fc');
   if (m.Q != null) add(num(m.Q), 'Kalite faktörü Q' + (m.Q > 0.7072 ? ' (tepe var)' : ''));
-  add(num(r.ref) + ' dB', (m.type === 'hp' ? 'Yüksek frekans' : 'DC') + ' kazancı');
-  add(r.slope == null ? '—' : num(Math.abs(r.slope)) + ' dB/dek', 'Kesim sonrası eğim (' + (m.type === 'hp' ? '↓ frekans' : '↑ frekans') + ')');
+  add(fdb(r.ref) + " dB", (m.type === 'hp' ? 'Yüksek frekans' : 'DC') + ' kazancı');
+  if (S.v.hero) { // first order: time constant and angular cutoff
+    const tau = v.C ? v.R * v.C : v.L / v.R;
+    add(fmtT(tau), "Zaman sabiti τ");
+    add(num(TAU * m.f0) + ' rad/s', 'Açısal kesim ω<sub>c</sub>'.replace(/<[^>]+>/g, ''));
+  }
+  const h0 = m.H(TAU * m.f0);
+  add(fdb(dB(h0)) + " dB", "Genlik @ f₀"); add(num(carg(h0) * 180 / Math.PI) + '°', 'Faz @ f₀');
+  S.summary = [hero[0] + ': ' + hero[1], hero[2]].concat(lines);
   queryProbe();
 }
 function probeF() { const x = Number($('#fq').value.replace(',', '.')); return x > 0 ? x * Number($('#fqu').value) : null; }
@@ -536,23 +672,28 @@ function newSvg(w, h) {
 const lv = (v, id, kind, name) => [name || id, fmtSI(v[id], kind)];
 
 function schLadder(m) {
-  const items = [{ t: 'S', k: 'R', name: 'Rs', v: m.Rs }].concat(m.els.map((e, i) => ({ t: e[0], k: e[1], name: e[1] + (i + 1), v: e[2] })));
-  items.push({ t: 'P', k: 'R', name: 'RL', v: m.RL, load: true });
+  const items = [];
+  if (m.Rs > 0) items.push({ t: 'S', k: 'R', name: 'Rs', v: m.Rs });
+  const plain = m.els.length === 2 && m.els[0][1] !== m.els[1][1];
+  m.els.forEach((e, i) => items.push({ t: e[0], k: e[1], name: plain ? e[1] : e[1] + (i + 1), v: e[2] }));
+  const hasLoad = isFinite(m.RL);
+  if (hasLoad) items.push({ t: 'P', k: 'R', name: 'RL', v: m.RL, load: true });
   const top = 48, bot = 155, mid = (top + bot) / 2;
-  let w = 30; for (const it of items) w += it.t === 'S' ? 75 : 80; w += 120;
+  let w = 30; for (const it of items) w += it.t === 'S' ? 75 : 80; w += 130;
   const b = newSvg(w, bot + 32);
   b.wire([30, top], [30, mid - 14]); b.source(30, mid); b.wire([30, mid + 14], [30, bot]); b.gnd(30, bot);
   b.text(48, mid + 4, 'Vin', 'start', 'tm');
-  let x = 30;
+  let x = 30, xe = 30;
   for (const it of items) {
-    const val = isFinite(it.v) ? fmtSI(it.v, it.k) : '∞';
+    const val = fmtSI(it.v, it.k);
     if (it.t === 'S') { b.part(it.k, x + 30, top, false, it.name, val); x += 60; b.wire([x, top], [x + 15, top]); x += 15; }
     else {
       b.dot(x, top); b.wire([x, top], [x, mid - 30]); b.part(it.k, x, mid, true, it.name, val); b.wire([x, mid + 30], [x, bot]); b.dot(x, bot);
-      if (!it.load) { b.wire([x, top], [x + 80, top]); b.wire([x, bot], [x + 80, bot]); x += 80; }
-      else { b.wire([x, top], [x + 60, top]); b.term(x + 60, top, 'Vout', true); b.wire([x, bot], [x + 60, bot]); }
+      if (!it.load) { b.wire([x, top], [x + 80, top]); x += 80; }
     }
   }
+  if (hasLoad) { b.wire([x, top], [x + 60, top]); xe = x + 60; } else { b.wire([x, top], [x + 40, top]); xe = x + 40; }
+  b.term(xe, top, 'Vout', true); b.wire([30, bot], [xe, bot]);
   return b.svg;
 }
 
@@ -775,6 +916,15 @@ function leave() { S.hoverF = null; draw(); }
 buildTabs();
 ['#cm', '#cp'].forEach((s) => { const c = $(s); c.addEventListener('pointermove', hover); c.addEventListener('pointerleave', leave); });
 $('#eser').onchange = onDesign;
+['eser', 'fq', 'fmin', 'fmax'].forEach((id) => { // static fields of the page get a "?" too
+  const lab = $('#' + id).closest('label'); lab.htmlFor = id;
+  addHelp(lab, lab.querySelector('span'), lab.querySelector('.fin'), HELP[id]);
+});
+$('#copyBtn').onclick = async () => {
+  const txt = (S.summary || []).join('\n') + '\n' + Object.entries(S.vals || {}).map(([k, x]) => k + ' = ' + (isFinite(x) ? num(x) : '∞')).join(', ');
+  try { await navigator.clipboard.writeText(txt); $('#copyMsg').textContent = 'Kopyalandı.'; } catch (e) { $('#copyMsg').textContent = 'Kopyalanamadı (tarayıcı izni).'; }
+  setTimeout(() => { $('#copyMsg').textContent = ''; }, 2500);
+};
 ['#fq', '#fqu'].forEach((s) => $(s).addEventListener('input', queryProbe));
 ['#fmin', '#fminu', '#fmax', '#fmaxu'].forEach((s) => $(s).addEventListener('input', () => { autoRange(false); draw(); }));
 $('#fauto').onclick = () => { autoRange(true); draw(); };

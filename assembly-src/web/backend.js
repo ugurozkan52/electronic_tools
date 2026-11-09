@@ -47,7 +47,7 @@ function readDark() {
   } catch (e) { /* storage blocked */ }
   const st = store && store.getState();
   const dark = st && typeof st.dark === 'boolean' ? st.dark
-    : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    : true; // dark is the default
   writeDark(dark);
   return dark;
 }
