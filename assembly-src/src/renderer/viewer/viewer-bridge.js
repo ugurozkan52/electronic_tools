@@ -546,6 +546,25 @@ function asmRenderHint() {
     b.onclick = function () { try { localStorage.setItem('montaj.hintHidden', hidden ? '0' : '1'); } catch (e) { /* ignore */ } asmRenderHint(); };
   }
 }
+// BOM summary line: total grouped BOM lines (and parts) of what the list shows, plus the scope (top / bottom / both / 3D)
+function asmUpdateBomCount() {
+  var box = document.getElementById('asm-bomcount');
+  if (!box || typeof getSelectedBomList !== 'function' || typeof pcbdata === 'undefined' || !pcbdata) return;
+  var list = getSelectedBomList(), mode = settings.bommode, n = list.length, parts = 0, on3d = typeof V3D !== 'undefined' && V3D.isOn();
+  if (mode !== 'netlist') list.forEach(function (e) { parts += e.length; });
+  var shown = typeof bom !== 'undefined' && bom ? bom.children.length : n;
+  var txt = mode === 'netlist' ? I18N.t('{n} net', { n: n }) : mode === 'ungrouped' ? I18N.t('{n} parça', { n: parts }) : I18N.t('{n} grup (BOM satırı) · {p} parça', { n: n, p: parts });
+  if (shown !== n) txt += ' — ' + I18N.t('{s} gösteriliyor', { s: shown });
+  var scope = on3d ? 'Tüm kart (3D)' : settings.canvaslayout === 'F' ? 'Üst yüz' : settings.canvaslayout === 'B' ? 'Alt yüz' : 'İki yüz';
+  box.textContent = I18N.t('Toplam') + ': ' + txt + ' · ' + I18N.t(scope);
+}
+var __asmOrigPopulateBomBody = populateBomBody;
+populateBomBody = function () { var r = __asmOrigPopulateBomBody.apply(this, arguments); asmUpdateBomCount(); return r; };
+// re-draw the BOM (used when the 3D view is switched on: the list becomes the full BOM)
+function asmRefreshBom() {
+  if (typeof changeBomMode !== 'function' || typeof bom === 'undefined' || !bom || typeof pcbdata === 'undefined' || !pcbdata) return;
+  try { changeBomMode(settings.bommode); } catch (e) { /* the page is still starting */ }
+}
 // dark mode is an application-wide preference (shared with the home screen)
 var __asmOrigSetDark = setDarkMode;
 setDarkMode = function (v) { __asmOrigSetDark(v); asm.setDark(!!v); document.documentElement.classList.toggle('dark', !!v); if (typeof V3D !== 'undefined') V3D.applyTheme(); };

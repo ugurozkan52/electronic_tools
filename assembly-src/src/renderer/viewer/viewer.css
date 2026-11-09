@@ -843,3 +843,6 @@ table.asm-log th { background: #f1e2c4; color: #2b2113; }
 #asm-session .asm-moremenu > .morebtn { font: 500 14px var(--font) !important; padding: 5px 12px !important; height: auto !important; line-height: 1.2 !important; }
 .dark .asm-hint-toggle, .asm-hint-toggle { background: transparent !important; color: var(--muted) !important; }
 .tp-warns:empty { display: none; } .tp-warns .tp-warn { margin: 0 0 8px; }
+
+/* BOM summary line (grouped line count) above the table */
+.asm-bomcount { clear: both; margin: 4px 8px 4px; font-size: 13px; font-weight: 600; color: var(--ink); }

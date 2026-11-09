@@ -75,6 +75,7 @@ Prob seçimi `probeScore`: TP > konnektör > montaj deliği > 2 pinli pasif; TH 
 - Kısayol satırı gizlenebilir (`localStorage montaj.hintHidden`).
 - Test: plan sorunları (nominal eksik, ray/GND yok) kartın üstünde kalıcı bant (`warnings()`); net rolleri yalnızca Net seçimi ekranında, Test ayarları seçimi korur. Alternatif noktalar 5 + "+N nokta".
 - Sihirbaz: "Takip adımları" etiket girişi (gizli `#c-boxes` virgüllü listeyi tutar), Önizle yapılmadan kaydet ipucu, KiCad + Altium dışa aktarma yolları, kısaltılmış dosya yolu.
+- BOM: 3D görünüm açıkken liste her zaman tam BOM (iki yüz) olur (`ibom.js` `getSelectedBomList`, 3D açılınca `asmRefreshBom` tabloyu yeniler); 2D görünümde üst/alt/iki yüz seçimine uyar. Tablonun üstündeki özet satırı (`#asm-bomcount`, `viewer-bridge.js` `asmUpdateBomCount`): toplam grup (BOM satırı) ve parça sayısı, filtre varsa gösterilen sayısı, kapsam (üst/alt/iki yüz/3D).
 
 ## Bilinen açıklar / sonraki işler
 - KiCad eklentisi gerçek KiCad 10'da henüz çalıştırılmadı (sahte kicad-cli ile test edildi). KiCad 11'de SWIG kaldırılıyor → IPC API'ye geçiş gerekecek.
