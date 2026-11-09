@@ -204,8 +204,8 @@ table.asm-log tr.ev-board-complete td { color: #1f7fae; font-weight: 600; }
 .fileinfo .title, .asm-serial b { font-family: var(--font-cond); }
 
 /* ================= v1.6: own icon set, job panel, colours, blink ================= */
-#top .menubtn, #top .statsbtn, #top .iobtn, .visbtn, button#bom-btn, button#lr-btn, button#tb-btn, button#bom-grouped-btn, button#bom-ungrouped-btn, button#bom-netlist-btn, button#copy { background-image: none !important; position: relative; }
-#top .menubtn::before, #top .statsbtn::before, #top .iobtn::before, .visbtn::before, button#bom-btn::before, button#lr-btn::before, button#tb-btn::before, button#bom-grouped-btn::before, button#bom-ungrouped-btn::before, button#bom-netlist-btn::before, button#copy::before { content: ''; position: absolute; inset: 0; margin: auto; width: 24px; height: 24px; background: var(--ink); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+#top .menubtn, #top .statsbtn, #top .iobtn, .visbtn, button#bom-btn, button#lr-btn, button#tb-btn, button#bom-grouped-btn, button#bom-ungrouped-btn, button#bom-netlist-btn, button#asm-pop-board, button#asm-pop-bom, button#copy { background-image: none !important; position: relative; }
+#top .menubtn::before, #top .statsbtn::before, #top .iobtn::before, .visbtn::before, button#bom-btn::before, button#lr-btn::before, button#tb-btn::before, button#bom-grouped-btn::before, button#bom-ungrouped-btn::before, button#bom-netlist-btn::before, button#asm-pop-board::before, button#asm-pop-bom::before, button#copy::before { content: ''; position: absolute; inset: 0; margin: auto; width: 24px; height: 24px; background: var(--ink); -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
 #top .menubtn { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0'/%3E%3Ccircle cx='16' cy='6' r='2'/%3E%3Ccircle cx='10' cy='12' r='2'/%3E%3Ccircle cx='18' cy='18' r='2'/%3E%3C/svg%3E"); }
 #top .statsbtn { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16'/%3E%3Crect x='6' y='11' width='3' height='9'/%3E%3Crect x='11' y='6' width='3' height='14'/%3E%3Crect x='16' y='14' width='3' height='6'/%3E%3C/svg%3E"); }
 #top .iobtn { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v10M8 10l4 4 4-4'/%3E%3Cpath d='M4 15v4h16v-4'/%3E%3C/svg%3E"); }
@@ -846,3 +846,19 @@ table.asm-log th { background: #f1e2c4; color: #2b2113; }
 
 /* BOM summary line (grouped line count) above the table */
 .asm-bomcount { clear: both; margin: 4px 8px 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+
+.tp-grp{display:inline-block;margin:0 0 4px;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--accent,#2563eb);color:#fff}
+
+a.asm-btn{text-decoration:none;display:inline-block}
+a.asm-btn[hidden],a.btn[hidden]{display:none!important}
+
+/* pop-out panes: the window (or the main window while a pane lives elsewhere) shows one pane only */
+body.asm-pane-board #top, body.asm-pane-bom #top, body[class*="asm-pane-"] .gutter, body[class*="asm-popped-"] .gutter,
+body.asm-pane-board #bomdiv, body.asm-pane-bom #canvasdiv, body.asm-popped-board #canvasdiv, body.asm-popped-bom #bomdiv { display: none !important; }
+body.asm-pane-board #canvasdiv, body.asm-pane-bom #bomdiv, body.asm-popped-board #bomdiv, body.asm-popped-bom #canvasdiv { width: 100% !important; flex: 1 1 100% !important; }
+.asm-listmenu .asm-btn[hidden] { display: none !important; }
+
+
+button#asm-pop-board { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='1.5'/%3E%3Cpath d='M8 20h8M12 16v4M13.5 8.5h3v3M16.5 8.5l-4 4'/%3E%3C/svg%3E"); }
+button#asm-pop-bom { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='1.5'/%3E%3Cpath d='M3 9.5h18M9 9.5V20M6 13h0M6 16.5h0'/%3E%3C/svg%3E"); }
+.asm-listmenu .button-container button[hidden] { display: none !important; }

@@ -449,20 +449,20 @@ function renderReport(rep) {
   const c = rep.counts || {};
   const kpi = (v, l) => el('div', { class: 'kpi' }, el('div', { class: 'v', text: v }), el('div', { class: 'l', text: l }));
   const msgs = [];
-  msgs.push(el('div', { class: 'msg', text: t('Çizilen: Top/Bottom Silkscreen, pad, yol, {vias} via, {holes} delik. Bakır katmanlar: {layers}.', { vias: c.vias || 0, holes: c.holes || 0, layers: ['Top'].concat(c.innerLayers || [], ['Bottom']).join(', ') }) }));
-  msgs.push(el('div', { class: 'msg', text: rep.bomSource === 'external' ? 'BOM: seçilen dosyadan.' : rep.bomSource === 'ipc' ? 'BOM: IPC-2581 dosyasının içinden.' : 'BOM: yok.' }));
-  for (const i of rep.info || []) msgs.push(el('div', { class: 'msg', text: i }));
+  msgs.push(el('div', { class: 'msg ok', text: t('Çizilen: Top/Bottom Silkscreen, pad, yol, {vias} via, {holes} delik. Bakır katmanlar: {layers}.', { vias: c.vias || 0, holes: c.holes || 0, layers: ['Top'].concat(c.innerLayers || [], ['Bottom']).join(', ') }) }));
+  msgs.push(el('div', { class: 'msg ok', text: rep.bomSource === 'external' ? 'BOM: seçilen dosyadan.' : rep.bomSource === 'ipc' ? 'BOM: IPC-2581 dosyasının içinden.' : 'BOM: yok.' }));
+  for (const i of rep.info || []) msgs.push(el('div', { class: 'msg ok', text: i }));
   for (const w of rep.warnings || []) msgs.push(el('div', { class: 'msg warn', text: w }));
   if (rep.missingInLayout && rep.missingInLayout.length) msgs.push(el('div', { class: 'msg warn', text: t("BOM'da olup IPC-2581 dosyasında bulunmayan {n} referans: {list}", { n: rep.missingInLayout.length, list: rep.missingInLayout.slice(0, 30).join(', ') + (rep.missingInLayout.length > 30 ? '…' : '') }) }));
   if (rep.noPads && rep.noPads.length) msgs.push(el('div', { class: 'msg warn', text: t("Pad'i bulunamayan {n} bileşen (yalnızca çerçeve gösterilir): {list}", { n: rep.noPads.length, list: rep.noPads.slice(0, 30).join(', ') + (rep.noPads.length > 30 ? '…' : '') }) }));
-  if (rep.dnp && rep.dnp.length) msgs.push(el('div', { class: 'msg', text: t("BOM'da olmayan (DNP sayılan) {n} bileşen: {list}", { n: rep.dnp.length, list: rep.dnp.slice(0, 30).join(', ') + (rep.dnp.length > 30 ? '…' : '') }) }));
+  if (rep.dnp && rep.dnp.length) msgs.push(el('div', { class: 'msg ok', text: t("BOM'da olmayan (DNP sayılan) {n} bileşen: {list}", { n: rep.dnp.length, list: rep.dnp.slice(0, 30).join(', ') + (rep.dnp.length > 30 ? '…' : '') }) }));
   const st = rep.step;
   if (st && st.counts) {
     const sc = st.counts;
-    msgs.push(el('div', { class: 'msg', text: t('3D model: {bodies} gövde, {comp} bileşen eşlendi ({byName} isimle, {byPlace} konumla), {tri} üçgen.', { bodies: sc.bodies, comp: sc.components, byName: sc.byName, byPlace: sc.byPlace, tri: sc.triangles.toLocaleString(I18N.locale()) }) }));
+    msgs.push(el('div', { class: 'msg ok', text: t('3D model: {bodies} gövde, {comp} bileşen eşlendi ({byName} isimle, {byPlace} konumla), {tri} üçgen.', { bodies: sc.bodies, comp: sc.components, byName: sc.byName, byPlace: sc.byPlace, tri: sc.triangles.toLocaleString(I18N.locale()) }) }));
     for (const w of st.warnings || []) msgs.push(el('div', { class: 'msg warn', text: w, raw: 1 }));
   }
-  if (!msgs.length) msgs.push(el('div', { class: 'msg', text: 'Sorun bulunmadı.' }));
+  if (!msgs.length) msgs.push(el('div', { class: 'msg ok', text: 'Sorun bulunmadı.' }));
   box.append(
     el('div', { class: 'kpis' },
       kpi(c.footprints, 'bileşen'), kpi(`${c.withPads}`, "pad'i eşleşen"), kpi(c.bomRows, 'BOM satırı'), kpi(c.dnp, 'DNP'),
@@ -575,6 +575,7 @@ function wire() {
   $('#btn-theme').setAttribute('aria-pressed', document.documentElement.classList.contains('dark') ? 'true' : 'false');
   $('#btn-theme').onclick = async () => { const d = !document.documentElement.classList.contains('dark'); document.documentElement.classList.toggle('dark', d); $('#btn-theme').setAttribute('aria-pressed', d ? 'true' : 'false'); await asm.setDark(d); if (W && W.preview) { drawPreview($('#cv-F'), W.preview.result.pcbdata, 'F'); drawPreview($('#cv-B'), W.preview.result.pcbdata, 'B'); } };
   $('#btn-about').onclick = async () => { INFO = INFO || (await asm.info()); show('about'); };
+  if (asm.ready) $('#btn-launcher').hidden = false;   // web build only: link back to the Elektronik Araçlar launcher
   $('#about-back').onclick = () => { show('home'); renderHome(); };
   $('#btn-new-2').onclick = () => openWizard(null);
   $('#wiz-back').onclick = () => { show('home'); renderHome(); };

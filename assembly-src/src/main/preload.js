@@ -26,6 +26,10 @@ contextBridge.exposeInMainWorld('asm', {
   // viewer
   viewerInit: () => ipcRenderer.sendSync('viewer:init'),
   kvSet: (scope, key, value) => ipcRenderer.send('kv:set', { scope, key, value }),
+  // pop-out panes (BOM list / board view in their own windows)
+  paneOpen: (pane) => ipcRenderer.invoke('pane:open', pane),
+  paneSend: (msg) => ipcRenderer.send('pane:send', msg),
+  onPane: (cb) => { ipcRenderer.on('pane:msg', (e, m) => cb(m)); },
   logAdd: (evt) => ipcRenderer.invoke('log:add', evt),
   logList: (args) => ipcRenderer.invoke('log:list', args),
   logExportCsv: (args) => ipcRenderer.invoke('log:exportCsv', args),

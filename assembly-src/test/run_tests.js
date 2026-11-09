@@ -222,6 +222,8 @@ console.log('OK turkish');
   assert.ok(step('sens:TEMP_SENS') && step('sens:TEMP_SENS').expect.type === 'manual');
   assert.ok(Math.abs(step('sens:VREF_2V5').expect.nominal - 2.5) < 1e-9);
   assert.ok(step('io:DI_1'), 'connector line → I/O phase');
+  assert.strictEqual(step('comm:I2C_SDA').group, 'I²C');
+  assert.strictEqual(step('comm:UART1_TX').group, 'UART');
   assert.ok(!plan.phases.flatMap((p) => p.steps).some((s) => s.id === 'io:I2C_SDA'), 'a line is tested in one phase only');
   // settings: nominal override, exclusion, disabled phase
   const p2 = TP.buildTestPlan(pcb, { fieldNames: ['Value'], config: { voltTol: 2, rails: { '+12V': { include: false }, '+5V0': { nominal: 5.2 } }, phases: { io: false } } });

@@ -25,6 +25,7 @@
   <script src="lib/OrbitControls.js"></script>
   <script src="lib/RoomEnvironment.js"></script>
   <script src="viewer-3d.js"></script>
+  <script src="viewer-panes.js"></script>
 </head>
 
 <body>
@@ -54,6 +55,7 @@
       </div>
     </div>
     <nav class="asm-nav" id="asm-session">
+      <a class="asm-btn" id="asm-launcher" href="../../../../index.html" title="Elektronik Araçlar ana ekranı" hidden>Ana ekran</a>
       <button class="asm-btn" id="asm-home" title="Projelere dön (Ctrl+H)">Projeler</button>
       <button class="asm-btn" id="asm-board-btn" title="Başka kart (seri no) seç">Kart değiştir</button>
       <div class="hideonprint menu asm-moremenu">
@@ -192,6 +194,11 @@
             <button id="bom-grouped-btn" class="left-most-button" onclick="changeBomMode('grouped')" title="Gruplu BOM">Gruplu BOM</button>
             <button id="bom-ungrouped-btn" class="middle-button" onclick="changeBomMode('ungrouped')" title="Grupsuz BOM">Grupsuz BOM</button>
             <button id="bom-netlist-btn" class="right-most-button" onclick="changeBomMode('netlist')" title="Net listesi">Net listesi</button>
+          </div>
+          <div class="vm-k" id="vm-win">Pencereler</div>
+          <div class="button-container" role="group" aria-labelledby="vm-win">
+            <button id="asm-pop-board" class="left-most-button" title="Kart görünümünü ayrı pencerede aç (ikinci monitör için)" hidden>Kart ayrı pencerede</button>
+            <button id="asm-pop-bom" class="right-most-button" title="BOM listesini ayrı pencerede aç (ikinci monitör için)" hidden>BOM ayrı pencerede</button>
           </div>
         </div>
       </div>

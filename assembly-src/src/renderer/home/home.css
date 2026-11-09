@@ -356,3 +356,15 @@ html.dark .busy-card { background: #18222f; color: #e8eef6; }
 .chip-add .input { flex: 1; }
 #save-hint { font-size: 13px; }
 #save-hint[hidden] { display: none; }
+
+a.btn{text-decoration:none;display:inline-flex;align-items:center}
+a.btn[hidden]{display:none!important}
+
+/* import report: green = ok, yellow = warning, red = error */
+.msg.ok { border-left-color: #2e9e5b; background: #e6f5ec; color: #14532d; }
+.msg.warn { border-left-color: #d9a400; background: #fff4cc; color: #5c4400; }
+.msg.err { border-left-color: #d93a3a; background: #fde4e4; color: #7a1414; }
+html.dark .msg.ok { border-left-color: #3fbf78; background: #13301f; color: #bdeed0; }
+html.dark .msg.warn { border-left-color: #f0c020; background: #3a2f0a; color: #ffe9a0; }
+html.dark .msg.err { border-left-color: #ff6b6b; background: #3d1414; color: #ffc9c9; }
+
