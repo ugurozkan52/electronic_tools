@@ -98,7 +98,10 @@ function openPane(pane) {
   w.webContents.session.webRequest.onBeforeRequest((d, cb) => cb({ cancel: !/^(file|devtools|data|blob|chrome-extension):/.test(d.url) }));
   w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   w.on('page-title-updated', (e) => e.preventDefault());
-  w.on('closed', () => { if (paneWins.get(pane) === w) paneWins.delete(pane); });
+  w.on('closed', () => {
+    if (paneWins.get(pane) === w) paneWins.delete(pane);
+    if (win && !win.isDestroyed()) win.webContents.send('pane:msg', { t: 'bye', pane });
+  });
   paneWins.set(pane, w);
   if (other) w.maximize();
   w.loadFile(path.join(__dirname, '..', 'renderer', 'viewer', 'viewer.html'), { query: { pane } });
@@ -397,6 +400,21 @@ function hashInputs(job) {
   h.update(JSON.stringify([job.title, job.revision, job.company]));
   return h.digest('hex');
 }
+// Bundled sample board (src/samples): imported once into the current data folder, then opened in the viewer.
+async function openSample(name) {
+  const dir = path.join(__dirname, '..', 'samples');
+  const all = JSON.parse(fs.readFileSync(path.join(dir, 'samples.json'), 'utf8')), sm = all[name || 'psu-28v-5v'];
+  if (!sm) throw new Error(t('Örnek bulunamadı: {file}', { file: name }));
+  const f = (x) => path.join(dir, name || 'psu-28v-5v', x);
+  let id = (store.listProjects().find((p) => p.name === sm.title) || {}).id;
+  if (!id) {
+    const tb = tab.readTableFile(f(sm.bom)), mapping = tab.suggestBomMapping(tb.rows);
+    const spec = { ipcFile: f(sm.ipc), stepFile: sm.step ? f(sm.step) : null, bom: mapping.cols && mapping.cols.designator >= 0 ? { path: f(sm.bom), sheet: null, mapping } : null, meta: { title: sm.title, revision: sm.revision, company: sm.company } };
+    const dz = t('Dizildi');
+    id = (await createProject(spec, { checkboxes: dz, markWhenChecked: dz })).id;
+  }
+  return { id, serial: sm.serial, operator: sm.operator };
+}
 function kicadSpec(job) {
   let bom = null;
   if (job.bomFile && fs.existsSync(job.bomFile)) {
@@ -514,6 +532,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('project:create', (e, { spec, options }) => createProject(spec, options));
+  ipcMain.handle('project:openSample', (e, name) => openSample(name));
 
   ipcMain.handle('project:reimport', (e, { id, spec, options }) => reimportProject(id, spec, options));
   // hardware test report: kept next to the project data (KiCad: <project>/docs/montaj)
@@ -574,7 +593,9 @@ function registerIpc() {
     return true;
   });
 
-  ipcMain.handle('pane:open', (e, pane) => openPane(pane));
+  ipcMain.handle('pane:open', (e, pane) => {
+    try { return openPane(pane); } catch (err) { console.error('pane:open failed', err); throw err; }
+  });
   ipcMain.on('pane:send', (e, msg) => {
     for (const w of [win, ...paneWins.values()]) if (w && !w.isDestroyed() && w.webContents.id !== e.sender.id) w.webContents.send('pane:msg', msg);
   });

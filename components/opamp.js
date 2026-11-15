@@ -1,4 +1,69 @@
 /* Op-amp: parameters, types, wizard and calculators (inverting, non-inverting, comparator, hysteresis, summing, difference, integrator…). */
+/* ---- active RC filter helpers (unity-gain buffer behind a passive RC section) ---- */
+const opFc = (R, C) => 1 / (2 * Math.PI * R * C);
+function opFiltGbw(items, fmax, gbw) {   // the buffer must be much faster than the highest corner it has to pass
+  if (!(gbw > 0) || !(fmax > 0)) return;
+  if (fmax > gbw / 10) items.push([eng(gbw, 'Hz'), tt('GBW yetersiz: tampon için GBW ≥ 10·f_c gerekir', 'GBW too low: the buffer needs GBW ≥ 10·f_c'), 'bad']);
+  else items.push([sig(gbw / fmax, 3) + '×', tt('GBW / f_c payı (≥ 10 iyi)', 'GBW / f_c margin (≥ 10 is good)'), 'good']);
+}
+function opFiltCompute(kind, G) {
+  const gbw = G.v('gbw'), f = G.v('f'), items = [];
+  if (kind !== 'bp') {
+    const R = G.v('r'), C = G.v('c'); if (!(R > 0 && C > 0)) return [['—', tt('R ve C girin', 'Enter R and C')]];
+    const fc = opFc(R, C);
+    items.push([eng(fc, 'Hz'), tt('Köşe frekansı f_c (−3 dB)', 'Corner frequency f_c (−3 dB)'), 'big'], [eng(R * C, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C')],
+      [(kind === 'lp' ? '−' : '+') + '20 dB/dekat', tt('Eğim (1. derece)', 'Slope (1st order)')], ['1× (0 dB)', tt('Geçirme bandı kazancı (tampon)', 'Pass-band gain (buffer)')]);
+    if (f > 0) { const x = kind === 'lp' ? f / fc : fc / f, mag = 1 / Math.sqrt(1 + x * x), ph = (kind === 'lp' ? -1 : 1) * Math.atan(x) * 180 / Math.PI; items.push([sig(20 * Math.log10(mag), 3) + ' dB', tt('Kazanç @ f', 'Gain @ f') + ' (' + sig(mag, 3) + '×)'], [sig(ph, 3) + '°', tt('Faz @ f', 'Phase @ f')]); }
+    opFiltGbw(items, fc, gbw);
+  } else {
+    const C1 = G.v('c1'), R1 = G.v('r1'), R2 = G.v('r2'), C2 = G.v('c2'); if (!(C1 > 0 && R1 > 0 && R2 > 0 && C2 > 0)) return [['—', tt('Dört bileşeni de girin', 'Enter all four components')]];
+    const fl = opFc(R1, C1), fh = opFc(R2, C2), f0 = Math.sqrt(fl * fh), mag = (ff) => 1 / Math.sqrt((1 + (fl / ff) ** 2) * (1 + (ff / fh) ** 2));
+    items.push([eng(f0, 'Hz'), tt('Merkez frekansı f_0 = √(f_L·f_H)', 'Centre frequency f_0 = √(f_L·f_H)'), 'big'], [eng(fl, 'Hz'), tt('Alt köşe f_L = 1/(2π·R1·C1)', 'Lower corner f_L = 1/(2π·R1·C1)')], [eng(fh, 'Hz'), tt('Üst köşe f_H = 1/(2π·R2·C2)', 'Upper corner f_H = 1/(2π·R2·C2)')],
+      [eng(fh - fl, 'Hz'), tt('Bant genişliği f_H − f_L', 'Bandwidth f_H − f_L')], [sig(f0 / (fh - fl), 3), 'Q = f_0 / BW'], [sig(20 * Math.log10(mag(f0)), 3) + ' dB', tt('Kazanç @ f_0', 'Gain @ f_0')]);
+    if (fl >= fh) items.push(['!', tt('f_L ≥ f_H: geçirme bandı yok', 'f_L ≥ f_H: no pass band'), 'bad']);
+    if (f > 0) items.push([sig(20 * Math.log10(mag(f)), 3) + ' dB', tt('Kazanç @ f', 'Gain @ f')]);
+    opFiltGbw(items, fh, gbw);
+  }
+  return items;
+}
+// worked examples (one decade apart), as in the 8-channel active filter reference boards: R·C pairs for 1 Hz … 10 MHz
+const OP_FILT_EX = [['1 Hz', 158e3, 1e-6], ['10 Hz', 15.8e3, 1e-6], ['100 Hz', 1.58e3, 1e-6], ['1 kHz', 1.58e3, 0.1e-6], ['10 kHz', 158, 0.1e-6], ['100 kHz', 158, 0.012e-6], ['1 MHz', 158, 1000e-12], ['10 MHz', 158, 100e-12]];
+const opFiltEx = (kind) => ({
+  title: ['Örnek değerler (1 Hz – 10 MHz, 8 kanallı filtre kartı)', 'Worked examples (1 Hz – 10 MHz, 8-channel filter board)'],
+  head: [['Hedef f_c', 'Target f_c'], 'R', 'C', ['Hesaplanan', 'Computed'], ['Op-amp', 'Op-amp']],
+  rows: OP_FILT_EX.map(([lbl, R, C]) => [lbl, eng(R, 'Ω'), eng(C, 'F'), eng(opFc(R, C), 'Hz'), opFc(R, C) > 280e3 ? ['Hızlı op-amp (GBW ≥ 10·f_c)', 'Fast op-amp (GBW ≥ 10·f_c)'] : ['MCP601 yeterli', 'MCP601 is enough']]),
+  sets: OP_FILT_EX.map(([, R, C]) => ({ r: R, c: C })),
+});
+const OP_BP_EX = [['100 Hz – 1 kHz', 1e-6, 1.58e3, 158, 1e-6], ['1 – 10 kHz', 0.1e-6, 1.58e3, 158, 0.1e-6], ['10 – 100 kHz', 0.012e-6, 1.58e3, 158, 0.012e-6], ['100 kHz – 1 MHz', 1000e-12, 1.58e3, 158, 1000e-12], ['1 – 10 MHz', 100e-12, 1.58e3, 158, 100e-12], ['10 – 100 MHz', 10e-12, 1.58e3, 158, 10e-12]];
+const opBpEx = () => ({
+  title: ['Örnek değerler (6 kanallı bant geçiren kart)', 'Worked examples (6-channel band-pass board)'],
+  head: [['Hedef bant', 'Target band'], 'C1', 'R1', 'R2', 'C2', ['f_0', 'f_0']],
+  rows: OP_BP_EX.map(([lbl, C1, R1, R2, C2]) => [lbl, eng(C1, 'F'), eng(R1, 'Ω'), eng(R2, 'Ω'), eng(C2, 'F'), eng(Math.sqrt(opFc(R1, C1) * opFc(R2, C2)), 'Hz')]),
+  sets: OP_BP_EX.map(([, C1, R1, R2, C2]) => ({ c1: C1, r1: R1, r2: R2, c2: C2 })),
+});
+function opSkCompute(lp, G) {
+  const R1 = G.v('r1'), R2 = G.v('r2'), C1 = G.v('c1'), C2 = G.v('c2'), f = G.v('f'), gbw = G.v('gbw');
+  if (!(R1 > 0 && R2 > 0 && C1 > 0 && C2 > 0)) return [['—', tt('Dört bileşeni de girin', 'Enter all four components')]];
+  const w0 = 1 / Math.sqrt(R1 * R2 * C1 * C2), fc = w0 / (2 * Math.PI);
+  // LP (unity gain): Q = √(R1R2C1C2) / (C2(R1+R2)) with C1 in the feedback; HP: Q = √(R1R2C1C2) / (R1(C1+C2)) with R1 in the feedback
+  const Q = lp ? Math.sqrt(R1 * R2 * C1 * C2) / (C2 * (R1 + R2)) : Math.sqrt(R1 * R2 * C1 * C2) / (R1 * (C1 + C2));
+  const mag = (ff) => { const x = ff / fc; const num = lp ? 1 : x * x; return num / Math.sqrt(Math.pow(1 - x * x, 2) + Math.pow(x / Q, 2)); };
+  const items = [[eng(fc, 'Hz'), tt('Köşe frekansı f_c', 'Corner frequency f_c'), 'big'], [sig(Q, 3), 'Q', Q > 0.6 && Q < 0.8 ? 'good' : Q > 1.2 ? 'warn' : ''], [sig(20 * Math.log10(mag(fc)), 3) + ' dB', tt('Kazanç @ f_c (Butterworth: −3 dB)', 'Gain @ f_c (Butterworth: −3 dB)')],
+    [(lp ? '−' : '+') + '40 dB/dekat', tt('Eğim (2. derece)', 'Slope (2nd order)')], [Q > 0.72 ? sig(fc * (lp ? Math.sqrt(1 - 1 / (2 * Q * Q)) : 1 / Math.sqrt(1 - 1 / (2 * Q * Q))), 4) + ' Hz · +' + sig(20 * Math.log10(Q / Math.sqrt(1 - 1 / (4 * Q * Q))), 3) + ' dB' : tt('Yok', 'None'), tt('Tepe (Q > 0,707 ise)', 'Peaking (if Q > 0.707)')]];
+  if (f > 0) items.push([sig(20 * Math.log10(mag(f)), 3) + ' dB', tt('Kazanç @ f', 'Gain @ f')]);
+  opFiltGbw(items, fc * Math.max(1, 2 * Q), gbw);
+  return items;
+}
+// Butterworth examples (Q = 0.707): LP equal R with C1 = 2·C2; HP equal C with R2 = 2·R1. R·C pairs follow the single-pole tables.
+const opSkEx = (lp) => ({
+  title: ['Örnek değerler (Butterworth, Q = 0,707)', 'Worked examples (Butterworth, Q = 0.707)'],
+  head: [['Hedef f_c', 'Target f_c'], 'R1', 'R2', 'C1', 'C2', ['Hesaplanan f_c', 'Computed f_c']],
+  rows: OP_FILT_EX.map(([lbl, R, C]) => { const R1 = lp ? R : R / Math.SQRT2, R2 = lp ? R : R * Math.SQRT2, C1 = lp ? C * Math.SQRT2 : C, C2 = lp ? C / Math.SQRT2 : C; return [lbl, eng(R1, 'Ω'), eng(R2, 'Ω'), eng(C1, 'F'), eng(C2, 'F'), eng(1 / (2 * Math.PI * Math.sqrt(R1 * R2 * C1 * C2)), 'Hz')]; }),
+  sets: OP_FILT_EX.map(([, R, C]) => (lp ? { r1: R, r2: R, c1: C * Math.SQRT2, c2: C / Math.SQRT2 } : { r1: R / Math.SQRT2, r2: R * Math.SQRT2, c1: C, c2: C })),
+});
+const OP_GBW = { id: 'gbw', tr: 'Op-amp GBW', en: 'Op-amp GBW', def: '2.8', u: 'F', ud: 2, help: ['Tampon olarak kazanç 1; bant genişliği ≈ GBW. Köşe frekansının en az 10 katı olmalı. MCP601: 2,8 MHz.', 'As a buffer the gain is 1; bandwidth ≈ GBW. It should be at least 10× the corner frequency. MCP601: 2.8 MHz.'] };
+const OP_FSIG = { id: 'f', tr: 'Sinyal frekansı (isteğe bağlı)', en: 'Signal frequency (optional)', def: '', u: 'F', ud: 1 };
+
 CMP.opamp = {
   name: ['Op-amp', 'Op-amp'],
   title: ['İşlemsel Yükselteç (Op-amp) Rehberi ve Hesaplayıcıları', 'Operational Amplifier (Op-amp) Guide and Calculators'],
@@ -74,8 +139,14 @@ CMP.opamp = {
       return { main: R[0], why };
     },
   },
+  calcGroups: [
+    ['amp', 'Yükselteçler', 'Amplifiers', 'Evirici, evirmeyen, toplayıcı ve fark yükselteçleri; kazanç ve direnç seçimi.', 'Inverting, non-inverting, summing and difference amplifiers; gain and resistor selection.'],
+    ['filt', 'Aktif filtreler', 'Active filters', 'Pasif RC/CR bölüm + birim kazançlı tampon: alçak geçiren, yüksek geçiren ve bant geçiren. Örnek tablolar 8 kanallı filtre kartlarından alınmıştır.', 'Passive RC/CR section + unity-gain buffer: low-pass, high-pass and band-pass. The example tables come from the 8-channel filter boards.'],
+    ['cmp', 'Karşılaştırıcılar', 'Comparators', 'Açık çevrim karşılaştırıcı ve histerezisli (Schmitt) eşik devreleri.', 'Open-loop comparator and hysteresis (Schmitt) threshold circuits.'],
+    ['dyn', 'Dinamik ve hata', 'Dynamics and error', 'İntegratör, bant genişliği / dönme hızı ve DC hata (ofset, kutuplama akımı).', 'Integrator, bandwidth / slew rate and DC error (offset, bias current).'],
+  ],
   calcs: [
-    { id: 'inv', title: ['Evirici (inverting) yükselteç', 'Inverting amplifier'], sub: ['A_v = −R_f / R_in, Z_in ≈ R_in', 'A_v = −R_f / R_in, Z_in ≈ R_in'],
+    { id: 'inv', group: 'amp', title: ['Evirici (inverting) yükselteç', 'Inverting amplifier'], sub: ['A_v = −R_f / R_in, Z_in ≈ R_in', 'A_v = −R_f / R_in, Z_in ≈ R_in'],
       fields: [
         { id: 'vin', tr: 'Giriş gerilimi V_in', en: 'Input voltage V_in', def: '0.5', u: 'V', ud: 1 }, { id: 'rin', tr: 'R_in', en: 'R_in', def: '10', u: 'R', ud: 2 }, { id: 'rf', tr: 'R_f', en: 'R_f', def: '47', u: 'R', ud: 2 },
         { id: 'vp', tr: 'Pozitif ray', en: 'Positive rail', def: '12', u: 'V', ud: 1 }, { id: 'vn', tr: 'Negatif ray (tek beslemede 0)', en: 'Negative rail (0 on single supply)', def: '-12', u: 'V', ud: 1 },
@@ -92,7 +163,7 @@ CMP.opamp = {
         items.push([eng(Math.min(Math.abs(hi / A), Math.abs(lo / A)), 'V'), tt('Kırpılmadan maks. |V_in|', 'Max |V_in| without clipping')]);
         return items;
       } },
-    { id: 'nin', title: ['Evirmeyen (non-inverting) yükselteç', 'Non-inverting amplifier'], sub: ['A_v = 1 + R_f / R_1', 'A_v = 1 + R_f / R_1'],
+    { id: 'nin', group: 'amp', title: ['Evirmeyen (non-inverting) yükselteç', 'Non-inverting amplifier'], sub: ['A_v = 1 + R_f / R_1', 'A_v = 1 + R_f / R_1'],
       fields: [
         { id: 'vin', tr: 'Giriş gerilimi V_in', en: 'Input voltage V_in', def: '0.5', u: 'V', ud: 1 }, { id: 'r1', tr: 'R_1 (toprağa)', en: 'R_1 (to ground)', def: '10', u: 'R', ud: 2 }, { id: 'rf', tr: 'R_f', en: 'R_f', def: '47', u: 'R', ud: 2 },
         { id: 'vp', tr: 'Pozitif ray', en: 'Positive rail', def: '12', u: 'V', ud: 1 }, { id: 'vn', tr: 'Negatif ray (tek beslemede 0)', en: 'Negative rail (0 on single supply)', def: '-12', u: 'V', ud: 1 },
@@ -108,7 +179,7 @@ CMP.opamp = {
         items.push([eng(Math.min(Math.abs(hi / A), Math.abs(lo / A)), 'V'), tt('Kırpılmadan maks. |V_in|', 'Max |V_in| without clipping')]);
         return items;
       } },
-    { id: 'gd', title: ['Kazanç tasarımı (direnç seçimi)', 'Gain design (resistor selection)'], sub: ['R_f = |A|·R_in  ·  R_f = (A − 1)·R_1', 'R_f = |A|·R_in  ·  R_f = (A − 1)·R_1'],
+    { id: 'gd', group: 'amp', title: ['Kazanç tasarımı (direnç seçimi)', 'Gain design (resistor selection)'], sub: ['R_f = |A|·R_in  ·  R_f = (A − 1)·R_1', 'R_f = |A|·R_in  ·  R_f = (A − 1)·R_1'],
       fields: [
         { id: 'tp', tr: 'Devre', en: 'Circuit', def: 'inv', sel: [['inv', 'Evirici', 'Inverting'], ['non', 'Evirmeyen', 'Non-inverting']] },
         { id: 'g', tr: 'İstenen kazanç (mutlak)', en: 'Desired gain (absolute)', def: '10' }, { id: 'r', tr: 'R_in / R_1 (seçilen)', en: 'R_in / R_1 (chosen)', def: '10', u: 'R', ud: 2 },
@@ -120,7 +191,7 @@ CMP.opamp = {
         const e = nearestE(Rf, 'E24'), Ga = inv ? e.near / R : 1 + e.near / R;
         return [[eng(Rf, 'Ω'), tt('Hesaplanan R_f', 'Calculated R_f'), 'big'], [eng(e.near, 'Ω'), tt('En yakın E24', 'Nearest E24')], [sig(Ga, 4), tt('E24 ile gerçek kazanç', 'Actual gain with E24')], [sig((Ga / g - 1) * 100, 3) + ' %', tt('Kazanç hatası', 'Gain error')]];
       } },
-    { id: 'cmp', title: ['Karşılaştırıcı (açık çevrim)', 'Comparator (open loop)'], sub: ['V_out = V_OH if V_in > V_ref, else V_OL', 'V_out = V_OH if V_in > V_ref, else V_OL'],
+    { id: 'cmp', group: 'cmp', title: ['Karşılaştırıcı (açık çevrim)', 'Comparator (open loop)'], sub: ['V_out = V_OH if V_in > V_ref, else V_OL', 'V_out = V_OH if V_in > V_ref, else V_OL'],
       fields: [
         { id: 'vin', tr: 'V_in (+ giriş)', en: 'V_in (+ input)', def: '2.6', u: 'V', ud: 1 }, { id: 'vref', tr: 'V_ref (− giriş)', en: 'V_ref (− input)', def: '2.5', u: 'V', ud: 1 },
         { id: 'vp', tr: 'Pozitif ray', en: 'Positive rail', def: '5', u: 'V', ud: 1 }, { id: 'vn', tr: 'Negatif ray', en: 'Negative rail', def: '0', u: 'V', ud: 1 }, { id: 'hr', tr: 'Çıkış pay', en: 'Output headroom', def: '0.1', u: 'V', ud: 1 },
@@ -133,7 +204,7 @@ CMP.opamp = {
         const Voh = Vp - hr, Vol = Vn + hr, d = Vin - Vref, hi = d > 0, lin = Math.abs(d) * A < (Voh - Vol) / 2;
         return [[eng(hi ? Voh : Vol, 'V'), tt('Çıkış', 'Output') + (hi ? ' (V_OH)' : ' (V_OL)'), 'big ' + (hi ? 'good' : 'warn')], [eng(d, 'V'), tt('Fark V_in − V_ref', 'Difference V_in − V_ref')], [eng((Voh - Vol) / A, 'V'), tt('Çıkışın tam sallanması için gereken fark', 'Difference needed for full output swing')], [lin ? tt('lineer bölgede', 'in the linear region') : tt('doymada', 'saturated'), tt('Çalışma durumu', 'State')]];
       } },
-    { id: 'sch', title: ['Histerezisli karşılaştırıcı (Schmitt trigger)', 'Hysteresis comparator (Schmitt trigger)'], sub: ['Evirmeyen: V_th = V_ref(1+R₁/R₂) − V_out·R₁/R₂', 'Non-inverting: V_th = V_ref(1+R₁/R₂) − V_out·R₁/R₂'],
+    { id: 'sch', group: 'cmp', title: ['Histerezisli karşılaştırıcı (Schmitt trigger)', 'Hysteresis comparator (Schmitt trigger)'], sub: ['Evirmeyen: V_th = V_ref(1+R₁/R₂) − V_out·R₁/R₂', 'Non-inverting: V_th = V_ref(1+R₁/R₂) − V_out·R₁/R₂'],
       fields: [
         { id: 'tp', tr: 'Devre', en: 'Circuit', def: 'non', sel: [['non', 'Evirmeyen (giriş R₁ ile)', 'Non-inverting (input via R₁)'], ['inv', 'Evirici (R₁/R₂ bölücü + girişte)', 'Inverting (R₁/R₂ divider on +)']] },
         { id: 'r1', tr: 'R₁', en: 'R₁', def: '10', u: 'R', ud: 2 }, { id: 'r2', tr: 'R₂ (geri besleme)', en: 'R₂ (feedback)', def: '100', u: 'R', ud: 2 },
@@ -152,7 +223,7 @@ CMP.opamp = {
         if (hd > 0) { const k = non ? (Voh - Vol) / hd : (Voh - Vol) / hd - 1; if (k > 0) items.push([sig(k, 4), tt('Gereken R₂/R₁ oranı', 'Required R₂/R₁ ratio'), 'good']); }
         return items;
       } },
-    { id: 'sum', title: ['Toplayıcı (summing) yükselteç', 'Summing amplifier'], sub: ['V_out = −R_f·(V₁/R₁ + V₂/R₂ + V₃/R₃)', 'V_out = −R_f·(V₁/R₁ + V₂/R₂ + V₃/R₃)'],
+    { id: 'sum', group: 'amp', title: ['Toplayıcı (summing) yükselteç', 'Summing amplifier'], sub: ['V_out = −R_f·(V₁/R₁ + V₂/R₂ + V₃/R₃)', 'V_out = −R_f·(V₁/R₁ + V₂/R₂ + V₃/R₃)'],
       fields: [
         { id: 'v1', tr: 'V₁', en: 'V₁', def: '1', u: 'V', ud: 1 }, { id: 'r1', tr: 'R₁', en: 'R₁', def: '10', u: 'R', ud: 2 }, { id: 'v2', tr: 'V₂', en: 'V₂', def: '0.5', u: 'V', ud: 1 }, { id: 'r2', tr: 'R₂', en: 'R₂', def: '10', u: 'R', ud: 2 },
         { id: 'v3', tr: 'V₃ (isteğe bağlı)', en: 'V₃ (optional)', def: '', u: 'V', ud: 1 }, { id: 'r3', tr: 'R₃', en: 'R₃', def: '10', u: 'R', ud: 2 }, { id: 'rf', tr: 'R_f', en: 'R_f', def: '10', u: 'R', ud: 2 },
@@ -164,7 +235,7 @@ CMP.opamp = {
         if (!n) return [['—', tt('En az bir giriş girin', 'Enter at least one input')]];
         return [[eng(-Rf * sum, 'V'), tt('Çıkış gerilimi', 'Output voltage'), 'big']].concat(items);
       } },
-    { id: 'dif', title: ['Fark (difference) yükselteç', 'Difference amplifier'], sub: ['V_out = (R₂/R₁)·(V₂ − V₁)', 'V_out = (R₂/R₁)·(V₂ − V₁)'],
+    { id: 'dif', group: 'amp', title: ['Fark (difference) yükselteç', 'Difference amplifier'], sub: ['V_out = (R₂/R₁)·(V₂ − V₁)', 'V_out = (R₂/R₁)·(V₂ − V₁)'],
       fields: [
         { id: 'v1', tr: 'V₁ (eviren taraf)', en: 'V₁ (inverting side)', def: '1.2', u: 'V', ud: 1 }, { id: 'v2', tr: 'V₂ (evirmeyen taraf)', en: 'V₂ (non-inverting side)', def: '1.3', u: 'V', ud: 1 },
         { id: 'r1', tr: 'R₁ = R₃', en: 'R₁ = R₃', def: '10', u: 'R', ud: 2 }, { id: 'r2', tr: 'R₂ = R₄', en: 'R₂ = R₄', def: '100', u: 'R', ud: 2 }, { id: 'tol', tr: 'Direnç toleransı (%)', en: 'Resistor tolerance (%)', def: '0.1', help: ['Dirençlerin eşleşmesi CMRR\'ı belirler: CMRR ≈ (1 + R₂/R₁) / (4·tolerans).', 'Resistor matching sets the CMRR: CMRR ≈ (1 + R₂/R₁) / (4·tolerance).'] },
@@ -177,7 +248,34 @@ CMP.opamp = {
         if (tol > 0) { const cm = (1 + A) / (4 * tol); items.push([sig(20 * Math.log10(cm), 3) + ' dB', tt('Dirençle sınırlı CMRR (kötü durum)', 'Resistor-limited CMRR (worst case)')], [eng((V1 + V2) / 2 * A / cm, 'V'), tt('Ortak moddan çıkış hatası', 'Output error from common mode')]); }
         return items;
       } },
-    { id: 'int', title: ['İntegratör (integrator)', 'Integrator'], sub: ['V_out(t) = −(1/RC)·∫V_in dt', 'V_out(t) = −(1/RC)·∫V_in dt'],
+    /* ---------------- active filters ---------------- */
+    { id: 'alp', group: 'filt', title: ['Aktif alçak geçiren filtre (RC + tampon)', 'Active low-pass filter (RC + buffer)'], sub: ['f_c = 1 / (2π·R·C). Seri R, toprağa C; op-amp birim kazançlı tampon (çıkış − girişe bağlı)', 'f_c = 1 / (2π·R·C). Series R, C to ground; the op-amp is a unity-gain buffer (output tied to the − input)'],
+      fields: [{ id: 'r', tr: 'R (seri)', en: 'R (series)', def: '158', u: 'R', ud: 1 }, { id: 'c', tr: 'C (toprağa)', en: 'C (to ground)', def: '1', u: 'C', ud: 2 }, OP_FSIG, OP_GBW],
+      ex: opFiltEx('lp'),
+      note: ['Tampon RC bölümü yükten ayırır: f_c sonraki katın giriş direncinden etkilenmez. Tek beslemede (5 V) op-amp rail-to-rail giriş/çıkışlı olmalı ve sinyal 0 V–V_dd içinde kalmalıdır; AC sinyal için girişi V_dd/2 öngerilimleyin. Aynı f_c için R·C sabittir: f_c arttıkça önce C küçültülür (1 µF → 100 pF), R çok küçülürse (< 100 Ω) kaynağı yükler, çok büyürse (> 1 MΩ) kutuplama akımı ve gürültü artar.', 'The buffer isolates the RC section from the load: f_c does not depend on the next stage\'s input resistance. On a single supply (5 V) the op-amp must be rail-to-rail in/out and the signal must stay within 0 V–V_dd; bias the input at V_dd/2 for AC signals. R·C is constant for a given f_c: as f_c rises, shrink C first (1 µF → 100 pF); a very small R (< 100 Ω) loads the source, a very large one (> 1 MΩ) raises bias-current error and noise.'],
+      compute(G) { return opFiltCompute('lp', G); } },
+    { id: 'ahp', group: 'filt', title: ['Aktif yüksek geçiren filtre (CR + tampon)', 'Active high-pass filter (CR + buffer)'], sub: ['f_c = 1 / (2π·R·C). Seri C, toprağa R; op-amp birim kazançlı tampon', 'f_c = 1 / (2π·R·C). Series C, R to ground; the op-amp is a unity-gain buffer'],
+      fields: [{ id: 'c', tr: 'C (seri)', en: 'C (series)', def: '1', u: 'C', ud: 2 }, { id: 'r', tr: 'R (toprağa)', en: 'R (to ground)', def: '158', u: 'R', ud: 1 }, OP_FSIG, OP_GBW],
+      ex: opFiltEx('hp'),
+      note: ['Toprağa giden R aynı zamanda + girişin DC kutuplama yoludur; bu yüzden tek beslemede R\'nin alt ucu toprak yerine V_dd/2 referansına bağlanır. Üst sınır op-amp GBW\'sidir: f_c\'nin ≥ 10 katı GBW seçin (10 MHz için ≥ 100 MHz).', 'The R to ground is also the DC bias path of the + input; on a single supply tie its lower end to a V_dd/2 reference instead of ground. The upper limit is the op-amp GBW: choose GBW ≥ 10× f_c (≥ 100 MHz for 10 MHz).'],
+      compute(G) { return opFiltCompute('hp', G); } },
+    { id: 'abp', group: 'filt', title: ['Aktif bant geçiren filtre (CR tampon + RC)', 'Active band-pass filter (CR buffer + RC)'], sub: ['Yüksek geçiren C1·R1 → tampon → alçak geçiren R2·C2. f_L = 1/(2π·R1·C1), f_H = 1/(2π·R2·C2), f_0 = √(f_L·f_H)', 'High-pass C1·R1 → buffer → low-pass R2·C2. f_L = 1/(2π·R1·C1), f_H = 1/(2π·R2·C2), f_0 = √(f_L·f_H)'],
+      fields: [{ id: 'c1', tr: 'C1 (seri, giriş)', en: 'C1 (series, input)', def: '1', u: 'C', ud: 2 }, { id: 'r1', tr: 'R1 (toprağa)', en: 'R1 (to ground)', def: '1.58', u: 'R', ud: 2 },
+        { id: 'r2', tr: 'R2 (seri, çıkış)', en: 'R2 (series, output)', def: '158', u: 'R', ud: 1 }, { id: 'c2', tr: 'C2 (toprağa, çıkış)', en: 'C2 (to ground, output)', def: '1', u: 'C', ud: 2 }, OP_FSIG, OP_GBW],
+      ex: opBpEx(),
+      note: ['Tampon iki RC bölümünü birbirinden ayırır; köşeler birbirinden bağımsız hesaplanır. Çıkış RC bölümü tamponlanmamıştır: sonraki katın giriş direnci R2\'ye paralel gelir, bu yüzden yük ≥ 100·R2 olmalı ya da ikinci bir tampon eklenmelidir. Köşeler bir dekat ayrıksa f_0\'daki kayıp ≈ −0,8 dB; yakınlaştıkça artar (f_L = f_H için −6 dB).', 'The buffer separates the two RC sections; the corners are computed independently. The output RC is unbuffered: the next stage\'s input resistance appears in parallel with R2, so the load should be ≥ 100·R2 or a second buffer added. With corners a decade apart the loss at f_0 is ≈ −0.8 dB; it grows as they approach (−6 dB for f_L = f_H).'],
+      compute(G) { return opFiltCompute('bp', G); } },
+    { id: 'skl', group: 'filt', title: ['Sallen-Key alçak geçiren (2. derece)', 'Sallen-Key low-pass (2nd order)'], sub: ['f_c = 1 / (2π·√(R1·R2·C1·C2)), Q = √(R1·R2·C1·C2) / (C2·(R1+R2)); birim kazançlı izleyici, C1 geri beslemede', 'f_c = 1 / (2π·√(R1·R2·C1·C2)), Q = √(R1·R2·C1·C2) / (C2·(R1+R2)); unity-gain follower, C1 in the feedback'],
+      fields: [{ id: 'r1', tr: 'R1 (giriş)', en: 'R1 (input)', def: '158', u: 'R', ud: 1 }, { id: 'r2', tr: 'R2', en: 'R2', def: '158', u: 'R', ud: 1 }, { id: 'c1', tr: 'C1 (çıkıştan R1–R2 düğümüne)', en: 'C1 (output to the R1–R2 node)', def: '1.414', u: 'C', ud: 2 }, { id: 'c2', tr: 'C2 (+ girişten toprağa)', en: 'C2 (+ input to ground)', def: '0.707', u: 'C', ud: 2 }, OP_FSIG, OP_GBW],
+      ex: opSkEx(true),
+      note: ['Eşit dirençlerle Q = ½·√(C1/C2): Butterworth (Q = 0,707) için C1 = 2·C2, Bessel için C1 ≈ 1,27·C2, Chebyshev 1 dB için C1 ≈ 3,8·C2. Q arttıkça köşede tepe oluşur; birim kazançlı izleyici kazanç/toleransa en az duyarlı yapıdır. Yüksek frekansta op-amp çıkış empedansı durdurma bandını bozar: GBW ≥ 100·f_c seçin.', 'With equal resistors Q = ½·√(C1/C2): C1 = 2·C2 for Butterworth (Q = 0.707), C1 ≈ 1.27·C2 for Bessel, C1 ≈ 3.8·C2 for 1 dB Chebyshev. Higher Q peaks at the corner; the unity-gain follower is the least sensitive to gain/tolerance. At high frequency the op-amp output impedance spoils the stop band: choose GBW ≥ 100·f_c.'],
+      compute(G) { return opSkCompute(true, G); } },
+    { id: 'skh', group: 'filt', title: ['Sallen-Key yüksek geçiren (2. derece)', 'Sallen-Key high-pass (2nd order)'], sub: ['f_c = 1 / (2π·√(R1·R2·C1·C2)), Q = √(R1·R2·C1·C2) / (R1·(C1+C2)); birim kazançlı izleyici, R1 geri beslemede', 'f_c = 1 / (2π·√(R1·R2·C1·C2)), Q = √(R1·R2·C1·C2) / (R1·(C1+C2)); unity-gain follower, R1 in the feedback'],
+      fields: [{ id: 'c1', tr: 'C1 (giriş)', en: 'C1 (input)', def: '1', u: 'C', ud: 2 }, { id: 'c2', tr: 'C2', en: 'C2', def: '1', u: 'C', ud: 2 }, { id: 'r1', tr: 'R1 (çıkıştan C1–C2 düğümüne)', en: 'R1 (output to the C1–C2 node)', def: '112', u: 'R', ud: 1 }, { id: 'r2', tr: 'R2 (+ girişten toprağa)', en: 'R2 (+ input to ground)', def: '223', u: 'R', ud: 1 }, OP_FSIG, OP_GBW],
+      ex: opSkEx(false),
+      note: ['Eşit kondansatörlerle Q = ½·√(R2/R1): Butterworth için R2 = 2·R1. R2 aynı zamanda + girişin DC kutuplama yoludur (tek beslemede V_dd/2 referansına bağlanır). Yüksek geçirenin üst sınırı op-amp bant genişliğidir; f_c\'nin ≥ 100 katı GBW seçin.', 'With equal capacitors Q = ½·√(R2/R1): R2 = 2·R1 for Butterworth. R2 is also the DC bias path of the + input (tie to a V_dd/2 reference on a single supply). The upper limit of a high-pass is the op-amp bandwidth; choose GBW ≥ 100× f_c.'],
+      compute(G) { return opSkCompute(false, G); } },
+    { id: 'int', group: 'dyn', title: ['İntegratör (integrator)', 'Integrator'], sub: ['V_out(t) = −(1/RC)·∫V_in dt', 'V_out(t) = −(1/RC)·∫V_in dt'],
       fields: [
         { id: 'r', tr: 'R', en: 'R', def: '10', u: 'R', ud: 2 }, { id: 'c', tr: 'C', en: 'C', def: '100', u: 'C', ud: 1 }, { id: 'vin', tr: 'Giriş (DC adım)', en: 'Input (DC step)', def: '1', u: 'V', ud: 1 },
         { id: 't', tr: 'Süre', en: 'Time', def: '5', u: 'T', ud: 1 }, { id: 'vp', tr: 'Ray (mutlak)', en: 'Rail (absolute)', def: '12', u: 'V', ud: 1 },
@@ -191,7 +289,7 @@ CMP.opamp = {
         if (Vin !== 0 && Vp > 0) items.push([eng(Vp / Math.abs(slope), 's'), tt('Ray\'a ulaşma süresi', 'Time to reach the rail')]);
         return items;
       } },
-    { id: 'bw', title: ['Bant genişliği ve dönme hızı', 'Bandwidth and slew rate'], sub: ['BW = GBW / gürültü kazancı, f_FPBW = SR / (2π·V_pk)', 'BW = GBW / noise gain, f_FPBW = SR / (2π·V_pk)'],
+    { id: 'bw', group: 'dyn', title: ['Bant genişliği ve dönme hızı', 'Bandwidth and slew rate'], sub: ['BW = GBW / gürültü kazancı, f_FPBW = SR / (2π·V_pk)', 'BW = GBW / noise gain, f_FPBW = SR / (2π·V_pk)'],
       fields: [{ id: 'gbw', tr: 'GBW', en: 'GBW', def: '1', u: 'F', ud: 2 }, { id: 'g', tr: 'Gürültü kazancı', en: 'Noise gain', def: '10', help: ['Evirici: 1 + R_f/R_in; evirmeyen: 1 + R_f/R_1.', 'Inverting: 1 + R_f/R_in; non-inverting: 1 + R_f/R_1.'] }, { id: 'sr', tr: 'Dönme hızı SR (V/µs)', en: 'Slew rate SR (V/µs)', def: '0.5' }, { id: 'vpk', tr: 'Çıkış tepe genliği', en: 'Output peak amplitude', def: '5', u: 'V', ud: 1 }],
       compute(G) {
         const gbw = G.v('gbw'), g = G.r('g'), sr = G.r('sr') * 1e6, vpk = G.v('vpk');
@@ -200,7 +298,7 @@ CMP.opamp = {
         if (sr > 0 && vpk > 0) { const fp = sr / (2 * Math.PI * vpk); items.push([eng(fp, 'Hz'), tt('Tam güç bant genişliği SR/(2π·V_pk)', 'Full-power bandwidth SR/(2π·V_pk)')], [fp < bw ? tt('Dönme hızı sınırlıyor', 'Slew rate limits') : tt('Küçük sinyal BW sınırlıyor', 'Small-signal BW limits'), tt('Büyük sinyalde sınırlayıcı', 'Limiting factor for large signals'), fp < bw ? 'warn' : 'good']); }
         return items;
       } },
-    { id: 'dc', title: ['DC hata (ofset ve kutuplama akımı)', 'DC error (offset and bias current)'], sub: ['V_err ≈ V_OS·(1 + R_f/R_in) + I_B·R_f', 'V_err ≈ V_OS·(1 + R_f/R_in) + I_B·R_f'],
+    { id: 'dc', group: 'dyn', title: ['DC hata (ofset ve kutuplama akımı)', 'DC error (offset and bias current)'], sub: ['V_err ≈ V_OS·(1 + R_f/R_in) + I_B·R_f', 'V_err ≈ V_OS·(1 + R_f/R_in) + I_B·R_f'],
       fields: [
         { id: 'rin', tr: 'R_in / R_1', en: 'R_in / R_1', def: '10', u: 'R', ud: 2 }, { id: 'rf', tr: 'R_f', en: 'R_f', def: '100', u: 'R', ud: 2 },
         { id: 'vos', tr: 'V_OS (mV)', en: 'V_OS (mV)', def: '1' }, { id: 'ib', tr: 'I_B (nA)', en: 'I_B (nA)', def: '50' }, { id: 'ios', tr: 'I_OS (nA)', en: 'I_OS (nA)', def: '10' },

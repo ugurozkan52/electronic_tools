@@ -111,6 +111,7 @@ EventHandler.registerCallback(IBOM_EVENT_TYPES.HIGHLIGHT_EVENT, function (e) {
 
 // ------------------------------------------------------------------ startup
 function pnTogglePane(pane) {
+  if (typeof asm.paneOpen !== 'function') { asmToast(I18N.t('Pencere açılamadı. Tarayıcının açılır pencere engelini kaldırın.'), 'warn'); return; }
   if (__pn.popped === pane) { pnSend({ t: 'close', pane: pane }); pnSetPopped(''); return; }
   if (__pn.popped) { asmToast(I18N.t('Önce açık olan pencereyi kapatın.'), 'warn'); return; }
   Promise.resolve(asm.paneOpen(pane)).then(function (ok) {

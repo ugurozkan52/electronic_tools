@@ -1,4 +1,76 @@
 /* Transistor (BJT NPN / PNP first): parameters, types, wizard and calculators. */
+/* ---- the four calculators exist for NPN and PNP; the maths is shared, polarity changes the wording, defaults and schematic ---- */
+function bjtCalcs(pnp) {
+  const T = pnp ? 'PNP' : 'NPN', sfx = pnp ? 'p' : 'n', grp = pnp ? 'pnp' : 'npn';
+  const list = [
+    { id: 'bs' + sfx, group: grp, title: [T + ' taban akımı ve taban direnci (anahtar)', T + ' base current and base resistor (switch)'], sub: ['I_B = I_C / β_zorlanmış, R_B = (V_drv − V_BE) / I_B', 'I_B = I_C / β_forced, R_B = (V_drv − V_BE) / I_B'],
+      fields: [
+        { id: 'vd', tr: pnp ? 'Sürücü düşük seviyesi (tabanı çeken)' : 'Sürücü yüksek seviyesi', en: pnp ? 'Driver low level (pulls the base)' : 'Driver high level', def: pnp ? '0' : '3.3', u: 'V', ud: 1, help: ['NPN: tabana uygulanan yüksek seviye. PNP: tabanı sürerken kullanılan düşük seviye (genelde 0 V).', 'NPN: the high level applied to the base. PNP: the low level used to drive the base (usually 0 V).'] },
+        { id: 'vcc', tr: 'Besleme gerilimi', en: 'Supply voltage', def: '12', u: 'V', ud: 1, help: ['PNP\'de emiter besleme gerilimi; yük akımı için de kullanılır.', 'For PNP, the emitter supply voltage; also used for the load current.'] },
+        { id: 'ic', tr: 'Kollektör akımı I_C', en: 'Collector current I_C', def: '100', u: 'A', ud: 1 },
+        { id: 'rl', tr: 'Veya yük direnci', en: 'Or load resistance', def: '', u: 'R', ud: 1, help: ['I_C boşsa I_C = (V_cc − V_CE(sat)) / R_L ile bulunur.', 'If I_C is empty, I_C = (V_cc − V_CE(sat)) / R_L is used.'] },
+        { id: 'bf', tr: 'Zorlanmış β', en: 'Forced β', def: '10', help: ['Doymada I_C/I_B oranı; genelde 10 (güç için 10–20). Daha küçük β daha güvenli doyma, daha çok taban akımı demektir.', 'I_C/I_B in saturation; usually 10 (10–20 for power). A smaller β means safer saturation and more base current.'] },
+        { id: 'hfe', tr: 'h_FE (min, veri sayfası)', en: 'h_FE (min, datasheet)', def: '100' },
+        { id: 'vbe', tr: 'V_BE (doymada)', en: 'V_BE (saturated)', def: '0.8', u: 'V', ud: 1 }, { id: 'vces', tr: 'V_CE(sat)', en: 'V_CE(sat)', def: '0.2', u: 'V', ud: 1 },
+      ],
+      note: ['Tabana, kapanırken serbest kalması için 10 kΩ civarı taban–emiter çekme direnci ekleyin. Hesaplanan direncin altındaki en yakın E24 değeri seçilir; böylece doyma garantilenir.', 'Add a base–emitter pull-down of about 10 kΩ so the base is defined when off. The nearest E24 value below the calculated resistor is chosen, which guarantees saturation.'],
+      compute(G) {
+        const npn = !pnp, vd = G.v('vd'), vcc = G.v('vcc'), vbe = G.v('vbe'), vces = G.v('vces') || 0, bf = G.r('bf') || 10, hfe = G.r('hfe');
+        let Ic = G.v('ic'); if (!(Ic > 0)) { const RL = G.v('rl'); if (RL > 0 && vcc > vces) Ic = (vcc - vces) / RL; }
+        if (!(Ic > 0 && vbe > 0)) return [['—', tt('I_C (veya yük direnci) girin', 'Enter I_C (or load resistance)')]];
+        const Vrb = npn ? vd - vbe : vcc - vd - vbe;
+        if (!(Vrb > 0)) return [['—', tt('Sürücü gerilimi V_BE\'yi aşmıyor; transistör iletmez', 'Drive voltage does not exceed V_BE; the transistor will not conduct'), 'bad']];
+        const Ib = Ic / bf, Rb = Vrb / Ib, std = nearestE(Rb, 'E24').lo, Iba = Vrb / std, od = hfe > 0 ? Iba * hfe / Ic : NaN;
+        const items = [[eng(Rb, 'Ω'), tt('Hesaplanan taban direnci R_B', 'Calculated base resistor R_B'), 'big'], [eng(std, 'Ω'), tt('Standart E24 (eşit/küçük)', 'Standard E24 (equal / lower)')], [eng(Ib, 'A'), tt('Gereken taban akımı I_B', 'Required base current I_B')], [eng(Iba, 'A'), tt('Standart dirençle I_B', 'I_B with the standard resistor')], [eng(Vrb * Vrb / std, 'W'), tt('R_B gücü', 'R_B power')], [eng(vces * Ic + vbe * Iba, 'W'), tt('Transistör kaybı (doymada)', 'Transistor loss (saturated)')]];
+        if (isFinite(od)) items.push([sig(od, 3) + '×', tt('Aşırı sürme (I_B·h_FE / I_C)', 'Overdrive (I_B·h_FE / I_C)'), od < 1.5 ? 'bad' : 'good']);
+        return items;
+      } },
+    { id: 'ic' + sfx, group: grp, title: [T + ' kollektör akımı (sabit taban akımı)', T + ' collector current (fixed base current)'], sub: ['I_B = (V_in − V_BE)/(R_B + (β+1)·R_E), I_C = β·I_B', 'I_B = (V_in − V_BE)/(R_B + (β+1)·R_E), I_C = β·I_B'],
+      fields: [
+        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'rc', tr: 'Kollektör direnci R_C', en: 'Collector resistor R_C', def: '470', u: 'R', ud: 1 },
+        { id: 'vin', tr: 'Taban kaynağı V_in', en: 'Base source V_in', def: '5', u: 'V', ud: 1 }, { id: 'rb', tr: 'Taban direnci R_B', en: 'Base resistor R_B', def: '100', u: 'R', ud: 2 },
+        { id: 're', tr: 'Emiter direnci R_E (isteğe bağlı)', en: 'Emitter resistor R_E (optional)', def: '', u: 'R', ud: 1 }, { id: 'b', tr: 'β (h_FE)', en: 'β (h_FE)', def: '200' },
+        { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 }, { id: 'vces', tr: 'V_CE(sat)', en: 'V_CE(sat)', def: '0.2', u: 'V', ud: 1 },
+      ],
+      note: ['β değeri geniş yayılımlıdır; doğruluk için emiter direnci ve gerilim bölücü polarma kullanın.', 'β has a wide spread; use an emitter resistor and divider bias for accuracy.'],
+      compute(G) {
+        const Vcc = G.v('vcc'), Rc = G.v('rc'), Vin = G.v('vin'), Rb = G.v('rb'), Re = G.v('re') || 0, B = G.r('b'), Vbe = G.v('vbe'), Vces = G.v('vces') || 0;
+        if (!(Vcc > 0 && Rc > 0 && Vin > Vbe && Rb > 0 && B > 0)) return [['—', tt('Değerleri girin (V_in > V_BE)', 'Enter the values (V_in > V_BE)')]];
+        const Ib = (Vin - Vbe) / (Rb + (B + 1) * Re), Ica = B * Ib, Ics = (Vcc - Vces) / (Rc + Re), sat = Ica >= Ics, Ic = sat ? Ics : Ica, Ibr = sat ? Ics / B : Ib, Vce = sat ? Vces : Vcc - Ic * Rc - (Ic + Ib) * Re;
+        const items = [[eng(Ic, 'A'), tt('Kollektör akımı I_C', 'Collector current I_C'), 'big'], [sat ? tt('DOYMA', 'SATURATION') : tt('Aktif bölge', 'Active region'), tt('Çalışma bölgesi', 'Operating region'), sat ? 'warn' : 'good'], [eng(Vce, 'V'), 'V_CE'], [eng(Ib, 'A'), tt('Taban akımı I_B', 'Base current I_B')], [eng(Ica, 'A'), tt('β·I_B (doyma yoksa I_C)', 'β·I_B (I_C if not saturated)')], [eng(Ics, 'A'), tt('Doyma akımı I_C(sat)', 'Saturation current I_C(sat)')], [eng(Vce * Ic, 'W'), tt('Transistör kaybı', 'Transistor loss')]];
+        if (sat) items.push([sig(Ib / Ibr, 3) + '×', tt('Aşırı sürme (I_B / doyma için gereken I_B)', 'Overdrive (I_B / I_B needed for saturation)')]);
+        return items;
+      } },
+    { id: 'vd' + sfx, group: grp, title: [T + ' gerilim bölücü polarma (kararlı)', T + ' voltage-divider bias (stable)'], sub: pnp ? ['V_th = V_cc·R₁/(R₁+R₂) (emiterden ölçülen), I_C ≈ (V_th − V_BE)/R_E', 'V_th = V_cc·R₁/(R₁+R₂) (measured from the emitter), I_C ≈ (V_th − V_BE)/R_E'] : ['V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E', 'V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E'],
+      fields: [
+        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'r1', tr: 'R1 (üst)', en: 'R1 (top)', def: '47', u: 'R', ud: 2 }, { id: 'r2', tr: 'R2 (alt)', en: 'R2 (bottom)', def: '10', u: 'R', ud: 2 },
+        { id: 'rc', tr: 'R_C', en: 'R_C', def: '2.2', u: 'R', ud: 2 }, { id: 're', tr: 'R_E', en: 'R_E', def: '1', u: 'R', ud: 2 }, { id: 'b', tr: 'β (h_FE)', en: 'β (h_FE)', def: '200' }, { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 },
+      ],
+      note: ['İyi polarmada bölücü akımı taban akımının en az 10 katı olmalı; böylece I_C β\'ya az duyarlı olur.', 'In good biasing the divider current should be at least 10× the base current, so I_C is only weakly dependent on β.'],
+      compute(G) {
+        const Vcc = G.v('vcc'), R1 = G.v('r1'), R2 = G.v('r2'), Rc = G.v('rc'), Re = G.v('re'), B = G.r('b'), Vbe = G.v('vbe');
+        if (!(Vcc > 0 && R1 > 0 && R2 > 0 && Rc > 0 && Re > 0 && B > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
+        const Vth = Vcc * (pnp ? R1 : R2) / (R1 + R2), Rth = R1 * R2 / (R1 + R2), solve = (b) => { const Ib = (Vth - Vbe) / (Rth + (b + 1) * Re); return b * Ib; };
+        if (Vth <= Vbe) return [['—', tt('V_th, V_BE\'den küçük; transistör iletmez', 'V_th is below V_BE; the transistor does not conduct'), 'bad']];
+        const Ic = solve(B), Ib = Ic / B, Ie = Ic + Ib, Vce = Vcc - Ic * Rc - Ie * Re, act = Vce > 0.3, lo = solve(B / 2), hi = solve(B * 2), Idiv = Vcc / (R1 + R2);
+        return [[eng(Ic, 'A'), tt('Kollektör akımı I_C', 'Collector current I_C'), 'big'], [eng(Vce, 'V'), tt('V_CE', 'V_CE'), act ? 'good' : 'bad'], [act ? tt('Aktif bölge', 'Active region') : tt('Doymaya yakın / doyma', 'Near / in saturation'), tt('Çalışma bölgesi', 'Operating region'), act ? 'good' : 'warn'], [eng(Ie * Re, 'V'), tt('V_E (emiter gerilimi)', 'V_E (emitter voltage)')], [eng((Vth - Vbe) / Re, 'A'), tt('Yaklaşık I_C ≈ (V_th − V_BE)/R_E', 'Approx. I_C ≈ (V_th − V_BE)/R_E')], [sig(Idiv / Ib, 3) + '×', tt('Bölücü akımı / taban akımı (≥ 10 iyi)', 'Divider current / base current (≥ 10 is good)'), Idiv / Ib >= 10 ? 'good' : 'warn'], [sig((lo / Ic - 1) * 100, 3) + ' % / +' + sig((hi / Ic - 1) * 100, 3) + ' %', tt('β yarıya / iki katına çıkarsa I_C değişimi', 'I_C change if β halves / doubles')], [eng(Vce * Ic, 'W'), tt('Transistör kaybı', 'Transistor loss')]];
+      } },
+    { id: 'pd' + sfx, group: grp, title: [T + ' güç kaybı ve eklem sıcaklığı', T + ' power dissipation and junction temperature'], sub: ['P = V_CE·I_C + V_BE·I_B, T_j = T_a + P·R_θJA', 'P = V_CE·I_C + V_BE·I_B, T_j = T_a + P·R_θJA'],
+      fields: [
+        { id: 'ic', tr: 'Kollektör akımı', en: 'Collector current', def: '0.5', u: 'A', ud: 2 }, { id: 'vce', tr: 'V_CE', en: 'V_CE', def: '5', u: 'V', ud: 1 }, { id: 'ib', tr: 'Taban akımı (isteğe bağlı)', en: 'Base current (optional)', def: '', u: 'A', ud: 1 }, { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 },
+        { id: 'd', tr: 'İletim oranı (%)', en: 'Conduction ratio (%)', def: '100' }, { id: 'rth', tr: 'R_θJA (K/W)', en: 'R_θJA (K/W)', def: '100' }, { id: 'ta', tr: 'Ortam (°C)', en: 'Ambient (°C)', def: '40' }, { id: 'tj', tr: 'T_j(max) (°C)', en: 'T_j(max) (°C)', def: '150' },
+      ],
+      compute(G) {
+        const Ic = G.v('ic'), Vce = G.v('vce'), Ib = G.v('ib') || 0, Vbe = G.v('vbe') || 0, d = (G.r('d') || 100) / 100, Rth = G.r('rth'), Ta = G.r('ta'), Tm = G.r('tj');
+        if (!(Ic > 0 && Vce > 0 && Rth > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
+        const P = (Vce * Ic + Vbe * Ib) * d, Tj = Ta + P * Rth;
+        return [[sig(Tj, 4) + ' °C', tt('Eklem sıcaklığı T_j', 'Junction temperature T_j'), 'big ' + (Tj > Tm ? 'bad' : Tj > Tm - 20 ? 'warn' : 'good')], [eng(P, 'W'), tt('Ortalama güç kaybı', 'Average power dissipation')], [sig(Tm - Tj, 3) + ' °C', tt('T_j(max)\'a kalan pay', 'Margin to T_j(max)')], [eng((Tm - Ta) / Rth, 'W'), tt('Bu ortamda izin verilen güç', 'Allowed power in this ambient')]];
+      } },
+  ];
+  if (pnp) list.forEach((c) => { c.sub = [c.sub[0] + ' · ' + 'Gerilimler emitere (V_cc) göre, akımlar NPN\'nin tersi yönde', c.sub[1] + ' · ' + 'Voltages referred to the emitter (V_cc), currents opposite to NPN']; });
+  return list;
+}
+
 CMP.transistor = {
   name: ['Transistör', 'Transistor'],
   title: ['Transistör (NPN / PNP) Rehberi ve Hesaplayıcıları', 'Transistor (NPN / PNP) Guide and Calculators'],
@@ -70,70 +142,11 @@ CMP.transistor = {
       return { main: R[0], why };
     },
   },
-  calcs: [
-    { id: 'bs', title: ['Taban akımı ve taban direnci (anahtar)', 'Base current and base resistor (switch)'], sub: ['I_B = I_C / β_zorlanmış, R_B = (V_drv − V_BE) / I_B', 'I_B = I_C / β_forced, R_B = (V_drv − V_BE) / I_B'],
-      fields: [
-        { id: 'tp', tr: 'Tür', en: 'Type', def: 'npn', sel: [['npn', 'NPN', 'NPN'], ['pnp', 'PNP', 'PNP']] },
-        { id: 'vd', tr: 'Sürücü gerilimi', en: 'Drive voltage', def: '3.3', u: 'V', ud: 1, help: ['NPN: tabana uygulanan yüksek seviye. PNP: tabanı sürerken kullanılan düşük seviye (genelde 0 V).', 'NPN: the high level applied to the base. PNP: the low level used to drive the base (usually 0 V).'] },
-        { id: 'vcc', tr: 'Besleme gerilimi', en: 'Supply voltage', def: '12', u: 'V', ud: 1, help: ['PNP\'de emiter besleme gerilimi; yük akımı için de kullanılır.', 'For PNP, the emitter supply voltage; also used for the load current.'] },
-        { id: 'ic', tr: 'Kollektör akımı I_C', en: 'Collector current I_C', def: '100', u: 'A', ud: 1 },
-        { id: 'rl', tr: 'Veya yük direnci', en: 'Or load resistance', def: '', u: 'R', ud: 1, help: ['I_C boşsa I_C = (V_cc − V_CE(sat)) / R_L ile bulunur.', 'If I_C is empty, I_C = (V_cc − V_CE(sat)) / R_L is used.'] },
-        { id: 'bf', tr: 'Zorlanmış β', en: 'Forced β', def: '10', help: ['Doymada I_C/I_B oranı; genelde 10 (güç için 10–20). Daha küçük β daha güvenli doyma, daha çok taban akımı demektir.', 'I_C/I_B in saturation; usually 10 (10–20 for power). A smaller β means safer saturation and more base current.'] },
-        { id: 'hfe', tr: 'h_FE (min, veri sayfası)', en: 'h_FE (min, datasheet)', def: '100' },
-        { id: 'vbe', tr: 'V_BE (doymada)', en: 'V_BE (saturated)', def: '0.8', u: 'V', ud: 1 }, { id: 'vces', tr: 'V_CE(sat)', en: 'V_CE(sat)', def: '0.2', u: 'V', ud: 1 },
-      ],
-      note: ['Tabana, kapanırken serbest kalması için 10 kΩ civarı taban–emiter çekme direnci ekleyin. Hesaplanan direncin altındaki en yakın E24 değeri seçilir; böylece doyma garantilenir.', 'Add a base–emitter pull-down of about 10 kΩ so the base is defined when off. The nearest E24 value below the calculated resistor is chosen, which guarantees saturation.'],
-      compute(G) {
-        const npn = G.s('tp') === 'npn', vd = G.v('vd'), vcc = G.v('vcc'), vbe = G.v('vbe'), vces = G.v('vces') || 0, bf = G.r('bf') || 10, hfe = G.r('hfe');
-        let Ic = G.v('ic'); if (!(Ic > 0)) { const RL = G.v('rl'); if (RL > 0 && vcc > vces) Ic = (vcc - vces) / RL; }
-        if (!(Ic > 0 && vbe > 0)) return [['—', tt('I_C (veya yük direnci) girin', 'Enter I_C (or load resistance)')]];
-        const Vrb = npn ? vd - vbe : vcc - vd - vbe;
-        if (!(Vrb > 0)) return [['—', tt('Sürücü gerilimi V_BE\'yi aşmıyor; transistör iletmez', 'Drive voltage does not exceed V_BE; the transistor will not conduct'), 'bad']];
-        const Ib = Ic / bf, Rb = Vrb / Ib, std = nearestE(Rb, 'E24').lo, Iba = Vrb / std, od = hfe > 0 ? Iba * hfe / Ic : NaN;
-        const items = [[eng(Rb, 'Ω'), tt('Hesaplanan taban direnci R_B', 'Calculated base resistor R_B'), 'big'], [eng(std, 'Ω'), tt('Standart E24 (eşit/küçük)', 'Standard E24 (equal / lower)')], [eng(Ib, 'A'), tt('Gereken taban akımı I_B', 'Required base current I_B')], [eng(Iba, 'A'), tt('Standart dirençle I_B', 'I_B with the standard resistor')], [eng(Vrb * Vrb / std, 'W'), tt('R_B gücü', 'R_B power')], [eng(vces * Ic + vbe * Iba, 'W'), tt('Transistör kaybı (doymada)', 'Transistor loss (saturated)')]];
-        if (isFinite(od)) items.push([sig(od, 3) + '×', tt('Aşırı sürme (I_B·h_FE / I_C)', 'Overdrive (I_B·h_FE / I_C)'), od < 1.5 ? 'bad' : 'good']);
-        return items;
-      } },
-    { id: 'ic', title: ['Kollektör akımı (sabit taban akımı)', 'Collector current (fixed base current)'], sub: ['I_B = (V_in − V_BE)/(R_B + (β+1)·R_E), I_C = β·I_B', 'I_B = (V_in − V_BE)/(R_B + (β+1)·R_E), I_C = β·I_B'],
-      fields: [
-        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'rc', tr: 'Kollektör direnci R_C', en: 'Collector resistor R_C', def: '470', u: 'R', ud: 1 },
-        { id: 'vin', tr: 'Taban kaynağı V_in', en: 'Base source V_in', def: '5', u: 'V', ud: 1 }, { id: 'rb', tr: 'Taban direnci R_B', en: 'Base resistor R_B', def: '100', u: 'R', ud: 2 },
-        { id: 're', tr: 'Emiter direnci R_E (isteğe bağlı)', en: 'Emitter resistor R_E (optional)', def: '', u: 'R', ud: 1 }, { id: 'b', tr: 'β (h_FE)', en: 'β (h_FE)', def: '200' },
-        { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 }, { id: 'vces', tr: 'V_CE(sat)', en: 'V_CE(sat)', def: '0.2', u: 'V', ud: 1 },
-      ],
-      note: ['PNP için aynı büyüklükler geçerlidir (akım yönleri ters, polariteler yer değiştirir). β değeri geniş yayılımlıdır; doğruluk için emiter direnci ve gerilim bölücü polarma kullanın.', 'The same magnitudes apply to PNP (current directions and polarities swap). β has a wide spread; use an emitter resistor and divider bias for accuracy.'],
-      compute(G) {
-        const Vcc = G.v('vcc'), Rc = G.v('rc'), Vin = G.v('vin'), Rb = G.v('rb'), Re = G.v('re') || 0, B = G.r('b'), Vbe = G.v('vbe'), Vces = G.v('vces') || 0;
-        if (!(Vcc > 0 && Rc > 0 && Vin > Vbe && Rb > 0 && B > 0)) return [['—', tt('Değerleri girin (V_in > V_BE)', 'Enter the values (V_in > V_BE)')]];
-        const Ib = (Vin - Vbe) / (Rb + (B + 1) * Re), Ica = B * Ib, Ics = (Vcc - Vces) / (Rc + Re), sat = Ica >= Ics, Ic = sat ? Ics : Ica, Ibr = sat ? Ics / B : Ib, Vce = sat ? Vces : Vcc - Ic * Rc - (Ic + Ib) * Re;
-        const items = [[eng(Ic, 'A'), tt('Kollektör akımı I_C', 'Collector current I_C'), 'big'], [sat ? tt('DOYMA', 'SATURATION') : tt('Aktif bölge', 'Active region'), tt('Çalışma bölgesi', 'Operating region'), sat ? 'warn' : 'good'], [eng(Vce, 'V'), 'V_CE'], [eng(Ib, 'A'), tt('Taban akımı I_B', 'Base current I_B')], [eng(Ica, 'A'), tt('β·I_B (doyma yoksa I_C)', 'β·I_B (I_C if not saturated)')], [eng(Ics, 'A'), tt('Doyma akımı I_C(sat)', 'Saturation current I_C(sat)')], [eng(Vce * Ic, 'W'), tt('Transistör kaybı', 'Transistor loss')]];
-        if (sat) items.push([sig(Ib / Ibr, 3) + '×', tt('Aşırı sürme (I_B / doyma için gereken I_B)', 'Overdrive (I_B / I_B needed for saturation)')]);
-        return items;
-      } },
-    { id: 'vd', title: ['Gerilim bölücü polarma (kararlı)', 'Voltage-divider bias (stable)'], sub: ['V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E', 'V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E'],
-      fields: [
-        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'r1', tr: 'R1 (üst)', en: 'R1 (top)', def: '47', u: 'R', ud: 2 }, { id: 'r2', tr: 'R2 (alt)', en: 'R2 (bottom)', def: '10', u: 'R', ud: 2 },
-        { id: 'rc', tr: 'R_C', en: 'R_C', def: '2.2', u: 'R', ud: 2 }, { id: 're', tr: 'R_E', en: 'R_E', def: '1', u: 'R', ud: 2 }, { id: 'b', tr: 'β (h_FE)', en: 'β (h_FE)', def: '200' }, { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 },
-      ],
-      note: ['İyi polarmada bölücü akımı taban akımının en az 10 katı olmalı; böylece I_C β\'ya az duyarlı olur.', 'In good biasing the divider current should be at least 10× the base current, so I_C is only weakly dependent on β.'],
-      compute(G) {
-        const Vcc = G.v('vcc'), R1 = G.v('r1'), R2 = G.v('r2'), Rc = G.v('rc'), Re = G.v('re'), B = G.r('b'), Vbe = G.v('vbe');
-        if (!(Vcc > 0 && R1 > 0 && R2 > 0 && Rc > 0 && Re > 0 && B > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        const Vth = Vcc * R2 / (R1 + R2), Rth = R1 * R2 / (R1 + R2), solve = (b) => { const Ib = (Vth - Vbe) / (Rth + (b + 1) * Re); return b * Ib; };
-        if (Vth <= Vbe) return [['—', tt('V_th, V_BE\'den küçük; transistör iletmez', 'V_th is below V_BE; the transistor does not conduct'), 'bad']];
-        const Ic = solve(B), Ib = Ic / B, Ie = Ic + Ib, Vce = Vcc - Ic * Rc - Ie * Re, act = Vce > 0.3, lo = solve(B / 2), hi = solve(B * 2), Idiv = Vcc / (R1 + R2);
-        return [[eng(Ic, 'A'), tt('Kollektör akımı I_C', 'Collector current I_C'), 'big'], [eng(Vce, 'V'), tt('V_CE', 'V_CE'), act ? 'good' : 'bad'], [act ? tt('Aktif bölge', 'Active region') : tt('Doymaya yakın / doyma', 'Near / in saturation'), tt('Çalışma bölgesi', 'Operating region'), act ? 'good' : 'warn'], [eng(Ie * Re, 'V'), tt('V_E (emiter gerilimi)', 'V_E (emitter voltage)')], [eng((Vth - Vbe) / Re, 'A'), tt('Yaklaşık I_C ≈ (V_th − V_BE)/R_E', 'Approx. I_C ≈ (V_th − V_BE)/R_E')], [sig(Idiv / Ib, 3) + '×', tt('Bölücü akımı / taban akımı (≥ 10 iyi)', 'Divider current / base current (≥ 10 is good)'), Idiv / Ib >= 10 ? 'good' : 'warn'], [sig((lo / Ic - 1) * 100, 3) + ' % / +' + sig((hi / Ic - 1) * 100, 3) + ' %', tt('β yarıya / iki katına çıkarsa I_C değişimi', 'I_C change if β halves / doubles')], [eng(Vce * Ic, 'W'), tt('Transistör kaybı', 'Transistor loss')]];
-      } },
-    { id: 'pd', title: ['Güç kaybı ve eklem sıcaklığı', 'Power dissipation and junction temperature'], sub: ['P = V_CE·I_C + V_BE·I_B, T_j = T_a + P·R_θJA', 'P = V_CE·I_C + V_BE·I_B, T_j = T_a + P·R_θJA'],
-      fields: [
-        { id: 'ic', tr: 'Kollektör akımı', en: 'Collector current', def: '0.5', u: 'A', ud: 2 }, { id: 'vce', tr: 'V_CE', en: 'V_CE', def: '5', u: 'V', ud: 1 }, { id: 'ib', tr: 'Taban akımı (isteğe bağlı)', en: 'Base current (optional)', def: '', u: 'A', ud: 1 }, { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 },
-        { id: 'd', tr: 'İletim oranı (%)', en: 'Conduction ratio (%)', def: '100' }, { id: 'rth', tr: 'R_θJA (K/W)', en: 'R_θJA (K/W)', def: '100' }, { id: 'ta', tr: 'Ortam (°C)', en: 'Ambient (°C)', def: '40' }, { id: 'tj', tr: 'T_j(max) (°C)', en: 'T_j(max) (°C)', def: '150' },
-      ],
-      compute(G) {
-        const Ic = G.v('ic'), Vce = G.v('vce'), Ib = G.v('ib') || 0, Vbe = G.v('vbe') || 0, d = (G.r('d') || 100) / 100, Rth = G.r('rth'), Ta = G.r('ta'), Tm = G.r('tj');
-        if (!(Ic > 0 && Vce > 0 && Rth > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        const P = (Vce * Ic + Vbe * Ib) * d, Tj = Ta + P * Rth;
-        return [[sig(Tj, 4) + ' °C', tt('Eklem sıcaklığı T_j', 'Junction temperature T_j'), 'big ' + (Tj > Tm ? 'bad' : Tj > Tm - 20 ? 'warn' : 'good')], [eng(P, 'W'), tt('Ortalama güç kaybı', 'Average power dissipation')], [sig(Tm - Tj, 3) + ' °C', tt('T_j(max)\'a kalan pay', 'Margin to T_j(max)')], [eng((Tm - Ta) / Rth, 'W'), tt('Bu ortamda izin verilen güç', 'Allowed power in this ambient')]];
-      } },
+  // calculators are shown in headed groups, one application at a time
+  // calculators are shown in two groups (NPN / PNP); same formulas, mirrored polarity
+  calcGroups: [
+    ['npn', 'NPN transistör', 'NPN transistor', 'Emiter toprakta (düşük taraf anahtar) ya da emiter direnci üzerinden; taban pozitif sürülür. Anahtar, kollektör akımı, polarma ve güç/sıcaklık.', 'Emitter on ground (low-side switch) or via an emitter resistor; the base is driven positive. Switch, collector current, bias and power/temperature.'],
+    ['pnp', 'PNP transistör', 'PNP transistor', 'Emiter beslemede (yüksek taraf anahtar); taban emitere göre negatif (toprağa doğru) sürülür. Aynı dört hesaplayıcı, PNP polaritesiyle.', 'Emitter on the supply (high-side switch); the base is driven negative with respect to the emitter (towards ground). The same four calculators with PNP polarity.'],
   ],
+  calcs: [...bjtCalcs(false), ...bjtCalcs(true)],
 };

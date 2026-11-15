@@ -70,8 +70,15 @@ CMP.capacitor = {
       return { main: R[0], why };
     },
   },
+  // calculators are shown in headed groups, one application at a time
+  calcGroups: [
+    ['ac', 'Frekans davranışı', 'Frequency behaviour', 'Empedans, ESR/ESL ve seri rezonans frekansı (SRF).', 'Impedance, ESR/ESL and self-resonant frequency (SRF).'],
+    ['time', 'Zaman ve enerji', 'Time and energy', 'RC şarj/deşarj, depolanan enerji ve besleme kesintisinde hold-up kapasitesi.', 'RC charge/discharge, stored energy and hold-up capacitance on supply loss.'],
+    ['rate', 'Derating ve ömür', 'Derating and life', 'Gerilim derating, ripple akımı ısınması ve elektrolitik ömür.', 'Voltage derating, ripple-current heating and electrolytic life.'],
+    ['val', 'Değer seçimi', 'Value selection', 'Hesaplanan değere en yakın standart (E-serisi) değer.', 'Nearest standard (E-series) value to the computed one.'],
+  ],
   calcs: [
-    { id: 'z', title: ['Empedans ve SRF', 'Impedance and SRF'], sub: ['|Z| = √(ESR² + (X_L − X_C)²)', '|Z| = √(ESR² + (X_L − X_C)²)'],
+    { id: 'z', group: 'ac', plot: (G, items) => capZPlot(G, items), title: ['Empedans ve SRF', 'Impedance and SRF'], sub: ['|Z| = √(ESR² + (X_L − X_C)²)', '|Z| = √(ESR² + (X_L − X_C)²)'],
       fields: [
         { id: 'c', tr: 'Kapasitans', en: 'Capacitance', def: '100', u: 'C', ud: 1 }, { id: 'f', tr: 'Frekans', en: 'Frequency', def: '1', u: 'F', ud: 2 },
         { id: 'esr', tr: 'ESR', en: 'ESR', def: '10', u: 'R', ud: 0, help: ['Seri eşdeğer direnç (veri sayfasından).', 'Equivalent series resistance (from the datasheet).'] },
@@ -84,7 +91,34 @@ CMP.capacitor = {
         const w = 2 * Math.PI * f, Xc = 1 / (w * C), Xl = w * esl, X = Xl - Xc, Z = Math.hypot(esr, X), fs = esl > 0 ? 1 / (2 * Math.PI * Math.sqrt(esl * C)) : Infinity;
         return [[eng(Z, 'Ω'), tt('Toplam empedans |Z|', 'Total impedance |Z|'), 'big'], [eng(Xc, 'Ω'), 'X_C'], [eng(Xl, 'Ω'), 'X_L (ESL)'], [fs === Infinity ? '—' : eng(fs, 'Hz'), tt('Kendinden rezonans (SRF)', 'Self-resonant frequency (SRF)')], [f < fs ? tt('Kapasitif', 'Capacitive') : tt('Endüktif', 'Inductive'), tt('Bu frekanstaki davranış', 'Behaviour at this frequency'), f < fs ? 'good' : 'warn'], [sig(esr / Xc * 100, 3) + ' %', 'tan δ = ESR/X_C']];
       } },
-    { id: 'rc', title: ['RC şarj / deşarj ve enerji', 'RC charge / discharge and energy'], sub: ['τ = R·C, E = ½·C·V²', 'τ = R·C, E = ½·C·V²'],
+    { id: 'ir', group: 'time', title: ['Inrush (kalkış) akımı', 'Inrush current'], sub: ['Besleme takılınca boş kondansatörler kısa devre gibi davranır: I_pk = V / R_seri (ani) ya da C·dV/dt (yumuşak kalkış), τ = R·C, I²t = V²·C / (2R)', 'Empty capacitors look like a short when the supply is applied: I_pk = V / R_series (step) or C·dV/dt (soft start), τ = R·C, I²t = V²·C / (2R)'],
+      fields: [
+        { id: 'c', tr: 'Toplam kapasite (giriş + dekuplaj)', en: 'Total capacitance (bulk + decoupling)', def: '470', u: 'C', ud: 2, help: ['Besleme hattındaki tüm kondansatörlerin toplamı: giriş elektrolitikleri, seramik dekuplajlar, regülatör giriş/çıkışları. Seramiklerde DC öngerilim kaybını hesaba katmayın (en kötü durum için anma değer).', 'Sum of all capacitors on the rail: bulk electrolytics, ceramic decoupling, regulator inputs/outputs. Ignore ceramic DC-bias loss (nominal value is the worst case).'] },
+        { id: 'v', tr: 'Besleme gerilimi', en: 'Supply voltage', def: '24', u: 'V', ud: 1 },
+        { id: 'rs', tr: 'Kaynak + kablo + ESR direnci', en: 'Source + cable + ESR resistance', def: '100', u: 'R', ud: 0, help: ['Besleme çıkış direnci, kablo/konnektör, PCB izi ve kondansatör ESR toplamı. Laboratuvar kaynağı + 1 m kablo için 50–200 mΩ tipik.', 'Supply output resistance, cable/connector, PCB trace and capacitor ESR in total. 50–200 mΩ is typical for a bench supply + 1 m of cable.'] },
+        { id: 'rl', tr: 'Inrush sınırlayıcı (NTC / direnç, isteğe bağlı)', en: 'Inrush limiter (NTC / resistor, optional)', def: '', u: 'R', ud: 1, help: ['Soğuk NTC direnci ya da seri direnç. Boşsa sınırlayıcı yok.', 'Cold NTC resistance or series resistor. Empty means no limiter.'] },
+        { id: 'tr', tr: 'Besleme yükselme süresi (yumuşak kalkış, isteğe bağlı)', en: 'Supply rise time (soft start, optional)', def: '', u: 'T', ud: 1, help: ['Kaynak / hot-swap denetleyicisi gerilimi bu sürede doğrusal yükseltiyorsa akım C·V/t_r ile sınırlanır. Boşsa ani basamak.', 'If the source / hot-swap controller ramps the voltage linearly over this time, the current is limited to C·V/t_r. Empty means a step.'] },
+        { id: 'imax', tr: 'İzin verilen tepe akım (isteğe bağlı)', en: 'Allowed peak current (optional)', def: '', u: 'A', ud: 2, help: ['Sigorta, konnektör, hot-swap FET SOA ya da kaynağın akım sınırı. Girilirse gereken sınırlayıcı direnç ya da yükselme süresi önerilir.', 'Fuse, connector, hot-swap FET SOA or the source current limit. If entered, the required limiter resistance or rise time is suggested.'] },
+        { id: 'i2t', tr: 'Sigorta I²t (A²s, isteğe bağlı)', en: 'Fuse I²t (A²s, optional)', def: '', help: ['Sigortanın erime I²t değeri (veri sayfası). Inrush I²t bunun %20–30\'unun altında kalmalı.', 'Melting I²t of the fuse (datasheet). The inrush I²t should stay below 20–30 % of it.'] },
+      ],
+      note: ['Kondansatör boşken başlangıç akımını yalnızca seri direnç sınırlar; 24 V / 0,1 Ω = 240 A gibi değerler konnektör kontaklarını yakar, sigortayı attırır ve ortak beslemeye çökme verir. Çözümler: NTC (soğukken yüksek, ısınınca düşük direnç), hot-swap denetleyici (dV/dt sınırlı FET), yumuşak kalkışlı regülatör, ya da ön şarj direnci + röle. Enerjinin yarısı her durumda seri dirençte ısıya döner (½CV²).', 'With empty capacitors only the series resistance limits the initial current; values like 24 V / 0.1 Ω = 240 A pit connector contacts, blow fuses and dip the shared supply. Remedies: NTC (high when cold, low when warm), hot-swap controller (dV/dt-limited FET), soft-start regulator, or a pre-charge resistor + relay. Half of the energy is always dissipated as heat in the series resistance (½CV²).'],
+      compute(G) {
+        const C = G.v('c'), V = G.v('v'), rs = G.v('rs') || 0, rl = G.v('rl') > 0 ? G.v('rl') : 0, tr = G.v('tr'), imax = G.v('imax'), i2tF = G.r('i2t');
+        if (!(C > 0 && V > 0 && rs + rl > 0)) return [['—', tt('Kapasite, gerilim ve seri direnç girin', 'Enter capacitance, voltage and series resistance')]];
+        const R = rs + rl, tau = R * C, ipkStep = V / R, i2tStep = V * V * C / (2 * R);
+        // linear ramp over t_r: current settles to C·V/t_r after ≈ τ, but can never exceed the step value
+        const ramp = tr > 0 && tr > 2 * tau, ipk = ramp ? Math.min(C * V / tr, ipkStep) : ipkStep, i2t = ramp ? ipk * ipk * tr : i2tStep, tEnd = ramp ? tr + 5 * tau : 5 * tau;
+        const items = [[eng(ipk, 'A'), tt('Tepe inrush akımı', 'Peak inrush current'), 'big ' + (imax > 0 ? (ipk > imax ? 'bad' : 'good') : '')],
+          [ramp ? tt('Yumuşak kalkış: I ≈ C·V/t_r', 'Soft start: I ≈ C·V/t_r') : tt('Ani basamak: I = V/R', 'Step: I = V/R'), tt('Sınırlayan etken', 'Limiting factor')],
+          [eng(tau, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C')], [eng(tEnd, 's'), tt('Inrush süresi (≈ %99 şarj)', 'Inrush duration (≈ 99 % charged)')],
+          [eng(C * V, 'C'), tt('Aktarılan yük Q = C·V', 'Charge delivered Q = C·V')], [eng(i2t, 'A²s'), tt('Inrush I²t', 'Inrush I²t'), i2tF > 0 ? (i2t > 0.3 * i2tF ? 'bad' : 'good') : ''],
+          [eng(0.5 * C * V * V, 'J'), tt('Seri dirençte ısınan enerji (½CV²)', 'Energy heated in the series resistance (½CV²)')]];
+        if (rl > 0) items.push([eng(0.5 * C * V * V * rl / R, 'J'), tt('Sınırlayıcıdaki enerji (darbe gücü kontrolü)', 'Energy in the limiter (check its pulse rating)')]);
+        if (i2tF > 0) items.push([sig(i2t / i2tF * 100, 3) + ' %', tt('Sigorta I²t\'sinin yüzdesi (< %30 iyi)', 'Percent of the fuse I²t (< 30 % is good)'), i2t > 0.3 * i2tF ? 'bad' : 'good']);
+        if (imax > 0 && ipk > imax) { items.push([eng(V / imax - rs, 'Ω'), tt('Gereken toplam sınırlayıcı direnç', 'Required limiter resistance'), 'warn'], [eng(C * V / imax, 's'), tt('Veya gereken yükselme süresi t_r', 'Or the required rise time t_r'), 'warn']); }
+        return items;
+      } },
+    { id: 'rc', group: 'time', title: ['RC şarj / deşarj ve enerji', 'RC charge / discharge and energy'], sub: ['τ = R·C, E = ½·C·V²', 'τ = R·C, E = ½·C·V²'],
       fields: [
         { id: 'r', tr: 'Direnç', en: 'Resistance', def: '10', u: 'R', ud: 2 }, { id: 'c', tr: 'Kapasitans', en: 'Capacitance', def: '100', u: 'C', ud: 2 },
         { id: 'v', tr: 'Gerilim', en: 'Voltage', def: '5', u: 'V', ud: 1 }, { id: 'p', tr: 'Hedef şarj (%)', en: 'Target charge (%)', def: '90', help: ['Şarjda bu orana, deşarjda kalan orana (100 − değer) ulaşma süresi.', 'Time to reach this percentage when charging, or (100 − value) when discharging.'] },
@@ -97,7 +131,7 @@ CMP.capacitor = {
         items.push([eng(5 * tau, 's'), tt('5τ (≈ %99,3)', '5τ (≈ 99.3 %)')], [eng(0.5 * C * V * V, 'J'), tt('Depolanan enerji ½CV²', 'Stored energy ½CV²')], [eng(C * V, 'C'), tt('Yük Q = C·V', 'Charge Q = C·V')], [eng(V / R, 'A'), tt('İlk akım (V/R)', 'Initial current (V/R)')]);
         return items;
       } },
-    { id: 'dr', title: ['Gerilim derating', 'Voltage derating'], sub: ['V_anma ≥ V_tepe / katsayı', 'V_rated ≥ V_peak / factor'],
+    { id: 'dr', group: 'rate', title: ['Gerilim derating', 'Voltage derating'], sub: ['V_anma ≥ V_tepe / katsayı', 'V_rated ≥ V_peak / factor'],
       fields: [
         { id: 't', tr: 'Tür', en: 'Type', def: 'x7r', sel: [['c0g', 'MLCC C0G', 'MLCC C0G'], ['x7r', 'MLCC X7R / X5R', 'MLCC X7R / X5R'], ['al', 'Alüminyum elektrolitik', 'Aluminium electrolytic'], ['alp', 'Alüminyum polimer', 'Aluminium polymer'], ['tam', 'Tantal MnO₂', 'Tantalum MnO₂'], ['tap', 'Tantal polimer', 'Tantalum polymer'], ['film', 'Film', 'Film']] },
         { id: 'vdc', tr: 'DC gerilim', en: 'DC voltage', def: '12', u: 'V', ud: 1 }, { id: 'vac', tr: 'AC/ripple tepe gerilimi', en: 'AC / ripple peak', def: '0.5', u: 'V', ud: 1 },
@@ -109,7 +143,7 @@ CMP.capacitor = {
         const vp = vdc + vac, need = vp / F, std = [4, 6.3, 10, 16, 25, 35, 50, 63, 100, 160, 200, 250, 400, 450, 630, 1000, 1500, 2000, 3000].find((x) => x >= need);
         return [[std ? eng(std, 'V') : tt('tablo dışı', 'off table'), tt('Seçilecek standart anma gerilimi', 'Standard rated voltage to choose'), 'big'], [eng(vp, 'V'), tt('Tepe gerilim (DC + AC)', 'Peak voltage (DC + AC)')], [eng(need, 'V'), tt('Gereken min. anma gerilimi', 'Required min. rated voltage')], [sig(F * 100, 3) + ' %', tt('Kullanım katsayısı (üst sınır)', 'Utilisation factor (upper limit)')]];
       } },
-    { id: 'rl', title: ['Ripple akımı ve elektrolitik ömür', 'Ripple current and electrolytic life'], sub: ['L = L₀·2^((T₀ − T_çekirdek)/10)', 'L = L₀·2^((T₀ − T_core)/10)'],
+    { id: 'rl', group: 'rate', title: ['Ripple akımı ve elektrolitik ömür', 'Ripple current and electrolytic life'], sub: ['L = L₀·2^((T₀ − T_çekirdek)/10)', 'L = L₀·2^((T₀ − T_core)/10)'],
       fields: [
         { id: 'i', tr: 'Ripple akımı (rms, A)', en: 'Ripple current (rms, A)', def: '1' }, { id: 'esr', tr: 'ESR', en: 'ESR', def: '100', u: 'R', ud: 0 },
         { id: 'rth', tr: 'Isıl direnç (K/W)', en: 'Thermal resistance (K/W)', def: '20', help: ['Çekirdek-ortam ısıl direnci; veri sayfasından veya ölçümle.', 'Core-to-ambient thermal resistance; from the datasheet or by measurement.'] },
@@ -125,7 +159,7 @@ CMP.capacitor = {
         if (ir > 0) items.push([sig(I / ir * 100, 3) + ' %', tt('Anma ripple akımının oranı', 'Fraction of rated ripple'), I > ir ? 'bad' : '']);
         return items;
       } },
-    { id: 'hu', title: ['Hold-up kapasitesi', 'Hold-up capacitance'], sub: ['C = 2·P·t / (η·(V₁² − V₂²))', 'C = 2·P·t / (η·(V₁² − V₂²))'],
+    { id: 'hu', group: 'time', title: ['Hold-up kapasitesi', 'Hold-up capacitance'], sub: ['C = 2·P·t / (η·(V₁² − V₂²))', 'C = 2·P·t / (η·(V₁² − V₂²))'],
       fields: [
         { id: 'p', tr: 'Yük gücü', en: 'Load power', def: '10', u: 'W', ud: 1 }, { id: 't', tr: 'Hold-up süresi', en: 'Hold-up time', def: '20', u: 'T', ud: 1 },
         { id: 'v1', tr: 'Başlangıç gerilimi', en: 'Start voltage', def: '12', u: 'V', ud: 1 }, { id: 'v2', tr: 'Minimum gerilim', en: 'Minimum voltage', def: '9', u: 'V', ud: 1 },
@@ -137,7 +171,7 @@ CMP.capacitor = {
         const C = 2 * P * t / (eta * (v1 * v1 - v2 * v2));
         return [[eng(C, 'F'), tt('Gereken kapasitans', 'Required capacitance'), 'big'], [eng(P * t / eta, 'J'), tt('Gereken enerji', 'Required energy')], [eng(0.5 * C * (v1 * v1 - v2 * v2), 'J'), tt('Kullanılabilir enerji', 'Usable energy')]];
       } },
-    { id: 'es', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
+    { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
       fields: [{ id: 'v', tr: 'Hesaplanan değer', en: 'Computed value', def: '4.2', u: 'C', ud: 2 }, { id: 's', tr: 'Seri', en: 'Series', def: 'E12', sel: SEL_E }],
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];
@@ -146,3 +180,63 @@ CMP.capacitor = {
       } },
   ],
 };
+
+/* ---- |Z|(f) plot for the impedance card: live trace of the form values, saved traces, their parallel, markers for ESR, SRF and the card frequency ---- */
+const ZP = { traces: [], hidden: new Set(), par: false };
+const ZP_COL = ['#2563eb', '#d97706', '#9333ea', '#dc2626', '#0891b2', '#65a30d', '#db2777', '#4b5563'];
+function zOf(tr, f) { const w = 2 * Math.PI * f; return [tr.esr, w * tr.esl - 1 / (w * tr.c)]; }   // complex Z = R + jX
+function zMag(tr, f) { const [r, x] = zOf(tr, f); return Math.hypot(r, x); }
+function zPar(trs, f) { let gr = 0, gi = 0; for (const t of trs) { const [r, x] = zOf(t, f), d = r * r + x * x; gr += r / d; gi += -x / d; } return 1 / Math.hypot(gr, gi); }
+function capZPlot(G, items) {
+  const live = { c: G.v('c'), esr: G.v('esr') || 0, esl: G.v('esl') || 0, f: G.v('f') };
+  const wrap = document.createElement('div'), NS = 'http://www.w3.org/2000/svg';
+  const haveLive = live.c > 0, all = ZP.traces.slice(); if (haveLive) all.push(Object.assign({ live: true }, live));
+  if (!all.length) return wrap;
+  // frequency range: a few decades either side of every SRF (or of 1/(2π·ESR·C) when ESL = 0)
+  let lo = Infinity, hi = 0;
+  for (const t of all) { const f0 = t.esl > 0 ? 1 / (2 * Math.PI * Math.sqrt(t.esl * t.c)) : (t.esr > 0 ? 1 / (2 * Math.PI * t.esr * t.c) : 1e6); lo = Math.min(lo, f0 / 1e4); hi = Math.max(hi, f0 * 1e3); }
+  if (live.f > 0) { lo = Math.min(lo, live.f / 10); hi = Math.max(hi, live.f * 10); }
+  const fmin = Math.pow(10, Math.max(0, Math.floor(Math.log10(lo)))), fmax = Math.pow(10, Math.min(10, Math.ceil(Math.log10(hi))));
+  const shown = all.filter((t, i) => t.live || !ZP.hidden.has(i)), saved = ZP.traces.filter((t, i) => !ZP.hidden.has(i));
+  const curves = shown.map((t) => ({ t, fn: (f) => zMag(t, f), col: t.live ? 'var(--c)' : ZP_COL[ZP.traces.indexOf(t) % ZP_COL.length], dash: t.live ? '' : '', name: t.live ? tt('Girilen', 'Form values') : t.name }));
+  if (ZP.par && saved.length > 1) curves.push({ par: true, fn: (f) => zPar(saved, f), col: 'var(--ink)', dash: '6 4', name: tt('Paralel (kayıtlı izler)', 'Parallel (saved traces)') });
+  const N = 240, lf0 = Math.log10(fmin), lf1 = Math.log10(fmax), F = Array.from({ length: N + 1 }, (_, i) => Math.pow(10, lf0 + (lf1 - lf0) * i / N));
+  let zlo = Infinity, zhi = 0; for (const c of curves) for (const f of F) { const z = c.fn(f); if (z > 0 && isFinite(z)) { zlo = Math.min(zlo, z); zhi = Math.max(zhi, z); } }
+  const zmin = Math.pow(10, Math.floor(Math.log10(zlo))), zmax = Math.pow(10, Math.ceil(Math.log10(zhi)));
+  const W = 640, H = 360, L = 58, R = 16, T = 26, B = 42, pw = W - L - R, ph = H - T - B;
+  const X = (f) => L + (Math.log10(f) - lf0) / (lf1 - lf0) * pw, Y = (z) => T + (Math.log10(zmax) - Math.log10(z)) / (Math.log10(zmax) - Math.log10(zmin)) * ph;
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('role', 'img');
+  const el = (tag, a, txt) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; };
+  el('rect', { x: L, y: T, width: pw, height: ph, fill: 'var(--card)', stroke: 'var(--line)' });
+  const decF = Math.round(lf1 - lf0), decZ = Math.round(Math.log10(zmax) - Math.log10(zmin));
+  for (let d = 0; d <= decF; d++) { const f = fmin * Math.pow(10, d), x = X(f); el('line', { x1: x, y1: T, x2: x, y2: T + ph, stroke: 'var(--line)' }); el('text', { x, y: T + ph + 16, 'text-anchor': 'middle' }, eng(f, 'Hz').replace(' ', '')); if (decF <= 9) for (let m = 2; m < 10; m++) { const ff = f * m; if (ff < fmax) el('line', { x1: X(ff), y1: T, x2: X(ff), y2: T + ph, stroke: 'var(--line)', 'stroke-dasharray': '2 4' }); } }
+  for (let d = 0; d <= decZ; d++) { const z = zmin * Math.pow(10, d), y = Y(z); el('line', { x1: L, y1: y, x2: L + pw, y2: y, stroke: 'var(--line)' }); el('text', { x: L - 6, y: y + 4, 'text-anchor': 'end' }, eng(z, 'Ω').replace(' ', '')); }
+  el('text', { x: L + pw / 2, y: H - 4, 'text-anchor': 'middle' }, tt('Frekans', 'Frequency')); el('text', { x: 14, y: T + ph / 2, transform: 'rotate(-90 14 ' + (T + ph / 2) + ')', 'text-anchor': 'middle' }, '|Z|');
+  el('text', { x: L, y: 16, class: 'ttl' }, tt('Empedans – frekans (ESR, ESL ve kendinden rezonans)', 'Impedance vs frequency (ESR, ESL and self-resonance)'));
+  const clamp = (z) => Math.min(Math.max(z, zmin), zmax);
+  for (const c of curves) {
+    const d = F.map((f, i) => (i ? 'L' : 'M') + X(f).toFixed(1) + ' ' + Y(clamp(c.fn(f))).toFixed(1)).join(' ');
+    el('path', { d, fill: 'none', stroke: c.col, 'stroke-width': c.par ? 2.4 : c.t && c.t.live ? 2.6 : 1.8, 'stroke-dasharray': c.dash, 'stroke-linejoin': 'round' });
+    if (c.t && c.t.esl > 0) { const f0 = 1 / (2 * Math.PI * Math.sqrt(c.t.esl * c.t.c)); if (f0 > fmin && f0 < fmax) { el('circle', { cx: X(f0), cy: Y(clamp(c.t.esr || zmin)), r: 3.5, fill: c.col }); if (c.t.live) el('text', { x: X(f0) + 8, y: Y(clamp(c.t.esr || zmin)) - 8 }, 'SRF ' + eng(f0, 'Hz')); } }
+  }
+  if (haveLive) { // asymptotes of the live trace: 1/ωC, ESR, ωL
+    const asy = (fn, lbl, x) => { const d = F.map((f, i) => (i ? 'L' : 'M') + X(f).toFixed(1) + ' ' + Y(clamp(fn(f))).toFixed(1)).join(' '); el('path', { d, fill: 'none', stroke: 'var(--mute)', 'stroke-width': 1, 'stroke-dasharray': '3 5', opacity: 0.8 }); };
+    asy((f) => 1 / (2 * Math.PI * f * live.c)); if (live.esr > 0) asy(() => live.esr); if (live.esl > 0) asy((f) => 2 * Math.PI * f * live.esl);
+    if (live.f > fmin && live.f < fmax) { const z = zMag(live, live.f), x = X(live.f), y = Y(clamp(z)); el('line', { x1: x, y1: T, x2: x, y2: T + ph, stroke: 'var(--c)', 'stroke-dasharray': '4 4' }); el('circle', { cx: x, cy: y, r: 4, fill: 'var(--c)' }); el('text', { x: x + 6, y: y - 8, class: 'ttl' }, eng(live.f, 'Hz') + ' → ' + eng(z, 'Ω')); }
+  }
+  wrap.appendChild(svg);
+  // legend (click toggles a saved trace) and tools
+  const leg = document.createElement('div'); leg.className = 'plot-leg';
+  curves.forEach((c) => { const sp = document.createElement('span'); const i = document.createElement('i'); i.style.background = c.col; if (c.dash) i.style.opacity = 0.7; sp.appendChild(i); sp.appendChild(document.createTextNode(c.name)); if (c.t && !c.t.live) { const idx = ZP.traces.indexOf(c.t); sp.title = tt('Gizle / göster', 'Hide / show'); sp.onclick = () => { ZP.hidden.has(idx) ? ZP.hidden.delete(idx) : ZP.hidden.add(idx); recalcAll(); }; } leg.appendChild(sp); });
+  ZP.traces.forEach((t, idx) => { if (ZP.hidden.has(idx)) { const sp = document.createElement('span'); sp.className = 'off'; const i = document.createElement('i'); i.style.background = ZP_COL[idx % ZP_COL.length]; sp.appendChild(i); sp.appendChild(document.createTextNode(t.name)); sp.onclick = () => { ZP.hidden.delete(idx); recalcAll(); }; leg.appendChild(sp); } });
+  wrap.appendChild(leg);
+  const tools = document.createElement('div'); tools.className = 'plot-tools';
+  const btn = (label, title, fn, primary) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (primary ? ' primary' : ''); b.textContent = label; b.title = title; b.onclick = fn; tools.appendChild(b); return b; };
+  btn(tt('İzi kaydet', 'Keep trace'), tt('Girilen kondansatörü grafikte sabit iz olarak tutar; sonra başka değerler girip karşılaştırın', 'Keeps the entered capacitor as a fixed trace; then enter other values to compare'), () => { if (!haveLive) return; ZP.traces.push({ c: live.c, esr: live.esr, esl: live.esl, name: eng(live.c, 'F') + ' · ESR ' + eng(live.esr, 'Ω') + ' · ESL ' + eng(live.esl, 'H') }); recalcAll(); }, true);
+  const pb = btn(tt('Paralel toplamı çiz', 'Plot the parallel'), tt('Kayıtlı izlerin paralel bağlantısının |Z| eğrisi', '|Z| of the saved traces connected in parallel'), () => { ZP.par = !ZP.par; recalcAll(); }); if (ZP.par) pb.classList.add('primary'); pb.disabled = ZP.traces.length < 2;
+  const eb = btn(tt('Son izi sil', 'Erase last trace'), '', () => { ZP.traces.pop(); ZP.hidden.clear(); recalcAll(); }); eb.disabled = !ZP.traces.length;
+  const cb = btn(tt('Tümünü temizle', 'Clear all'), '', () => { ZP.traces.length = 0; ZP.hidden.clear(); ZP.par = false; recalcAll(); }); cb.disabled = !ZP.traces.length;
+  const h = document.createElement('span'); h.className = 'hint'; h.textContent = ZP.traces.length ? tt('Lejanttaki ada tıklayınca iz gizlenir.', 'Click a legend name to hide a trace.') : tt('Örnek: 100 µF elektrolitik (ESR 100 mΩ, ESL 20 nH) + 100 nF seramik (ESR 10 mΩ, ESL 1 nH) kaydedip paralelini çizin.', 'Example: keep a 100 µF electrolytic (ESR 100 mΩ, ESL 20 nH) and a 100 nF ceramic (ESR 10 mΩ, ESL 1 nH), then plot the parallel.'); tools.appendChild(h);
+  wrap.appendChild(tools);
+  return wrap;
+}

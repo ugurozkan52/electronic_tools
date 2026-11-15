@@ -575,6 +575,11 @@ function wire() {
   $('#btn-theme').setAttribute('aria-pressed', document.documentElement.classList.contains('dark') ? 'true' : 'false');
   $('#btn-theme').onclick = async () => { const d = !document.documentElement.classList.contains('dark'); document.documentElement.classList.toggle('dark', d); $('#btn-theme').setAttribute('aria-pressed', d ? 'true' : 'false'); await asm.setDark(d); if (W && W.preview) { drawPreview($('#cv-F'), W.preview.result.pcbdata, 'F'); drawPreview($('#cv-B'), W.preview.result.pcbdata, 'B'); } };
   $('#btn-about').onclick = async () => { INFO = INFO || (await asm.info()); show('about'); };
+  $('#btn-sample').onclick = async () => {   // bundled sample: import once (IPC-2581 + BOM + STEP), then open it straight in the viewer
+    const b = $('#btn-sample'), label = b.textContent; b.disabled = true; b.textContent = t('Örnek hazırlanıyor…');
+    try { const r = await asm.openSample('psu-28v-5v'); await asm.startSession({ projectId: r.id, serial: r.serial, operator: r.operator }); }
+    catch (err) { b.disabled = false; b.textContent = label; alert(t('Örnek açılamadı: {err}', { err: err.message || err })); }
+  };
   if (asm.ready) $('#btn-launcher').hidden = false;   // web build only: link back to the Elektronik Araçlar launcher
   $('#about-back').onclick = () => { show('home'); renderHome(); };
   $('#btn-new-2').onclick = () => openWizard(null);

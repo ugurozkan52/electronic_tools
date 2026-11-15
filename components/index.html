@@ -60,6 +60,25 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 56px}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected=true]{background:var(--c);color:var(--c-ink)}
 .tab:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.cgrp{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.cg{border:1.5px solid var(--line);background:var(--line2);color:var(--ink);border-radius:9px;padding:10px 20px;cursor:pointer;font-weight:700;font-size:14px}
+.cg:hover{border-color:var(--c)}
+.cg[aria-selected=true]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
+.cg:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.card[hidden]{display:none}
+.simrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.simrow .btn.primary{background:var(--c);border-color:var(--c);color:var(--c-ink);font-weight:700}
+.simrow[hidden]{display:none}
+.simrow .btn.spice{background:#b7791f;border-color:#b7791f;color:#fff;font-weight:700}.simrow .btn.spice:hover{background:#d69e2e;border-color:#d69e2e}
+.cgdesc{margin:-6px 0 10px}
+.grid.one{grid-template-columns:minmax(0,900px);justify-content:center}
+.cgrp,.cpick{justify-content:center}.cgdesc{text-align:center}
+.cpick{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--line2)}
+.cp{border:1px solid transparent;background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer}
+.cp:hover{border-color:var(--line)}.cp[aria-selected="true"]{background:var(--c);border-color:var(--c);color:var(--c-ink)}
+.cp:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+.exw{margin-top:12px}.exw summary{cursor:pointer;font-weight:600;font-size:13.5px}.exw .tbl-wrap{margin-top:8px}.exw table{font-size:13px}.exw td,.exw th{white-space:nowrap;padding:5px 9px}
+.exw tr.exr{cursor:pointer}.exw tr.exr:hover td,.exw tr.exr:focus-visible td{background:var(--line2)}.exw tr.exr.on td{background:var(--c-soft,var(--line2));font-weight:600}
 .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 22px 20px;overflow:hidden}
 .card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c)}
 .card h2{margin:0 0 4px;font-size:18px}
@@ -102,6 +121,10 @@ svg.sch{display:block;width:100%;height:auto;margin:0 auto;color:var(--ink)}
 svg.sch text{fill:var(--ink);font-size:12px;font-family:system-ui,sans-serif}
 svg.sch .nm,svg.sch .tm{font-weight:700}
 svg.sch .vl{fill:var(--mute);font-size:11px}
+.plot-wrap{margin-top:12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 8px}.plot-wrap[hidden]{display:none}
+.plot-wrap svg{display:block;width:100%;height:auto}.plot-wrap text{fill:var(--mute);font-size:11px;font-family:system-ui,sans-serif}.plot-wrap .ttl{fill:var(--ink);font-weight:700;font-size:12.5px}
+.plot-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 0}.plot-tools .btn{padding:6px 10px;font-size:12.5px}.plot-tools .hint{margin-left:4px}
+.plot-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;font-size:12.5px}.plot-leg span{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.plot-leg i{display:inline-block;width:18px;height:3px;border-radius:2px}.plot-leg .off{opacity:.4;text-decoration:line-through}
 .sch-wrap{margin-top:12px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 8px;overflow-x:auto}
 .sch-wrap[hidden]{display:none}
 .foot{margin-top:28px;color:var(--mute);font-size:12.5px;text-align:center}
@@ -285,12 +308,38 @@ function runWiz() {
   const r = w.run(v);
   $('#w_out').innerHTML = `<div class="rec"><h3>${esc(tt(...r.main))}</h3><ul>${r.why.map((x) => `<li>${esc(tt(x[0], x[1]))}</li>`).join('')}</ul><p class="note">${esc(tt('Genel kural: anma değerlerinin altında çalışın (derating) ve üretici veri sayfasındaki eğrileri kontrol edin.', 'Rule of thumb: operate below the ratings (derating) and check the curves in the manufacturer datasheet.'))}</p></div>`;
 }
+// worked-example table of a card: c.ex = {title, head, rows (display cells), sets (field values per row)}; a click loads the row into the fields
+function exHTML(c) {
+  if (!c.ex) return '';
+  const cell = (x) => (Array.isArray(x) ? I(x[0], x[1]) : esc(x));
+  const head = c.ex.head.map((h) => '<th>' + cell(h) + '</th>').join('');
+  const rows = c.ex.rows.map((r, i) => '<tr class="exr" tabindex="0" data-ex="' + i + '" title="' + esc(tt('Değerleri karta uygula', 'Load the values into the card')) + '">' + r.map((x) => '<td>' + cell(x) + '</td>').join('') + '</tr>').join('');
+  return '<details class="exw" open><summary>' + I(...c.ex.title) + '</summary><div class="tbl-wrap"><table><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div><p class="hint">' + I('Satıra tıklayınca değerler alanlara yazılır ve sonuçlar güncellenir.', 'Click a row to load its values into the fields and update the results.') + '</p></details>';
+}
+function setField(cid, id, val) {   // write a base-unit value into an input, choosing the largest unit prefix that keeps the number ≥ 1
+  const e = $('#' + cid + '_' + id), u = $('#' + cid + '_' + id + '_u'); if (!e) return;
+  let m = 1;
+  if (u) { const opts = [...u.options].map((o) => Number(o.value)).sort((a, b) => a - b); m = opts[0]; for (const x of opts) if (Math.abs(val) >= x * 0.9995) m = x; u.value = String(m); }
+  e.value = sig(val / m, 4);
+}
+const calcGroup = {};   // selected calculator group per component (e.g. MOSFET N / P channel)
+const calcPick = {};    // selected calculator inside a group (one card at a time, keyed component|group)
 function buildCalcs(calcs) {
-  $('#p-calc').innerHTML = `<div class="grid">${calcs.map((c) => `<div class="card" id="c_${c.id}"><h2>${I(...c.title)}</h2><p class="sub">${I(...c.sub)}</p><div class="two">${c.fields.map((f) => fieldHTML(c.id, f)).join('')}</div><div class="res" id="o_${c.id}"></div><div class="sch-wrap" id="s_${c.id}" hidden></div>${c.note ? `<p class="note">${I(...c.note)}</p>` : ''}</div>`).join('')}</div>`;
+  const groups = CMP[cur].calcGroups, sel = groups ? (calcGroup[cur] || groups[0][0]) : null;
+  const inGrp = groups ? calcs.filter((c) => c.group === sel) : calcs, pick = groups ? (inGrp.some((c) => c.id === calcPick[cur + '|' + sel]) ? calcPick[cur + '|' + sel] : (inGrp[0] || {}).id) : null;
+  const sub = groups ? `<div class="cpick" role="tablist" aria-label="${esc(tt('Uygulama', 'Application'))}">${inGrp.map((c) => `<button type="button" class="cp" role="tab" data-c="${c.id}" aria-selected="${c.id === pick}">${I(...c.title)}</button>`).join('')}</div>` : '';
+  const head = groups ? `<div class="cgrp" role="tablist" aria-label="${esc(tt('Hesaplayıcı grubu', 'Calculator group'))}">${groups.map(([g, tr, en]) => `<button type="button" class="cg" role="tab" data-g="${g}" aria-selected="${g === sel}">${I(tr, en)}</button>`).join('')}</div>${(() => { const d = groups.find((x) => x[0] === sel); return d && d[3] ? `<p class="sub cgdesc">${I(d[3], d[4])}</p>` : ''; })()}${sub}` : '';
+  $('#p-calc').innerHTML = head + `<div class="grid${groups ? ' one' : ''}">${calcs.map((c) => `<div class="card" id="c_${c.id}"${groups && c.id !== pick ? ' hidden' : ''}><h2>${I(...c.title)}</h2><p class="sub">${I(...c.sub)}</p><div class="two">${c.fields.map((f) => fieldHTML(c.id, f)).join('')}</div><div class="res" id="o_${c.id}"></div>${exHTML(c)}<div class="sch-wrap" id="s_${c.id}" hidden></div><div class="plot-wrap" id="pl_${c.id}" hidden></div><div class="simrow" id="sim_${c.id}" hidden><button type="button" class="btn primary" data-sim="${c.id}" title="${esc(tt('Bu devreyi CircuitJS simülasyonunda yeni sekmede açar', 'Opens this circuit in the CircuitJS simulation in a new tab'))}">${I('Simülasyonda aç ↗', 'Open in simulation ↗')}</button><button type="button" class="btn spice" data-spice="${c.id}" title="${esc(tt('Devreyi SPICE netlist (.cir) olarak indirir; LTspice ile açıp çalıştırın', 'Downloads the circuit as a SPICE netlist (.cir); open and run it in LTspice'))}">${I('LTspice (.cir indir)', 'LTspice (download .cir)')}</button><span class="hint" id="simmsg_${c.id}"></span></div>${c.note ? `<p class="note">${I(...c.note)}</p>` : ''}</div>`).join('')}</div>`;
+  if (groups) {
+    $('#p-calc').querySelectorAll('.cg').forEach((b) => { b.onclick = () => { calcGroup[cur] = b.dataset.g; buildCalcs(calcs); applyLang(); recalcAll(); }; });
+    $('#p-calc').querySelectorAll('.cp').forEach((b) => { b.onclick = () => { calcPick[cur + '|' + sel] = b.dataset.c; buildCalcs(calcs); applyLang(); recalcAll(); }; });
+  }
 }
 function recalcAll() {
   const C = CMP[cur]; if (!C || !$('#p-calc').firstChild) return;
   for (const c of C.calcs) { let items; try { items = c.compute(getter(c.id)); } catch (e) { items = [['—', String(e.message || e)]]; } out("#o_" + c.id, items || [["—", ""]]);
+    const sr = $('#sim_' + c.id); if (sr) sr.hidden = !SIM_MAP[cur + '.' + c.id];
+    const pl = $('#pl_' + c.id); if (pl) { if (c.plot) { try { pl.replaceChildren(c.plot(getter(c.id), items)); pl.hidden = false; } catch (e) { pl.hidden = true; } } else pl.hidden = true; }
     const sf = SCH_MAP[cur + "." + c.id], sb = $("#s_" + c.id); if (sb) { if (sf) { try { sb.replaceChildren(sf(getter(c.id), items)); sb.hidden = false; } catch (e) { sb.hidden = true; } } else sb.hidden = true; } }
   runWiz();
 }
@@ -312,6 +361,31 @@ function selectComp(k, keepTab) {
 <script>
 /* ================================================================= boot */
 buildTabs(); buildParts();
+$('#p-calc').addEventListener('click', (e) => {   // worked-example row → fields
+  const tr = e.target.closest('tr[data-ex]'); if (!tr) return;
+  const card = tr.closest('.card'), cid = card.id.slice(2), c = CMP[cur].calcs.find((x) => x.id === cid), set = c && c.ex && c.ex.sets[Number(tr.dataset.ex)];
+  if (!set) return; for (const k in set) setField(cid, k, set[k]); recalcAll();
+  card.querySelectorAll('tr[data-ex]').forEach((r) => r.classList.toggle('on', r === tr));
+});
+$('#p-calc').addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr[data-ex]')) { e.preventDefault(); e.target.click(); } });
+$('#p-calc').addEventListener('click', (e) => {   // LTspice: convert the CircuitJS circuit to a SPICE netlist and download it
+  const b = e.target.closest('[data-spice]'); if (!b) return;
+  const id = b.dataset.spice, fn = SIM_MAP[cur + '.' + id], msg = $('#simmsg_' + id), c = CMP[cur].calcs.find((x) => x.id === id);
+  const say = (t) => { msg.textContent = t; setTimeout(() => { msg.textContent = ''; }, 4000); };
+  if (!fn) return;
+  try { const txt = cjsToSpice(fn(getter(id)), tt(...c.title)); downloadText(cur + '-' + id + '.cir', txt); say(tt('İndirildi: LTspice’ta File → Open ile açın, Run ile çalıştırın.', 'Downloaded: open it in LTspice with File → Open and press Run.')); }
+  catch (err) { say(tt('Netlist oluşturulamadı: ', 'Could not build the netlist: ') + err.message); }
+});
+$('#p-calc').addEventListener('click', (e) => {   // "open in simulation": build the CircuitJS text from the card's current values
+  const b = e.target.closest('[data-sim]'); if (!b) return;
+  const id = b.dataset.sim, fn = SIM_MAP[cur + '.' + id], msg = $('#simmsg_' + id);
+  const say = (t) => { msg.textContent = t; setTimeout(() => { msg.textContent = ''; }, 3500); };
+  if (!fn) return;
+  if (!/^https?:$/.test(location.protocol)) { say(tt('Bu düğme sayfa bir sunucudan (http) açıldığında çalışır.', 'This button works when the page is served over http.')); return; }
+  let text; try { text = fn(getter(id)); } catch (err) { say(tt('Devre oluşturulamadı: ', 'Could not build the circuit: ') + err.message); return; }
+  const w = window.open('../simulation/circuitjs.html?cct=' + encodeURIComponent(text), '_blank');
+  if (!w) say(tt('Yeni sekme açılamadı: açılır pencere engelini kaldırın.', 'Could not open a tab: allow pop-ups.'));
+});
 $('#p-calc').addEventListener('input', recalcAll); $('#p-calc').addEventListener('change', recalcAll);
 $('#p-wiz').addEventListener('change', runWiz);
 $('#lTR').onclick = () => setLang('tr'); $('#lEN').onclick = () => setLang('en');

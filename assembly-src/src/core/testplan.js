@@ -13,7 +13,7 @@
 
   var DEF = { shortMax: 2, openMin: 1e6, resTol: 0.1, resAbs: 0.5 };
   // later phases (editable in "Test ayarları", stored per project)
-  var CFG = { voltTol: 5, inputTol: 10, railMinOhm: 10, currentLimit: '0.5 A', ioMax: 40, rails: {}, nets: {},
+  var CFG = { voltTol: 5, inputTol: 10, railMinOhm: 10, currentLimit: '0.5 A', ioMax: 40, rails: {}, nets: {}, funcs: {},
     phases: { pwr: true, volt: true, comm: true, sens: true, pwm: true, gpio: true, io: true } };
 
   // ------------------------------------------------------------ net classes
@@ -310,6 +310,7 @@
     if (e.type === 'range') return T('≈ {v} ({a} … {b})', { v: fmtVolts(e.nominal), a: fmtVolts(e.min), b: fmtVolts(e.max) });
     if (e.type === 'absmin') return T('|V| ≥ {v}', { v: fmtVolts(e.min) });
     if (e.type === 'record') return T('Değeri kaydedin (isteğe bağlı)');
+    if (e.type === 'check') return e.hint;
     if (e.type === 'manual' && e.unit === 'V') return e.hint ? T(e.hint) : T('Gerilimi kaydedin ve beklenen değerle karşılaştırın');
     if (e.type === 'short') return T('< {v} (süreklilik / bip)', { v: fmtOhms(e.max) });
     if (e.type === 'open') return T('> {v} veya OL (açık devre)', { v: fmtOhms(e.min) });
@@ -424,10 +425,10 @@
       var sug = a && a.cls ? a.cls : null, why = a && a.cls ? whyNet(n, T, a) : '';
       if (!sug && list.length && !RX_NC.test(baseNet(n)) && !RX_AUTO.test(baseNet(n))) {
         var conn = list.some(function (p) { return CONN.test(p.ref); });
-        if (RX_SIG_SUGGEST.test(baseNet(n)) || conn) { sug = 'signal'; why = conn ? T('Konnektöre çıkan hat') : T('Adı bir sinyal hattını gösteriyor'); }
+        if (funcOf(n) || RX_SIG_SUGGEST.test(baseNet(n)) || conn) { sug = 'signal'; why = conn ? T('Konnektöre çıkan hat') : T('Adı bir sinyal hattını gösteriyor'); }
       }
       return { net: n, pads: list.length, fps: new Set(list.map(function (p) { return p.fp; })).size, cls: r ? r.cls : null, src: r ? r.src : null,
-        suggest: sug, why: why, nominal: railVolts(n), nc: RX_NC.test(baseNet(n)), auto: RX_AUTO.test(baseNet(n)) };
+        func: funcOf(n), funcManual: C.funcs && C.funcs[n] || '', suggest: sug, why: why, nominal: railVolts(n), nc: RX_NC.test(baseNet(n)), auto: RX_AUTO.test(baseNet(n)) };
     }).sort(function (x, y) {
       // suggested power, ground, chassis, signal first; then the rest (natural order)
       var o = { power: 0, ground: 1, chassis: 2, signal: 3 };
@@ -445,10 +446,34 @@
     if (c.phases) Object.keys(c.phases).forEach(function (k) { o.phases[k] = c.phases[k] !== false; });
     o.nets = {};
     if (c.nets) Object.keys(c.nets).forEach(function (k) { if (/^(power|ground|chassis|signal|none)$/.test(c.nets[k])) o.nets[k] = c.nets[k]; });
+    o.funcs = {};
+    if (c.funcs) Object.keys(c.funcs).forEach(function (k) { if (c.funcs[k] === 'none' || FUNCS.some(function (f) { return f.id === c.funcs[k]; })) o.funcs[k] = c.funcs[k]; });
     o.selection = !!c.selection;
     return o;
   }
 
+  // ---- what a signal net does (interface / function). Longer roots match anywhere in the name,
+  // short ones (TX, EN, CS …) only as a separate word, so "SPI1_CS_N" is SPI but "ENCODER" is not GPIO "EN".
+  // Order matters: the first match wins. The technician can override it per net ("İşlev" in the net list).
+  var FUNCS = [
+    { id: 'i2c', label: 'I²C', rx: /I2C|IIC|TWI\d*|SMB(CLK|DAT|ALERT)?|PMBUS|(?<![A-Z])(SDA|SCL)(?![A-Z])|SDAT/ },
+    { id: 'can', label: 'CAN', rx: /(?<![A-Z])(FD)?CAN(?![A-Z])|CAN[_\-]?(H|L|HI|LO|HIGH|LOW|TX|RX|STB|SILENT)(?![A-Z])|CANBUS|J1939/ },
+    { id: 'rs485', label: 'RS-485 / RS-422', rx: /RS[_\-]?(485|422)|(?<![0-9])(485|422)(?![0-9])|MODBUS|LVDS|ARINC|1553|USB[_\-]?D|(?<![A-Z])(RS|EIA)[_\-]?[AB](?![A-Z])|(?<![A-Z])(DE|RE|DIR|TXEN|RXEN|DERE)(?![A-Z])/ },
+    { id: 'uart', label: 'UART', rx: /UART|USART|LPUART|SCI\d|RS[_\-]?232|SERIAL|TXD|RXD|(?<![A-Z])(TX|RX)\d*(?![A-Z])|(?<![A-Z])(RTS|CTS|DTR|DSR|VCP)(?![A-Z])|CONSOLE/ },
+    { id: 'spi', label: 'SPI', rx: /SPI|(?<![A-Z])(SCK|SCLK|MOSI|MISO|SDI|SDO|COPI|CIPO|PICO|POCI|NSS|SSEL|SS|CS|CSN|NCS)\d*(?![A-Z])|SS_?N|CS_?N/ },
+    { id: 'adc', label: 'ADC', rx: /ADC|AIN|(?<![A-Z])AN\d+(?![A-Z])|ANALOG|ANLG/ },
+    { id: 'sens', label: 'Sensör / analog', rx: /SENS|SNS|TEMP|NTC|PTC|PT100|PT1000|RTD|THERM|VREF|REF_?\d|(?<![A-Z])REF(?![A-Z])|EXC|IMU|ACCEL|GYRO|MAG|PRESS|HUMID|ISENSE|IMON|VMON|CSA|SHUNT|HALL|LDR|PHOTO/ },
+    { id: 'pwm', label: 'PWM', rx: /PWM|PPM(?![A-Z])|BUZZ|SERVO|DUTY|BACKLIGHT|(?<![A-Z])(OC|CCP|DIMM?|DIMMING|FAN)\d*(?![A-Z])/ },
+    { id: 'timer', label: 'Timer / saat', rx: /LPTIM|LPTMR|TIMER|(?<![A-Z])(TIM|TMR|GPT|PIT|RTC)\d*(_?CH\d+N?)?(?![A-Z])|CAPTURE|(?<![A-Z])ICP?\d|(?<![A-Z])ETR(?![A-Z])|WDT|WDG|WATCHDOG|XTAL|OSC|32K|SQW|CLKOUT|(?<![A-Z])MCO\d?|(?<![A-Z])PPS|ENCODER|QEP|TACH/ },
+    { id: 'gpio', label: 'GPIO', rx: /GPIO|(?<![A-Z])IO_?\d+|(?<![A-Z])P[A-K]\d{1,2}(?![A-Z0-9])|(?<![A-Z])P\d_\d+|(?<![A-Z])(LED|KEY)|BTN|BUTTON|SWITCH|(?<![A-Z])SW\d*(?![A-Z])|RST|RESET|BOOT|IRQ|ALERT|WAKE|PGOOD|POWER_?GOOD|RELAY|RLY|ENABLE|FAULT|DETECT|(?<![A-Z])(INT|PG|EN|SHDN|STBY|STANDBY|SEL|OK|READY|BUSY|FLT|STATUS|STAT|DRDY|MODE|CTRL|CTL|DET|PRSNT|PRESENT|JP)\d*(?![A-Z])/ },
+  ];
+  // net name → function id ('' = unknown); manual: id chosen by the user, 'none' = not an interface line
+  function funcOf(net, manual) {
+    if (manual) return manual === 'none' ? '' : manual;
+    var n = baseNet(net).toUpperCase();
+    for (var i = 0; i < FUNCS.length; i++) if (FUNCS[i].rx.test(n)) return FUNCS[i].id;
+    return '';
+  }
   var RX_I2C = /(^|[^A-Z])(I2C|IIC|SDA|SCL|SMB|SMBCLK|SMBDAT)/i;
   var RX_UART = /(UART|USART|TXD|RXD|(^|[_\-])(TX|RX)(\d|[_\-]|$)|^(TX|RX)\d?$)/i;
   var RX_SPI = /(SPI|SCK|SCLK|MOSI|MISO|SDI|SDO|(^|[_\-])N?CS\d*([_\-]|$)|NSS|SS_N)/i;
@@ -584,7 +609,7 @@
     var sigNets = [];
     nets.forEach(function (list, net) {
       var role = roles.get(net);
-      var forced = !!(role && role.cls === 'signal');           // chosen by the user as a signal to test
+      var forced = !!(role && role.cls === 'signal') || !!(C.funcs && C.funcs[net] && C.funcs[net] !== 'none');           // chosen by the user as a signal to test
       if (C.selection && !forced) return;
       if (used.has(net) || (!forced && RX_NC.test(net))) return;
       var auto = !forced && RX_AUTO.test(net);
@@ -610,9 +635,15 @@
 
     // ---- phase 4: communication
     var comm = [], taken = new Set();
+    var buses = {};   // oscilloscope / logic-analyzer steps: one per bus (UART1, SPI1, I²C, CAN …) or per PWM / timer line
+    var busAdd = function (kind, key, s, role) {
+      var id = kind + '|' + key;
+      (buses[id] = buses[id] || { kind: kind, key: key, lines: [] }).lines.push({ net: s.net, pads: s.pads, role: role || '' });
+    };
     var pairs = {};
+    var fnOf = function (net) { return funcOf(net, C.funcs && C.funcs[net]); };
     sigNets.forEach(function (s) {
-      if (s.auto || !(RX_DIFF_IF.test(s.net) || RX_CAN.test(s.net))) return;
+      if (s.auto || (fnOf(s.net) !== 'rs485' && fnOf(s.net) !== 'can')) return;
       var k = diffKey(s.net);
       if (!k) return;
       (pairs[k.base] = pairs[k.base] || {})[k.pol] = s;
@@ -621,7 +652,7 @@
       var pr = pairs[base];
       if (!pr.p || !pr.n) return;
       taken.add(pr.p.net); taken.add(pr.n.net);
-      var isCan = RX_CAN.test(pr.p.net) || RX_CAN.test(pr.n.net);
+      var isCan = fnOf(pr.p.net) === 'can' || fnOf(pr.n.net) === 'can';
       var pa = bestPad(pr.p.pads), pb = nearPad(pr.n.pads, pa);
       if (!pa || !pb) return;
       var tx = /TX|DO|OUT|DRV|Y|Z/i.test(base);
@@ -632,6 +663,7 @@
         text: [T('Kırmızı probu {a} ({na}), siyah probu {b} ({nb}) noktasına değdirin; iki hat arasındaki farkı ölçün.', { a: label(pa), na: pr.p.net, b: label(pb), nb: pr.n.net }),
           isCan ? T('CAN boşta (resesif): fark ≈ 0 V.') : tx ? T('Sürücü etkin ve boşta: |fark| ≥ 1,5 V beklenir.') : T('Alıcı hattı: fail-safe polarlama varsa |fark| ≥ 200 mV; yoksa değer 0 V olabilir, karar sizde.')],
         probes: { pos: probe(pa), neg: probe(pb) }, expect: ex });
+      busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.p, 'h'); busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.n, 'l');
       if (isCan) [pr.p, pr.n].forEach(function (s) {
         var st = single(s, 'comm:', T('{net} ortak mod gerilimi', { net: s.net }), { type: 'range', nominal: 2.5, min: 2.0, max: 3.0 }, [T('CAN resesif seviye ≈ 2,5 V.')]);
         if (st) { st.group = 'CAN'; comm.push(st); }
@@ -652,6 +684,14 @@
       if (/(^|[_\-])(DE|RE|REN|DEN|DIR)(_?N)?([_\-]|\d|$)/i.test(n)) return 'dir';
       return '';
     };
+    // lines of one interface share a prefix: UART1_TX / UART1_RX → "UART1"
+    var busKey = function (net, kind) {
+      var n = baseNet(net);
+      var rx = kind === 'UART' ? /[_\-]?(TXD|RXD|TX|RX|RTS|CTS)(?=\d*([_\-]|$))/i
+        : kind === 'SPI' ? /[_\-]?(SCLK|SCK|MOSI|MISO|SDI|SDO|COPI|CIPO|PICO|POCI|N?CS\d*(_?N)?|NSS|SS_N)(?=([_\-]|$))/i
+        : kind === 'I²C' ? /[_\-]?(SDA|SCL|SMBDAT|SMBCLK)/i : null;
+      return (rx ? n.replace(rx, '') : n).toUpperCase();
+    };
     var COMM_NOTES = {
       'I²C': function (r) { return r === 'sda' || r === 'scl' ? T('Boşta SDA ve SCL lojik 1 olmalı (pull-up, tipik 2,2–10 kΩ). 0 V ise hat kısa ya da bir aygıt hattı çekiyor olabilir.') : ''; },
       'UART': function (r) { return r === 'tx' ? T('TX çıkışı boşta lojik 1 (başlangıç biti gelene kadar). Osiloskopta baud hızını ve start/stop bitlerini doğrulayın.') : r === 'rx' ? T('RX girişi boşta lojik 1 olmalı; 0 V ise karşı uç TX’i bağlı değil ya da kısa devre var.') : r === 'flow' ? T('RTS/CTS akış kontrol hattı: aktif seviyesini şemaya göre doğrulayın.') : ''; },
@@ -661,7 +701,7 @@
     };
     sigNets.forEach(function (s) {
       if (taken.has(s.net) || s.auto) return;
-      var kind = RX_I2C.test(s.net) ? 'I²C' : RX_CAN.test(s.net) ? 'CAN' : RX_UART.test(s.net) ? 'UART' : RX_SPI.test(s.net) ? 'SPI' : RX_DIFF_IF.test(s.net) || RX_RS485_CTL.test(s.net) ? 'RS-422/485' : null;
+      var kind = ({ i2c: 'I²C', can: 'CAN', uart: 'UART', spi: 'SPI', rs485: 'RS-422/485' })[fnOf(s.net)] || null;
       if (!kind) return;
       taken.add(s.net);
       var role = lineRole(s.net);
@@ -671,15 +711,16 @@
       var note = COMM_NOTES[kind] ? COMM_NOTES[kind](role) : '';
       var st = single(s, 'comm:', T('{net} boşta seviye ({kind})', { net: s.net, kind: kind }), ih.ex, [ih.note, note].filter(Boolean));
       if (st) { st.group = kind; comm.push(st); }
+      busAdd(kind, busKey(s.net, kind), s, role);
     });
 
     // ---- phase 5: sensors / ADC inputs
     var sens = [];
     sigNets.forEach(function (s) {
-      if (taken.has(s.net) || s.auto || !RX_SENSOR.test(s.net)) return;
+      if (taken.has(s.net) || s.auto || (fnOf(s.net) !== 'sens' && fnOf(s.net) !== 'adc')) return;
       taken.add(s.net);
       var v = /REF/i.test(s.net) ? railVolts(s.net) : null;
-      var isAdc = RX_ADC.test(baseNet(s.net));
+      var isAdc = fnOf(s.net) === 'adc';
       var ex = v != null ? { type: 'range', nominal: v, min: v * 0.98, max: v * 1.02 } : { type: 'manual', unit: 'V', hint: isAdc ? 'ADC giriş gerilimini kaydedin; 0 V ile Vref arasında olmalı' : 'Sensör çıkışını kaydedin ve beklenen aralıkla karşılaştırın' };
       var st = single(s, 'sens:', isAdc ? T('{net} ADC hattı', { net: s.net }) : T('{net} sensör hattı', { net: s.net }), ex,
         [v != null ? T('Referans gerilimi ±%2.') : isAdc ? T('Girişe bilinen bir gerilim uygulayın (ya da boşta bırakın), değeri okuyun; ADC sonucu ile karşılaştırın. Gerilim 0 V – Vref aralığında olmalı.') : T('Ortam koşulunda (oda sıcaklığı, hareketsiz) beklenen değerle karşılaştırın.')]);
@@ -691,7 +732,8 @@
     sigNets.forEach(function (s) {
       if (taken.has(s.net) || s.auto) return;
       var n = baseNet(s.net);
-      var isPwm = RX_PWM.test(n), isTim = !isPwm && RX_TIMER.test(n), isGpio = !isPwm && !isTim && RX_GPIO.test(n);
+      var fnc = fnOf(s.net);
+      var isPwm = fnc === 'pwm', isTim = fnc === 'timer', isGpio = fnc === 'gpio';
       if (!isPwm && !isTim && !isGpio) return;
       taken.add(s.net);
       if (isPwm || isTim) {
@@ -700,6 +742,7 @@
           isPwm ? [T('Multimetre DC kademesinde ortalama gerilim ≈ görev oranı × IO gerilimi (örn. %50 → IO/2). Osiloskopta frekans ve görev oranını doğrulayın; çıkış kapalıyken seviye 0 V (ya da pasif seviye) olmalı.')]
             : [T('Zamanlayıcı/yakalama/saat hattı: osiloskopta beklenen frekansı doğrulayın (örn. 32,768 kHz RTC kristali, watchdog darbesi). Boşta DC seviyeyi kaydedin.')]);
         if (st) { st.group = isPwm ? 'PWM' : 'Timer'; pwm.push(st); }
+        busAdd(isPwm ? 'PWM' : 'Timer', s.net, s);
       } else {
         var pr = pullRail(s.net), activeLow = /(^|[_\-])N|_N$|NRST|RESET|RST|CS/i.test(n) && !/^(GPIO|IO)/i.test(n);
         var ex = pr ? { type: 'range', nominal: pr.nominal, min: pr.nominal * 0.85, max: pr.nominal * 1.05 } : { type: 'manual', unit: 'V', hint: 'Hat durumunu kaydedin (0 V / lojik 1)' };
@@ -708,6 +751,55 @@
             /LED/i.test(n) ? T('LED hattı: yakınca/söndürünce seviyenin değiştiğini doğrulayın.') : /BTN|BUTTON|SW\d|KEY/i.test(n) ? T('Düğme hattı: basılıyken seviyenin değiştiğini doğrulayın.') : /IRQ|INT|ALERT/i.test(n) ? T('Kesme hattı: boşta pasif seviyede olmalı (genelde lojik 1, aktif-düşük).') : activeLow ? T('Aktif-düşük hat: boşta lojik 1 beklenir.') : ''].filter(Boolean));
         if (gs) { gs.group = 'GPIO'; gpio.push(gs); }
       }
+    });
+
+    // ---- oscilloscope / logic-analyzer steps (waveform and protocol checks)
+    var ROLE_ORDER = { tx: 0, rx: 1, flow: 2, scl: 0, sda: 1, clk: 0, cs: 1, mosi: 2, miso: 3, h: 0, l: 1, dir: 2 };
+    var BUS = {
+      'UART': {
+        text: [T('Lojik analizörde UART çözücüsü (8N1, beklenen baud hızı); osiloskopta tetik = düşen kenar, 1–2 V/div, 10 µs/div (115200 baud için).'), T('Karttan veri gönderilmesini sağlayın (test firmware’i ya da terminalden komut).')],
+        expect: T('Boşta lojik 1; start biti süresi = 1/baud (115200 → ≈ 8,7 µs); çözücüde beklenen karakterler; seviyeler IO gerilimi ile uyumlu.'),
+        debug: [T('Boşta 0 V: pin çıkış modunda değil ya da hat kısa. TX–GND direncini enerjisiz ölçün.'), T('Süre farklı: baud/saat ayarı yanlış (örn. kristal ya da PLL).'), T('Çözücüde bozuk karakter: baud, parite ya da stop biti uyumsuz; GND bağlantısını kontrol edin.'), T('Hiç darbe yok: firmware göndermiyor ya da pin muxlama hatalı.')] },
+      'I²C': {
+        text: [T('Osiloskop: 2 V/div, 2 µs/div, tetik SCL düşen kenar. Lojik analizör: I²C çözücüsü ekleyin, eşik ≈ IO gerilimi/2.'), T('Karttan bir cihaz adresine okuma/yazma yaptırın.')],
+        expect: T('Boşta SDA ve SCL lojik 1; SCL 100 kHz (standart) ya da 400 kHz (hızlı); yükselme süresi < 1 µs (100 kHz) / < 300 ns (400 kHz); her adres baytından sonra ACK (SDA düşük).'),
+        debug: [T('NACK: adres yanlış (7/8 bit karışıklığı), cihaz beslemesi ya da reset hattı, yanlış hat.'), T('Yavaş yükselme: pull-up çok büyük ya da hat kapasitansı yüksek; 4,7 kΩ → 2,2 kΩ deneyin.'), T('Hat 0 V’ta takılı: bus kilitlenmiş; enerjiyi kesip cihazları tek tek ayırın.'), T('Seviye uyumsuz: pull-up rayı ile cihaz IO gerilimi farklı.')] },
+      'SPI': {
+        text: [T('Lojik analizör: SPI çözücüsü (CPOL/CPHA firmware’e göre). Osiloskop: tetik CS düşen kenar, SCK ve MOSI/MISO birlikte izlenir.'), T('Karttan bir transfer başlatın (örn. cihaz ID okuma).')],
+        expect: T('CS boşta lojik 1, transfer boyunca düşük; SCK frekansı beklenen değerde; MOSI/MISO veri SCK örnekleme kenarında kararlı; cihazdan yanıt (MISO) var.'),
+        debug: [T('MISO sabit 0 ya da 1: cihaz seçilmemiş (CS), beslenmiyor ya da reset’te.'), T('Veri bir bit kayık: CPOL/CPHA uyumsuz.'), T('SCK çok hızlı/çınlama: frekansı düşürün, seri direnç ekleyin, GND dönüşünü kısaltın.'), T('Birden fazla cihazda çakışma: diğer CS hatlarının yüksek olduğunu doğrulayın.')] },
+      'CAN': {
+        text: [T('Osiloskop: CANH ve CANL ayrı kanallarda (ya da diferansiyel prob), 1 V/div, bit süresine göre zaman tabanı (500 kbit/s → 2 µs/bit). Lojik analizör: CAN çözücüsü, diferansiyel giriş.'), T('Enerjisiz iken CANH–CANL direncini ölçün; karttan bir çerçeve gönderin.')],
+        expect: T('Resesif: CANH ≈ CANL ≈ 2,5 V; baskın: CANH ≈ 3,5 V, CANL ≈ 1,5 V (fark ≈ 2 V); çözücüde geçerli ID/DLC; enerjisiz CANH–CANL ≈ 60 Ω (iki 120 Ω sonlandırma).'),
+        debug: [T('Fark hep ≈ 0 V: sürücü pasif; transceiver beslemesi, STB/EN pini, TXD hattı.'), T('Direnç ≈ 120 Ω: tek sonlandırma var; ≈ 40 Ω: üç sonlandırma.'), T('Çerçeve hatası: bit hızı uyumsuz ya da hat dalgalı; GND/şase referansını kontrol edin.')] },
+      'RS-422/485': {
+        text: [T('Osiloskop: A ve B ayrı kanallarda (diferansiyel prob tercih edilir), 1–2 V/div. Lojik analizör: UART çözücüsü A−B diferansiyel girişte.'), T('Sürücüyü etkinleştirip veri gönderin (DE = 1).')],
+        expect: T('Sürücü açıkken |A−B| ≥ 1,5 V; boşta fail-safe polarlama ile A−B ≥ 200 mV; DE/RE yönü doğru; bit hızı beklenen değerde.'),
+        debug: [T('Fark ≈ 0 V: sürücü kapalı (DE = 0) ya da beslemesiz; DE hattını ölçün.'), T('Bozuk veri: sonlandırma (120 Ω) yok ya da A/B ters; GND referansı.'), T('Boşta belirsiz seviye: fail-safe polarlama dirençleri eksik.')] },
+      'PWM': {
+        text: [T('Osiloskop: kanal 1 hat üzerinde, tetik yükselen kenar, ölçümler: frekans, görev oranı (duty), tepe-tepe gerilim, yükselme/düşme süresi. Lojik analizör: sayısal darbe genişliği/frekans ölçümü.'), T('PWM çıkışını firmware’den etkinleştirin (örn. %50 görev oranı).')],
+        expect: T('Frekans ve görev oranı tasarım değerinde (±%2); genlik ≈ IO gerilimi; yükselme/düşme süreleri periyodun < %10’u; kenarlarda aşırı çınlama yok.'),
+        debug: [T('Sinyal yok (sabit 0 V): çıkış kapalı, pin muxlama ya da timer saati kapalı.'), T('Sabit yüksek: görev oranı %100 ya da timer durmuş.'), T('Frekans yanlış: timer ön bölücü/saat ayarını kontrol edin.'), T('Genlik düşük, kenarlar yuvarlak: yük çok ağır ya da sürücü katı (MOSFET gate) zayıf; seri direnç/filtreyi inceleyin.')] },
+      'Timer': {
+        text: [T('Osiloskop: hat üzerinde, tetik yükselen kenar; frekansı ve darbe genişliğini ölçün. Lojik analizör: kenar sayımı/frekans ölçümü.'), T('Zamanlayıcıyı/saat çıkışını firmware’den etkinleştirin.')],
+        expect: T('Frekans beklenen değerde (örn. RTC 32,768 kHz, watchdog darbe periyodu); genlik ≈ IO gerilimi; kararlı, titreşimsiz.'),
+        debug: [T('Sinyal yok: kristal çalışmıyor (yük kondansatörleri, besleme) ya da çıkış etkin değil.'), T('Frekans kayık: kristal yük kapasitesi/saat kaynağı seçimi yanlış.'), T('Genlik çok düşük: osiloskop probu kristal hattını yüklüyor olabilir; 10× prob kullanın.')] },
+    };
+    var busPhase = function (kind) { return kind === 'PWM' || kind === 'Timer' ? pwm : comm; };
+    Object.keys(buses).sort().forEach(function (id) {
+      var b = buses[id], info = BUS[b.kind];
+      if (!info) return;
+      var lines = b.lines.slice().sort(function (x, y) { return (ROLE_ORDER[x.role] != null ? ROLE_ORDER[x.role] : 9) - (ROLE_ORDER[y.role] != null ? ROLE_ORDER[y.role] : 9) || (x.net < y.net ? -1 : 1); });
+      var first = lines[0], pa = bestPad(first.pads), g = gndFor(first.net), pb = g ? nearPad(g.pads, pa) : null;
+      if (!pa || !pb) return;
+      var chs = lines.map(function (l, i) { var p = bestPad(l.pads); return T('Kanal {n}: {net} → {pin}', { n: i + 1, net: l.net, pin: label(p) }); });
+      var name = b.key && b.key !== b.lines[0].net.toUpperCase() ? b.key : '';
+      busPhase(b.kind).push({
+        id: 'bus:' + id, kind: 'bus', netA: first.net, netB: g.net, unit: '', group: b.kind, instrument: 'scope',
+        title: b.kind === 'PWM' || b.kind === 'Timer' ? T('{net} dalga formu ölçümü ({kind})', { net: first.net, kind: b.kind }) : name ? T('{name} dalga/protokol kontrolü ({kind})', { name: name, kind: b.kind }) : T('{net} dalga/protokol kontrolü ({kind})', { net: first.net, kind: b.kind }),
+        text: [T('Osiloskop ya da lojik analizör kullanın.')].concat(chs, [T('GND klipsi: {net} → {pin}', { net: g.net, pin: label(pb) })], info.text),
+        probes: { pos: probe(pa), neg: probe(pb) }, expect: { type: 'check', hint: info.expect }, debug: info.debug,
+      });
     });
 
     // ---- phase 6: other I/O lines that leave the board through a connector
@@ -752,5 +844,5 @@
   }
   function netSize(pcb, net) { var map = netCache && netCache.get(pcb) || padsByNet(pcb); return (map.get(normNet(net)) || []).length; }
 
-  return { normNet: normNet, railVolts: railVolts, parseVolts: parseVolts, parseValue: parseValue, fmtValue: fmtValue, fmtVolts: fmtVolts, CFG: CFG, buildTestPlan: buildTestPlan, candidates: candidates, netSize: netSize, evaluate: evaluate, parseOhms: parseOhms, fmtOhms: fmtOhms, classifyNet: classifyNet, whyNet: whyNet, baseNet: baseNet, resolveRoles: resolveRoles, bridges: bridges, DEF: DEF };
+  return { normNet: normNet, railVolts: railVolts, parseVolts: parseVolts, parseValue: parseValue, fmtValue: fmtValue, fmtVolts: fmtVolts, CFG: CFG, buildTestPlan: buildTestPlan, candidates: candidates, netSize: netSize, evaluate: evaluate, parseOhms: parseOhms, fmtOhms: fmtOhms, classifyNet: classifyNet, FUNCS: FUNCS.map(function (f) { return { id: f.id, label: f.label }; }), funcOf: funcOf, whyNet: whyNet, baseNet: baseNet, resolveRoles: resolveRoles, bridges: bridges, DEF: DEF };
 });

@@ -69,8 +69,14 @@ CMP.resistor = {
       return { main: R[0], why };
     },
   },
+  // calculators are shown in headed groups, one application at a time
+  calcGroups: [
+    ['circ', 'Devre hesapları', 'Circuit calculations', 'Gerilim bölücü ve akım algılama direnci: değer, hata bütçesi ve güç.', 'Voltage divider and current-sense resistor: value, error budget and power.'],
+    ['rate', 'Güç ve derating', 'Power and derating', 'Direnç gücü, sıcaklıkla derating ve darbe dayanımı.', 'Resistor power, temperature derating and pulse withstand.'],
+    ['val', 'Değer seçimi', 'Value selection', 'Hesaplanan değere en yakın standart (E-serisi) değer.', 'Nearest standard (E-series) value to the computed one.'],
+  ],
   calcs: [
-    { id: 'pw', title: ['Güç ve derating', 'Power and derating'], sub: ['P = V²/R = I²R', 'P = V²/R = I²R'],
+    { id: 'pw', group: 'rate', title: ['Güç ve derating', 'Power and derating'], sub: ['P = V²/R = I²R', 'P = V²/R = I²R'],
       fields: [
         { id: 'r', tr: 'Direnç', en: 'Resistance', def: '10000', u: 'R', help: ['Direncin nominal değeri.', 'Nominal resistance.'] },
         { id: 'v', tr: 'Uygulanan gerilim', en: 'Applied voltage', def: '5', u: 'V', ud: 1, help: ['Gerilimi biliyorsanız girin; boşsa akım kullanılır.', 'Enter if you know the voltage; if empty, current is used.'] },
@@ -92,7 +98,7 @@ CMP.resistor = {
         if (Rth > 0) items.push([sig(P * Rth, 3) + ' °C', tt('Kendi ısınması ΔT = P·Rth', 'Self-heating ΔT = P·Rth')], [sig(Ta + P * Rth, 3) + ' °C', tt('Tahmini gövde sıcaklığı', 'Estimated body temperature')]);
         return items;
       } },
-    { id: 'dv', title: ['Gerilim bölücü ve hata bütçesi', 'Voltage divider and error budget'], sub: ['Vout = Vin·R2/(R1+R2)', 'Vout = Vin·R2/(R1+R2)'],
+    { id: 'dv', group: 'circ', title: ['Gerilim bölücü ve hata bütçesi', 'Voltage divider and error budget'], sub: ['Vout = Vin·R2/(R1+R2)', 'Vout = Vin·R2/(R1+R2)'],
       fields: [
         { id: 'vin', tr: 'Giriş gerilimi', en: 'Input voltage', def: '12', u: 'V', ud: 1 },
         { id: 'r1', tr: 'R1 (üst)', en: 'R1 (top)', def: '10', u: 'R', ud: 2 },
@@ -120,7 +126,7 @@ CMP.resistor = {
         items.push([eng(vo * (1 + dMin / 100), 'V') + ' … ' + eng(vo * (1 + dMax / 100), 'V'), tt('En kötü durum aralığı', 'Worst-case range'), 'warn'], ['±' + sig(Math.max(Math.abs(dMax), Math.abs(dMin)), 3) + ' %', tt('En kötü durum çıkış hatası', 'Worst-case output error')], [sig(rss, 3) + ' %', tt('RSS (istatistiksel) tahmin', 'RSS (statistical) estimate')]);
         return items;
       } },
-    { id: 'cs', title: ['Akım algılama direnci', 'Current-sense resistor'], sub: ['V = I·R, P = I²R', 'V = I·R, P = I²R'],
+    { id: 'cs', group: 'circ', title: ['Akım algılama direnci', 'Current-sense resistor'], sub: ['V = I·R, P = I²R', 'V = I·R, P = I²R'],
       fields: [
         { id: 'r', tr: 'Direnç', en: 'Resistance', def: '10', u: 'R', ud: 0, help: ['Şönt direnç değeri (mΩ).', 'Shunt resistance (mΩ).'] },
         { id: 'imax', tr: 'Maks. akım (A)', en: 'Max current (A)', def: '5' }, { id: 'imin', tr: 'Min. akım (A)', en: 'Min current (A)', def: '0.1' },
@@ -138,7 +144,7 @@ CMP.resistor = {
         items.push([sig(tol + th, 3) + ' %', tt('Toplam yaklaşık hata (tolerans + TCR)', 'Approx. total error (tolerance + TCR)')]);
         return items;
       } },
-    { id: 'es', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
+    { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
       fields: [{ id: 'v', tr: 'Hesaplanan değer', en: 'Computed value', def: '4.2', u: 'R', ud: 2 }, { id: 's', tr: 'Seri', en: 'Series', def: 'E24', sel: SEL_E }],
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];

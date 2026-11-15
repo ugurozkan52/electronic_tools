@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('asm', {
   readTable: (args) => ipcRenderer.invoke('import:readTable', args),
   preview: (spec) => ipcRenderer.invoke('import:preview', spec),
   createProject: (args) => ipcRenderer.invoke('project:create', args),
+  openSample: (name) => ipcRenderer.invoke('project:openSample', name),
   reimportProject: (args) => ipcRenderer.invoke('project:reimport', args),
   listProjects: () => ipcRenderer.invoke('project:list'),
   getProject: (id) => ipcRenderer.invoke('project:get', id),
