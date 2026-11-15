@@ -581,7 +581,7 @@ function wire() {
     catch (err) { b.disabled = false; b.textContent = label; alert(t('Örnek açılamadı: {err}', { err: err.message || err })); }
   };
   if (asm.ready) $('#btn-launcher').hidden = false;   // web build only: link back to the Elektronik Araçlar launcher
-  if (asm.ready) $('#btn-win').hidden = false;        // web build only: desktop installer (built by .github/workflows/desktop-win.yml)
+  if (asm.ready) { $('#btn-win').hidden = false; $('#btn-kicad').hidden = false; }   // web build only: desktop app and KiCad plugin zips (.github/workflows/desktop-win.yml)
   $('#about-back').onclick = () => { show('home'); renderHome(); };
   $('#btn-new-2').onclick = () => openWizard(null);
   $('#wiz-back').onclick = () => { show('home'); renderHome(); };

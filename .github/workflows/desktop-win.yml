@@ -1,7 +1,7 @@
 # Builds the Montaj Goruntuleyici desktop app for Windows and publishes it on the "montaj-win" GitHub release.
-# The asset names are fixed, so the download button on the Assembly home page always points at the newest build:
-#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-setup-win-x64.exe  (installer)
-#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-win-x64.zip        (portable)
+# Both downloads are zips with fixed names, so the buttons on the Assembly home page always point at the newest build:
+#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-win-x64.zip              (desktop app, no install)
+#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-KiCad-eklenti-win-x64.zip (KiCad PCM package, app included)
 name: Montaj Windows build
 
 on:
@@ -35,21 +35,22 @@ jobs:
           cache-dependency-path: assembly-src/package-lock.json
       - run: npm ci
       - run: npm run check
-      # NSIS installer + portable zip, x64, with version-free file names (unsigned: Windows SmartScreen may warn)
-      - name: Build
+      # portable zip (x64, unsigned: Windows SmartScreen may warn); dist/win-unpacked is reused for the KiCad package
+      - name: Build desktop zip
         run: >
-          npx electron-builder --win nsis zip --x64 --publish never
-          '-c.nsis.artifactName=MontajGoruntuleyici-setup-win-x64.${ext}'
+          npx electron-builder --win zip --x64 --publish never
           '-c.win.artifactName=MontajGoruntuleyici-win-x64.${ext}'
+      - name: Build KiCad plugin zip
+        run: node kicad-plugin/pack.js dist/win-unpacked dist/MontajGoruntuleyici-KiCad-eklenti-win-x64.zip
       - name: Publish to the montaj-win release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VER=$(node -p "require('./package.json').version")
-          NOTES="Montaj Görüntüleyici $VER – Windows x64. Kurulum: MontajGoruntuleyici-setup-win-x64.exe; kurulumsuz: MontajGoruntuleyici-win-x64.zip. Commit: $GITHUB_SHA"
+          NOTES="Montaj Görüntüleyici $VER – Windows x64. Masaüstü: MontajGoruntuleyici-win-x64.zip (kurulumsuz, açıp 'Montaj Görüntüleyici.exe' çalıştırın). KiCad eklentisi: MontajGoruntuleyici-KiCad-eklenti-win-x64.zip (KiCad → Eklenti ve İçerik Yöneticisi → Dosyadan yükle). Commit: $GITHUB_SHA"
           if gh release view montaj-win >/dev/null 2>&1; then
             gh release edit montaj-win --title "Montaj Görüntüleyici $VER (Windows)" --notes "$NOTES"
           else
             gh release create montaj-win --title "Montaj Görüntüleyici $VER (Windows)" --notes "$NOTES" --target "$GITHUB_SHA"
           fi
-          gh release upload montaj-win dist/MontajGoruntuleyici-setup-win-x64.exe dist/MontajGoruntuleyici-win-x64.zip --clobber
+          gh release upload montaj-win dist/MontajGoruntuleyici-win-x64.zip dist/MontajGoruntuleyici-KiCad-eklenti-win-x64.zip --clobber
