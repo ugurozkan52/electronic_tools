@@ -447,7 +447,8 @@
     o.nets = {};
     if (c.nets) Object.keys(c.nets).forEach(function (k) { if (/^(power|ground|chassis|signal|none)$/.test(c.nets[k])) o.nets[k] = c.nets[k]; });
     o.funcs = {};
-    if (c.funcs) Object.keys(c.funcs).forEach(function (k) { if (c.funcs[k] === 'none' || FUNCS.some(function (f) { return f.id === c.funcs[k]; })) o.funcs[k] = c.funcs[k]; });
+    if (c.funcs) Object.keys(c.funcs).forEach(function (k) { var v = String(c.funcs[k]), b = v.split(':')[0], pn = v.split(':')[1];
+      if (v === 'none' || FUNCS.some(function (f) { return f.id === b; }) && (pn == null || (PINS[b] || []).some(function (x) { return x[0] === pn; }))) o.funcs[k] = v; });
     o.selection = !!c.selection;
     return o;
   }
@@ -459,7 +460,8 @@
     { id: 'i2c', label: 'I²C', rx: /I2C|IIC|TWI\d*|SMB(CLK|DAT|ALERT)?|PMBUS|(?<![A-Z])(SDA|SCL)(?![A-Z])|SDAT/ },
     { id: 'can', label: 'CAN', rx: /(?<![A-Z])(FD)?CAN(?![A-Z])|CAN[_\-]?(H|L|HI|LO|HIGH|LOW|TX|RX|STB|SILENT)(?![A-Z])|CANBUS|J1939/ },
     { id: 'rs485', label: 'RS-485 / RS-422', rx: /RS[_\-]?(485|422)|(?<![0-9])(485|422)(?![0-9])|MODBUS|LVDS|ARINC|1553|USB[_\-]?D|(?<![A-Z])(RS|EIA)[_\-]?[AB](?![A-Z])|(?<![A-Z])(DE|RE|DIR|TXEN|RXEN|DERE)(?![A-Z])/ },
-    { id: 'uart', label: 'UART', rx: /UART|USART|LPUART|SCI\d|RS[_\-]?232|SERIAL|TXD|RXD|(?<![A-Z])(TX|RX)\d*(?![A-Z])|(?<![A-Z])(RTS|CTS|DTR|DSR|VCP)(?![A-Z])|CONSOLE/ },
+    { id: 'rs232', label: 'RS-232', rx: /RS[_\-]?232|EIA[_\-]?232|(?<![A-Z])V24(?![A-Z])/ },
+    { id: 'uart', label: 'UART', rx: /UART|USART|LPUART|SCI\d|SERIAL|TXD|RXD|(?<![A-Z])(TX|RX)\d*(?![A-Z])|(?<![A-Z])(RTS|CTS|DTR|DSR|VCP)(?![A-Z])|CONSOLE/ },
     { id: 'spi', label: 'SPI', rx: /SPI|(?<![A-Z])(SCK|SCLK|MOSI|MISO|SDI|SDO|COPI|CIPO|PICO|POCI|NSS|SSEL|SS|CS|CSN|NCS)\d*(?![A-Z])|SS_?N|CS_?N/ },
     { id: 'adc', label: 'ADC', rx: /ADC|AIN|(?<![A-Z])AN\d+(?![A-Z])|ANALOG|ANLG/ },
     { id: 'sens', label: 'Sensör / analog', rx: /SENS|SNS|TEMP|NTC|PTC|PT100|PT1000|RTD|THERM|VREF|REF_?\d|(?<![A-Z])REF(?![A-Z])|EXC|IMU|ACCEL|GYRO|MAG|PRESS|HUMID|ISENSE|IMON|VMON|CSA|SHUNT|HALL|LDR|PHOTO/ },
@@ -469,10 +471,45 @@
   ];
   // net name → function id ('' = unknown); manual: id chosen by the user, 'none' = not an interface line
   function funcOf(net, manual) {
-    if (manual) return manual === 'none' ? '' : manual;
+    if (manual) return manual === 'none' ? '' : String(manual).split(':')[0];
     var n = baseNet(net).toUpperCase();
     for (var i = 0; i < FUNCS.length; i++) if (FUNCS[i].rx.test(n)) return FUNCS[i].id;
     return '';
+  }
+  // pins of an interface the technician can pick in the "İşlev" list ("uart:tx" …); ids are the line roles used by the plan
+  var PINS = {
+    uart: [['tx', 'TX'], ['rx', 'RX'], ['rts', 'RTS'], ['cts', 'CTS']],
+    spi: [['clk', 'SCK'], ['mosi', 'MOSI'], ['miso', 'MISO'], ['cs', 'CS']],
+    i2c: [['scl', 'SCL'], ['sda', 'SDA']],
+    rs232: [['tx', 'TXD'], ['rx', 'RXD'], ['rts', 'RTS'], ['cts', 'CTS'], ['dtr', 'DTR'], ['dsr', 'DSR'], ['dcd', 'DCD'], ['ri', 'RI']],
+    rs485: [['a', 'A'], ['b', 'B'], ['y', 'Y'], ['z', 'Z'], ['dir', 'DE/RE']],
+    can: [['h', 'CANH'], ['l', 'CANL'], ['tx', 'TXD'], ['rx', 'RXD'], ['stb', 'STB']],
+  };
+  // line role from the net name alone ('' = unknown)
+  function roleByName(net) {
+    var n = baseNet(net);
+    if (/(^|[_-])N?CSd*([_-]|$)|NSS|SS_N/i.test(n)) return 'cs';
+    if (/SCK|SCLK|(^|[_-])CLK/i.test(n)) return 'clk';
+    if (/MOSI|SDI|COPI|PICO/i.test(n)) return 'mosi';
+    if (/MISO|SDO|CIPO|POCI/i.test(n)) return 'miso';
+    if (/SDA|SMBDAT/i.test(n)) return 'sda';
+    if (/SCL|SMBCLK/i.test(n)) return 'scl';
+    if (/TXD|(^|[_-])TX(d|[_-]|$)/i.test(n)) return 'tx';
+    if (/RXD|(^|[_-])RX(d|[_-]|$)/i.test(n)) return 'rx';
+    if (/RTS/i.test(n)) return 'rts';
+    if (/CTS/i.test(n)) return 'cts';
+    var hs = n.match(/(?:^|[_\-])(DTR|DSR|DCD|RI)(?=\d|[_\-]|$)/i);
+    if (hs) return hs[1].toLowerCase();
+    if (/(^|[_\-])N?STB(_?N)?([_\-]|\d|$)|STANDBY/i.test(n)) return 'stb';
+    if (/(^|[_-])(DE|RE|REN|DEN|DIR)(_?N)?([_-]|d|$)/i.test(n)) return 'dir';
+    return '';
+  }
+  // pin of an interface line: chosen by the user ("uart:tx") or guessed from the name when it fits the interface
+  function pinOf(net, manual) {
+    var f = funcOf(net, manual), m = manual && String(manual).split(':')[1];
+    if (m) return m;
+    var r = roleByName(net);
+    return PINS[f] && PINS[f].some(function (x) { return x[0] === r; }) ? r : (f === 'rs485' && r === 'dir' ? r : '');
   }
   var RX_I2C = /(^|[^A-Z])(I2C|IIC|SDA|SCL|SMB|SMBCLK|SMBDAT)/i;
   var RX_UART = /(UART|USART|TXD|RXD|(^|[_\-])(TX|RX)(\d|[_\-]|$)|^(TX|RX)\d?$)/i;
@@ -640,13 +677,30 @@
       var id = kind + '|' + key;
       (buses[id] = buses[id] || { kind: kind, key: key, lines: [] }).lines.push({ net: s.net, pads: s.pads, role: role || '' });
     };
-    var pairs = {};
+    var pairs = {}, manualDiff = {};
     var fnOf = function (net) { return funcOf(net, C.funcs && C.funcs[net]); };
     sigNets.forEach(function (s) {
       if (s.auto || (fnOf(s.net) !== 'rs485' && fnOf(s.net) !== 'can')) return;
-      var k = diffKey(s.net);
+      var mp = pinOf(s.net, C.funcs && C.funcs[s.net]), k = diffKey(s.net);
+      if (/^(a|b|y|z|h|l)$/.test(mp)) {
+        var pol = /^(a|y|h)$/.test(mp) ? 'p' : 'n', grp = mp === 'y' || mp === 'z' ? 'TX' : mp === 'a' || mp === 'b' ? 'RX' : '';
+        var fk = fnOf(s.net).toUpperCase() + (grp ? '#' + grp : '');
+        manualDiff[s.net] = fk;                                   // fallback pair key when the names do not pair up
+        k = { base: k && k.pol === pol ? k.base : fk, pol: pol };
+      } else if (/^(tx|rx|stb|dir)$/.test(mp)) return;      // logic-side lines of the transceiver are single-line steps
       if (!k) return;
       (pairs[k.base] = pairs[k.base] || {})[k.pol] = s;
+    });
+    Object.keys(pairs).forEach(function (b) {
+      var pr = pairs[b];
+      if (pr.p && pr.n) return;
+      ['p', 'n'].forEach(function (pl) {
+        var m = pr[pl], fk = m && manualDiff[m.net];
+        if (!fk || fk === b) return;
+        var t = pairs[fk] = pairs[fk] || {};
+        if (!t[pl]) { t[pl] = m; delete pr[pl]; }
+      });
+      if (!pr.p && !pr.n) delete pairs[b];
     });
     Object.keys(pairs).sort().forEach(function (base) {
       var pr = pairs[base];
@@ -655,7 +709,7 @@
       var isCan = fnOf(pr.p.net) === 'can' || fnOf(pr.n.net) === 'can';
       var pa = bestPad(pr.p.pads), pb = nearPad(pr.n.pads, pa);
       if (!pa || !pb) return;
-      var tx = /TX|DO|OUT|DRV|Y|Z/i.test(base);
+      var mpp = pinOf(pr.p.net, C.funcs && C.funcs[pr.p.net]), tx = mpp === 'y' || mpp !== 'a' && /TX|DO|OUT|DRV|Y|Z/i.test(base);
       var ex = isCan ? { type: 'range', nominal: 0, min: -0.5, max: 0.05 }
         : { type: 'absmin', min: tx ? 1.5 : 0.2 };
       comm.push({ id: 'commdiff:' + pr.p.net + '|' + pr.n.net, kind: 'diff', group: isCan ? 'CAN' : 'RS-422/485', netA: pr.p.net, netB: pr.n.net, unit: 'V',
@@ -663,7 +717,8 @@
         text: [T('Kırmızı probu {a} ({na}), siyah probu {b} ({nb}) noktasına değdirin; iki hat arasındaki farkı ölçün.', { a: label(pa), na: pr.p.net, b: label(pb), nb: pr.n.net }),
           isCan ? T('CAN boşta (resesif): fark ≈ 0 V.') : tx ? T('Sürücü etkin ve boşta: |fark| ≥ 1,5 V beklenir.') : T('Alıcı hattı: fail-safe polarlama varsa |fark| ≥ 200 mV; yoksa değer 0 V olabilir, karar sizde.')],
         probes: { pos: probe(pa), neg: probe(pb) }, expect: ex });
-      busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.p, 'h'); busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.n, 'l');
+      var dRole = function (m, dflt) { var r = pinOf(m.net, C.funcs && C.funcs[m.net]); return isCan ? dflt : /^(a|b|y|z)$/.test(r) ? r : dflt === 'h' ? 'a' : 'b'; };
+      busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.p, dRole(pr.p, 'h')); busAdd(isCan ? 'CAN' : 'RS-422/485', base, pr.n, dRole(pr.n, 'l'));
       if (isCan) [pr.p, pr.n].forEach(function (s) {
         var st = single(s, 'comm:', T('{net} ortak mod gerilimi', { net: s.net }), { type: 'range', nominal: 2.5, min: 2.0, max: 3.0 }, [T('CAN resesif seviye ≈ 2,5 V.')]);
         if (st) { st.group = 'CAN'; comm.push(st); }
@@ -671,25 +726,17 @@
     });
     // per-line notes by interface (what the technician checks besides the idle level)
     var lineRole = function (n) {
-      n = baseNet(n);
-      if (/(^|[_\-])N?CS\d*([_\-]|$)|NSS|SS_N/i.test(n)) return 'cs';
-      if (/SCK|SCLK|(^|[_\-])CLK/i.test(n)) return 'clk';
-      if (/MOSI|SDI|COPI|PICO/i.test(n)) return 'mosi';
-      if (/MISO|SDO|CIPO|POCI/i.test(n)) return 'miso';
-      if (/SDA|SMBDAT/i.test(n)) return 'sda';
-      if (/SCL|SMBCLK/i.test(n)) return 'scl';
-      if (/TXD|(^|[_\-])TX(\d|[_\-]|$)/i.test(n)) return 'tx';
-      if (/RXD|(^|[_\-])RX(\d|[_\-]|$)/i.test(n)) return 'rx';
-      if (/RTS|CTS/i.test(n)) return 'flow';
-      if (/(^|[_\-])(DE|RE|REN|DEN|DIR)(_?N)?([_\-]|\d|$)/i.test(n)) return 'dir';
-      return '';
+      var r = pinOf(n, C.funcs && C.funcs[n]) || roleByName(n);
+      return /^(rts|cts|dtr|dsr|dcd|ri)$/.test(r) ? 'flow' : r;
     };
     // lines of one interface share a prefix: UART1_TX / UART1_RX → "UART1"
     var busKey = function (net, kind) {
       var n = baseNet(net);
       var rx = kind === 'UART' ? /[_\-]?(TXD|RXD|TX|RX|RTS|CTS)(?=\d*([_\-]|$))/i
         : kind === 'SPI' ? /[_\-]?(SCLK|SCK|MOSI|MISO|SDI|SDO|COPI|CIPO|PICO|POCI|N?CS\d*(_?N)?|NSS|SS_N)(?=([_\-]|$))/i
-        : kind === 'I²C' ? /[_\-]?(SDA|SCL|SMBDAT|SMBCLK)/i : null;
+        : kind === 'I²C' ? /[_\-]?(SDA|SCL|SMBDAT|SMBCLK)/i
+        : kind === 'RS-232' ? /[_\-]?(TXD|RXD|TX|RX|RTS|CTS|DTR|DSR|DCD|RI)(?=\d*([_\-]|$))/i
+        : kind === 'CAN' ? /[_\-]?(TXD|RXD|TX|RX|STB)(?=\d*([_\-]|$))/i : null;
       return (rx ? n.replace(rx, '') : n).toUpperCase();
     };
     var COMM_NOTES = {
@@ -697,17 +744,20 @@
       'UART': function (r) { return r === 'tx' ? T('TX çıkışı boşta lojik 1 (başlangıç biti gelene kadar). Osiloskopta baud hızını ve start/stop bitlerini doğrulayın.') : r === 'rx' ? T('RX girişi boşta lojik 1 olmalı; 0 V ise karşı uç TX’i bağlı değil ya da kısa devre var.') : r === 'flow' ? T('RTS/CTS akış kontrol hattı: aktif seviyesini şemaya göre doğrulayın.') : ''; },
       'SPI': function (r) { return r === 'cs' ? T('CS (çip seçimi) boşta pasif = lojik 1 (aktif-düşük).') : r === 'clk' ? T('SCK boşta seviyesi saat polaritesine (CPOL) bağlıdır: 0 V ya da lojik 1; osiloskopta frekansı doğrulayın.') : r === 'mosi' || r === 'miso' ? T('Veri hattı: boşta seviye aygıta bağlıdır; kaydedin, transfer sırasında osiloskopla doğrulayın.') : ''; },
       'RS-422/485': function (r) { return r === 'dir' ? T('Yön denetimi (DE/RE): alıcı modunda DE=0, RE=0; sürücü modunda DE=1. Beklenen seviyeyi kaydedin.') : T('RS-422/485 hattı: boşta fail-safe polarlama ile seviye belirlidir, kaydedin.'); },
-      'CAN': function () { return T('CAN hattı: boşta (resesif) seviye ≈ 2,5 V.'); },
+      'CAN': function (r) { return r === 'tx' || r === 'rx' ? T('CAN denetleyici tarafı (TXD/RXD): boşta (resesif) lojik 1.') : r === 'stb' ? T('STB (bekleme): normal çalışmada transceiver etkin olmalı; seviyeyi şemaya göre doğrulayın.') : T('CAN hattı: boşta (resesif) seviye ≈ 2,5 V.'); },
+      'RS-232': function (r) { return r === 'tx' ? T('RS-232 TXD boşta (mark) negatif gerilimde: tipik −5 … −12 V. 0 V ise sürücü (MAX232 vb.) beslenmiyor ya da şarj pompası kondansatörleri eksik.') : r === 'rx' ? T('RS-232 RXD: karşı uç bağlı değilse 0 V olabilir; bağlıysa boşta negatif gerilim.') : T('RS-232 el sıkışma hattı: seviyeyi kaydedin (etkin = pozitif gerilim).'); },
     };
     sigNets.forEach(function (s) {
       if (taken.has(s.net) || s.auto) return;
-      var kind = ({ i2c: 'I²C', can: 'CAN', uart: 'UART', spi: 'SPI', rs485: 'RS-422/485' })[fnOf(s.net)] || null;
+      var kind = ({ i2c: 'I²C', can: 'CAN', uart: 'UART', spi: 'SPI', rs485: 'RS-422/485', rs232: 'RS-232' })[fnOf(s.net)] || null;
       if (!kind) return;
       taken.add(s.net);
       var role = lineRole(s.net);
       var ih = idleHigh(s, kind);
       // lines that are not idle-high by nature (clock, data, direction) are recorded, not judged
-      if (kind === 'SPI' && role !== 'cs' || kind === 'RS-422/485' && role === 'dir') ih = { ex: { type: 'manual', unit: 'V', hint: 'Boşta seviyeyi kaydedin' }, note: T('{kind} hattı: seviyeyi kaydedin.', { kind: kind }) };
+      if (kind === 'RS-232') ih = role === 'tx' ? { ex: { type: 'range', nominal: -6, min: -15, max: -3 }, note: T('RS-232 TXD boşta: −3 V ile −15 V arası.') } : { ex: { type: 'manual', unit: 'V', hint: 'Boşta seviyeyi kaydedin' }, note: T('{kind} hattı: seviyeyi kaydedin.', { kind: kind }) };
+      else if (kind === 'CAN' && (role === 'h' || role === 'l')) ih = { ex: { type: 'range', nominal: 2.5, min: 2.0, max: 3.0 }, note: T('CAN resesif seviye ≈ 2,5 V.') };
+      else if (kind === 'SPI' && role !== 'cs' || kind === 'RS-422/485' || kind === 'CAN' && role === 'stb') ih = { ex: { type: 'manual', unit: 'V', hint: 'Boşta seviyeyi kaydedin' }, note: T('{kind} hattı: seviyeyi kaydedin.', { kind: kind }) };
       var note = COMM_NOTES[kind] ? COMM_NOTES[kind](role) : '';
       var st = single(s, 'comm:', T('{net} boşta seviye ({kind})', { net: s.net, kind: kind }), ih.ex, [ih.note, note].filter(Boolean));
       if (st) { st.group = kind; comm.push(st); }
@@ -754,7 +804,7 @@
     });
 
     // ---- oscilloscope / logic-analyzer steps (waveform and protocol checks)
-    var ROLE_ORDER = { tx: 0, rx: 1, flow: 2, scl: 0, sda: 1, clk: 0, cs: 1, mosi: 2, miso: 3, h: 0, l: 1, dir: 2 };
+    var ROLE_ORDER = { tx: 0, rx: 1, flow: 2, scl: 0, sda: 1, clk: 0, cs: 1, mosi: 2, miso: 3, h: 0, l: 1, a: 0, b: 1, y: 2, z: 3, dir: 4, stb: 4 };
     var BUS = {
       'UART': {
         text: [T('Lojik analizörde UART çözücüsü (8N1, beklenen baud hızı); osiloskopta tetik = düşen kenar, 1–2 V/div, 10 µs/div (115200 baud için).'), T('Karttan veri gönderilmesini sağlayın (test firmware’i ya da terminalden komut).')],
@@ -772,6 +822,10 @@
         text: [T('Osiloskop: CANH ve CANL ayrı kanallarda (ya da diferansiyel prob), 1 V/div, bit süresine göre zaman tabanı (500 kbit/s → 2 µs/bit). Lojik analizör: CAN çözücüsü, diferansiyel giriş.'), T('Enerjisiz iken CANH–CANL direncini ölçün; karttan bir çerçeve gönderin.')],
         expect: T('Resesif: CANH ≈ CANL ≈ 2,5 V; baskın: CANH ≈ 3,5 V, CANL ≈ 1,5 V (fark ≈ 2 V); çözücüde geçerli ID/DLC; enerjisiz CANH–CANL ≈ 60 Ω (iki 120 Ω sonlandırma).'),
         debug: [T('Fark hep ≈ 0 V: sürücü pasif; transceiver beslemesi, STB/EN pini, TXD hattı.'), T('Direnç ≈ 120 Ω: tek sonlandırma var; ≈ 40 Ω: üç sonlandırma.'), T('Çerçeve hatası: bit hızı uyumsuz ya da hat dalgalı; GND/şase referansını kontrol edin.')] },
+      'RS-232': {
+        text: [T('Lojik analizör RS-232 gerilimlerini (±12 V) doğrudan ölçemeyebilir: veriyi transceiver’ın lojik tarafından (TTL TXD/RXD) okuyun ya da osiloskopta ters çevrilmiş (inverted) UART çözücüsü kullanın.'), T('Karttan veri gönderin; RXD için USB–RS-232 dönüştürücüden veri gönderip yankıyı izleyin.')],
+        expect: T('TXD boşta −3 … −15 V (mark); veri sırasında +/− arasında salınır; çözücüde beklenen karakterler; baud hızı ±%2.'),
+        debug: [T('TXD 0 V: sürücü beslemesiz ya da şarj pompası kondansatörleri eksik/ters.'), T('Bozuk veri: baud ya da çerçeve uyumsuz; çözücüde ters çevirme ayarı.'), T('Yankı yok: TXD/RXD çapraz bağlantı (null-modem) gerekiyor olabilir.')] },
       'RS-422/485': {
         text: [T('Osiloskop: A ve B ayrı kanallarda (diferansiyel prob tercih edilir), 1–2 V/div. Lojik analizör: UART çözücüsü A−B diferansiyel girişte.'), T('Sürücüyü etkinleştirip veri gönderin (DE = 1).')],
         expect: T('Sürücü açıkken |A−B| ≥ 1,5 V; boşta fail-safe polarlama ile A−B ≥ 200 mV; DE/RE yönü doğru; bit hızı beklenen değerde.'),
@@ -792,8 +846,10 @@
       var lines = b.lines.slice().sort(function (x, y) { return (ROLE_ORDER[x.role] != null ? ROLE_ORDER[x.role] : 9) - (ROLE_ORDER[y.role] != null ? ROLE_ORDER[y.role] : 9) || (x.net < y.net ? -1 : 1); });
       var first = lines[0], pa = bestPad(first.pads), g = gndFor(first.net), pb = g ? nearPad(g.pads, pa) : null;
       if (!pa || !pb) return;
-      var chs = lines.map(function (l, i) { var p = bestPad(l.pads); return T('Kanal {n}: {net} → {pin}', { n: i + 1, net: l.net, pin: label(p) }); });
-      var name = b.key && b.key !== b.lines[0].net.toUpperCase() ? b.key : '';
+      var RN = { tx: 'TX', rx: 'RX', flow: b.kind === 'RS-232' ? 'RTS/CTS/DTR/DSR' : 'RTS/CTS', clk: 'SCK', cs: 'CS', mosi: 'MOSI', miso: 'MISO', sda: 'SDA', scl: 'SCL', h: b.kind === 'CAN' ? 'CANH' : 'H', l: b.kind === 'CAN' ? 'CANL' : 'L', a: 'A', b: 'B', y: 'Y', z: 'Z', dir: 'DE/RE', stb: 'STB' };
+      var chs = lines.map(function (l, i) { var p = bestPad(l.pads), rn = RN[l.role];
+        return rn ? T('Kanal {n} ({r}): {net} → {pin}', { n: i + 1, r: rn, net: l.net, pin: label(p) }) : T('Kanal {n}: {net} → {pin}', { n: i + 1, net: l.net, pin: label(p) }); });
+      var name = b.key && b.key !== b.lines[0].net.toUpperCase() ? b.key.replace('#', ' ') : '';
       busPhase(b.kind).push({
         id: 'bus:' + id, kind: 'bus', netA: first.net, netB: g.net, unit: '', group: b.kind, instrument: 'scope',
         title: b.kind === 'PWM' || b.kind === 'Timer' ? T('{net} dalga formu ölçümü ({kind})', { net: first.net, kind: b.kind }) : name ? T('{name} dalga/protokol kontrolü ({kind})', { name: name, kind: b.kind }) : T('{net} dalga/protokol kontrolü ({kind})', { net: first.net, kind: b.kind }),
@@ -844,5 +900,5 @@
   }
   function netSize(pcb, net) { var map = netCache && netCache.get(pcb) || padsByNet(pcb); return (map.get(normNet(net)) || []).length; }
 
-  return { normNet: normNet, railVolts: railVolts, parseVolts: parseVolts, parseValue: parseValue, fmtValue: fmtValue, fmtVolts: fmtVolts, CFG: CFG, buildTestPlan: buildTestPlan, candidates: candidates, netSize: netSize, evaluate: evaluate, parseOhms: parseOhms, fmtOhms: fmtOhms, classifyNet: classifyNet, FUNCS: FUNCS.map(function (f) { return { id: f.id, label: f.label }; }), funcOf: funcOf, whyNet: whyNet, baseNet: baseNet, resolveRoles: resolveRoles, bridges: bridges, DEF: DEF };
+  return { normNet: normNet, railVolts: railVolts, parseVolts: parseVolts, parseValue: parseValue, fmtValue: fmtValue, fmtVolts: fmtVolts, CFG: CFG, buildTestPlan: buildTestPlan, candidates: candidates, netSize: netSize, evaluate: evaluate, parseOhms: parseOhms, fmtOhms: fmtOhms, classifyNet: classifyNet, FUNCS: FUNCS.map(function (f) { return { id: f.id, label: f.label }; }), funcOf: funcOf, pinOf: pinOf, PINS: PINS, whyNet: whyNet, baseNet: baseNet, resolveRoles: resolveRoles, bridges: bridges, DEF: DEF };
 });
