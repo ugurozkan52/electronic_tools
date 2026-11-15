@@ -1,0 +1,55 @@
+# Builds the Montaj Goruntuleyici desktop app for Windows and publishes it on the "montaj-win" GitHub release.
+# The asset names are fixed, so the download button on the Assembly home page always points at the newest build:
+#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-setup-win-x64.exe  (installer)
+#   https://github.com/<owner>/<repo>/releases/download/montaj-win/MontajGoruntuleyici-win-x64.zip        (portable)
+name: Montaj Windows build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assembly-src/**'
+      - '.github/workflows/desktop-win.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-win
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: assembly-src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: assembly-src/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      # NSIS installer + portable zip, x64, with version-free file names (unsigned: Windows SmartScreen may warn)
+      - name: Build
+        run: >
+          npx electron-builder --win nsis zip --x64 --publish never
+          '-c.nsis.artifactName=MontajGoruntuleyici-setup-win-x64.${ext}'
+          '-c.win.artifactName=MontajGoruntuleyici-win-x64.${ext}'
+      - name: Publish to the montaj-win release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          NOTES="Montaj Görüntüleyici $VER – Windows x64. Kurulum: MontajGoruntuleyici-setup-win-x64.exe; kurulumsuz: MontajGoruntuleyici-win-x64.zip. Commit: $GITHUB_SHA"
+          if gh release view montaj-win >/dev/null 2>&1; then
+            gh release edit montaj-win --title "Montaj Görüntüleyici $VER (Windows)" --notes "$NOTES"
+          else
+            gh release create montaj-win --title "Montaj Görüntüleyici $VER (Windows)" --notes "$NOTES" --target "$GITHUB_SHA"
+          fi
+          gh release upload montaj-win dist/MontajGoruntuleyici-setup-win-x64.exe dist/MontajGoruntuleyici-win-x64.zip --clobber

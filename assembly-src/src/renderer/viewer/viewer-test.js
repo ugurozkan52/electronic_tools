@@ -267,9 +267,25 @@ var TEST = (function () {
         rs.onchange = function () { d.role = rs.value; d.on = !!rs.value; sync(); };
         // what the pin / line does: drives the test steps (UART, SPI, I²C, PWM …); "Otomatik" = guessed from the name
         var fs = asmEl('select', { class: 'asm-select ns-func', 'aria-label': T('{net} işlevi', { net: n.net }), title: T('Hattın ne iş yaptığı: test adımlarını belirler') });
-        var auto = n.func ? (TESTPLAN.FUNCS.filter(function (f) { return f.id === n.func; })[0] || {}).label : '';
+        // UART / SPI / I²C also offer their pins ("UART TX", "SPI MOSI" …): the pin sets the line's role in the logic-analyzer step
+        var funcLabel = function (f) { return f.id === 'sens' ? T('Sensör / analog') : f.label; };
+        var pinLabel = function (fid, pid) {
+          var f = TESTPLAN.FUNCS.filter(function (x) { return x.id === fid; })[0], pn = (TESTPLAN.PINS[fid] || []).filter(function (x) { return x[0] === pid; })[0];
+          var hint = { clk: T('saat'), scl: T('saat'), sda: T('veri'), cs: T('çip seçimi'), a: '+', b: '−', y: 'TX+', z: 'TX−', stb: T('bekleme') }[pid];
+          var pre = fid === 'rs485' ? 'RS-485/422' : f && f.label;
+          return f && pn ? (pn[1].indexOf(pre) === 0 ? pn[1] : pre + ' ' + pn[1]) + (hint ? ' (' + hint + ')' : '') : '';
+        };
+        var autoF = n.func ? TESTPLAN.FUNCS.filter(function (f) { return f.id === n.func; })[0] : null, autoP = n.func ? TESTPLAN.pinOf(n.net) : '';
+        var auto = autoF ? (autoP && pinLabel(n.func, autoP)) || funcLabel(autoF) : '';
         fs.appendChild(asmEl('option', { value: '', text: auto ? T('Otomatik: {f}', { f: auto }) : T('Otomatik (ad tanınmadı)'), raw: 1 }));
-        TESTPLAN.FUNCS.forEach(function (f) { fs.appendChild(asmEl('option', { value: f.id, text: f.id === 'sens' ? T('Sensör / analog') : f.label, raw: 1 })); });
+        TESTPLAN.FUNCS.forEach(function (f) {
+          var pins = TESTPLAN.PINS[f.id];
+          if (!pins) { fs.appendChild(asmEl('option', { value: f.id, text: funcLabel(f), raw: 1 })); return; }
+          var og = document.createElement('optgroup'); og.label = f.label;
+          og.appendChild(asmEl('option', { value: f.id, text: T('{f} (pin otomatik)', { f: f.label }), raw: 1 }));
+          pins.forEach(function (pn) { og.appendChild(asmEl('option', { value: f.id + ':' + pn[0], text: pinLabel(f.id, pn[0]), raw: 1 })); });
+          fs.appendChild(og);
+        });
         fs.appendChild(asmEl('option', { value: 'none', text: T('Yok (genel I/O)'), raw: 1 }));
         fs.value = d.func || '';
         fs.disabled = !n.pads || d.role !== 'signal';

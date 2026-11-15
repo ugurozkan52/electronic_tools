@@ -7,6 +7,7 @@
 <title>Filtre Hesaplayıcı</title>
 <meta name="description" content="RC, RL, LC, Pi/T ve aktif (Sallen-Key, MFB) filtre hesaplayıcı: bileşen değerlerinden kesim frekansı, Q ve Bode grafiği; kesim frekansından bileşen önerisi.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2314171c'/%3E%3Cpath d='M4 8h9c3 0 3 8 7 8' stroke='%23a98bff' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="../components/spice.js"></script>
 <script>
 /* Shared light/dark theme: localStorage 'et-theme' is common to all tools on this site. */
 (function(){var K='et-theme',r=document.documentElement,t;
@@ -119,6 +120,7 @@ svg.sch .oa{font-size:16px;font-weight:700}
 .note{font-size:12px;color:var(--mute);border-left:3px solid var(--line);padding-left:10px;margin:8px 0 0}
 .range{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}
 .simrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.btn.spice{background:#b7791f;border-color:#b7791f;color:#fff;font-weight:700}.btn.spice:hover,.btn.spice:focus-visible{background:#d69e2e;border-color:#d69e2e;color:#fff}
 #simHint{margin-top:6px}
 .range .fld{margin:0;flex:1;min-width:120px}
 </style>
@@ -159,10 +161,11 @@ svg.sch .oa{font-size:16px;font-weight:700}
       <button class="btn" id="copyBtn" type="button" style="margin-top:6px">Sonucu kopyala</button> <span class="hint" id="copyMsg"></span>
       <div class="simrow">
         <button class="btn primary" id="simBtn" type="button" title="Bu filtreyi CircuitJS simülasyonunda yeni sekmede açar">Simülasyonda aç ↗</button>
+        <button class="btn spice" id="simSpice" type="button" title="Filtreyi LTspice şematiği (.asc) olarak indirir; LTspice ile açıp Run ile AC taramasını çalıştırın">LTspice şematiği (.asc)</button>
         <button class="btn" id="simCopy" type="button" title="CircuitJS'e File → Import from Text ile yapıştırılabilir">Devre metnini kopyala</button>
         <span class="hint" id="simMsg"></span>
       </div>
-      <p class="hint" id="simHint">Seçili filtre ve bileşen değerleri CircuitJS'e aktarılır; giriş kaynağı fc/10 – 10·fc arasında frekans taramasıdır, osiloskopta giriş ve çıkış görünür.</p>
+      <p class="hint" id="simHint">Seçili filtre ve bileşen değerleri CircuitJS'e aktarılır; giriş kaynağı fc/10 – 10·fc arasında frekans taramasıdır, osiloskopta giriş ve çıkış görünür. LTspice düğmesi aynı devreyi AC analizi (.ac) hazır bir şematik olarak indirir; çıkış "out" düğümündedir.</p>
     </section>
   </div>
 
@@ -1029,6 +1032,14 @@ $('#simCopy').onclick = async () => {
   const t = S.model && circuitText();
   if (!t) { simMsg('Önce geçerli bileşen değerleri girin.'); return; }
   try { await navigator.clipboard.writeText(t); simMsg('Devre metni kopyalandı (CircuitJS: File → Import from Text).'); } catch (e) { simMsg('Kopyalanamadı (tarayıcı izni).'); }
+};
+
+$('#simSpice').onclick = () => { // LTspice schematic (.asc) of the same circuit: sweep source becomes an AC source with an .ac analysis
+  const t = S.model && circuitText();
+  if (!t) { simMsg('Önce geçerli bileşen değerleri girin.'); return; }
+  const name = String(S.v.label || S.v.name || S.v.id), file = 'filtre-' + String(S.v.id).replace(/[^w-]+/g, '_') + '.asc';
+  downloadText(file, cjsToAsc(t, name + ' filtre'));
+  simMsg(file + ' indirildi: LTspice ile açıp Run ile AC taramasını çalıştırın, çıkış "out" düğümündedir.');
 };
 
 /* ----------------------------------------------------------------- boot */
