@@ -19,7 +19,7 @@ function newSch(w, h) {
     },
     gnd(x, y) { b.wire([x, y], [x, y + 7]); b.wire([x - 12, y + 7], [x + 12, y + 7]); b.wire([x - 7.5, y + 12], [x + 7.5, y + 12]); b.wire([x - 3, y + 17], [x + 3, y + 17]); },
     // two-terminal part, 60 long incl. leads; rot 0 = horizontal (left→right), 90 = vertical (top→bottom), -90 = vertical (bottom→top)
-    part(kind, x, y, rot, name, value) {
+    part(kind, x, y, rot, name, value, left) {
       const g = el('g', { transform: `translate(${x},${y})${rot ? ` rotate(${rot})` : ''}` }), p = (d, ex) => el('path', Object.assign({ d }, st, ex || {}), null, g);
       if (kind === 'R') p('M-30 0H-20L-16 -7L-8 7L0 -7L8 7L16 -7L20 0H30');
       else if (kind === 'C') { p('M-30 0H-4M4 0H30'); p('M-4 -11V11M4 -11V11', { 'stroke-width': 2.6 }); }
@@ -30,7 +30,8 @@ function newSch(w, h) {
         if (kind === 'Z') p('M10 -9L14 -12M10 9L6 12');
         if (kind === 'LED') { p('M-3 -12L6 -22M3 -12L12 -22'); p('M6 -22L2 -21M6 -22L5 -18M12 -22L8 -21M12 -22L11 -18'); }
       } else if (kind === 'TVS') { p('M-30 0H-14M14 0H30'); p('M-14 -8V8L-1 0Z'); p('M14 -8V8L1 0Z'); p('M-1 -9V9M1 -9V9'); }
-      if (rot !== 0) { b.text(x + 16, y - 2, name, 'start', 'nm'); b.text(x + 16, y + 13, value, 'start', 'vl'); }
+      if (rot !== 0 && left) { b.text(x - 16, y - 2, name, 'end', 'nm'); b.text(x - 16, y + 13, value, 'end', 'vl'); }
+      else if (rot !== 0) { const lx = x + (kind === 'LED' ? 28 : 16); b.text(lx, y - 2, name, 'start', 'nm'); b.text(lx, y + 13, value, 'start', 'vl'); }
       else { b.text(x, y - 16, name, 'middle', 'nm'); b.text(x, y + 28, value, 'middle', 'vl'); }
     },
     box(x, y, w, h, label, sub) { el('rect', { x, y, width: w, height: h, rx: 4, fill: 'var(--card)', stroke: 'currentColor', 'stroke-width': 1.8 }); b.text(x + w / 2, y + h / 2 + (sub ? 0 : 4), label, 'middle', 'nm'); b.text(x + w / 2, y + h / 2 + 14, sub, 'middle', 'vl'); },
@@ -85,8 +86,8 @@ function schBjtSwitch(G, items) {
     s.wire([140, 30], [250, 30]); s.term(250, 30, 'Vcc', 'r', sv(G, 'vcc', 'V'));
     const q = s.bjt(170, 110, true, true, 'Q1 PNP'); s.wire([210, 30], q.top); s.dot(210, 30);
     s.wire(q.bot, [210, 150]); s.part('R', 210, 180, 90, nz(rlv && 'RL', tt('Yük', 'Load')), rlv); s.gnd(210, 210); s.text(226, 150, ic && 'I_C ' + ic, 'start', 'vl');
-    s.term(14, 110, 'Vdrv', 'l', sv(G, 'vd', 'V')); s.wire([14, 110], [50, 110]); s.part('R', 80, 110, 0, 'Rb', iv(items, 1)); s.wire([110, 110], [170, 110]); s.dot(140, 110);
-    s.text(140, 104, iv(items, 3) && 'I_B ' + iv(items, 3), 'middle', 'vl');
+    s.term(14, 110, 'Vdrv', 'l', sv(G, 'vd', 'V')); s.wire([14, 110], [50, 110]); s.part('R', 80, 110, 0, 'Rb', iv(items, 1)); s.wire([100, 110], [170, 110]); s.dot(140, 110);
+    s.text(140, 126, iv(items, 3) && 'I_B ' + iv(items, 3), 'middle', 'vl');
     s.wire([140, 30], [140, 50]); s.part('R', 140, 80, 90, 'Rbe', '10 kΩ'); s.dot(140, 30);
     s.text(0, 246, tt('Yüksek taraf: emiter besleme tarafında', 'High-side: emitter on the supply side'), 'start', 'vl');
   }
@@ -104,7 +105,7 @@ function bjtColumn(s, G, pnp, name) {
 }
 function schBjtIc(G, items) {
   const pnp = G.s('tp') === 'pnp', s = newSch(300, 270); bjtColumn(s, G, pnp, pnp ? 'Q1 PNP' : 'Q1 NPN');
-  s.text(226, pnp ? 212 : 92, iv(items, 0) && 'I_C ' + iv(items, 0), 'start', 'vl'); s.text(262, 138, iv(items, 2) && 'V_CE ' + iv(items, 2), 'start', 'vl');
+  s.text(pnp ? 272 : 226, pnp ? 212 : 92, iv(items, 0) && 'I_C ' + iv(items, 0), 'start', 'vl'); s.text(222, 150, iv(items, 2) && 'V_CE ' + iv(items, 2), 'start', 'vl');
   s.term(14, 130, 'Vin', 'l', sv(G, 'vin', 'V')); s.wire([14, 130], [50, 130]); s.part('R', 80, 130, 0, 'Rb', sv(G, 'rb', 'Ω')); s.wire([110, 130], [170, 130]);
   s.text(140, 124, iv(items, 3) && 'I_B ' + iv(items, 3), 'middle', 'vl');
   return s.svg;
@@ -113,7 +114,7 @@ function schBjtDiv(G, items) {
   const pnp = G.s('tp') === 'pnp', s = newSch(300, 270); bjtColumn(s, G, pnp, pnp ? 'Q1 PNP' : 'Q1 NPN'); s.dot(210, 30);
   s.wire([60, 30], [210, 30]); s.wire([60, 30], [60, 50]); s.part('R', 60, 80, 90, 'R1', sv(G, 'r1', 'Ω')); s.dot(60, 130); s.part('R', 60, 180, 90, 'R2', sv(G, 'r2', 'Ω')); s.gnd(60, 210);
   s.wire([60, 130], [170, 130]);
-  s.text(226, pnp ? 212 : 92, iv(items, 0) && 'I_C ' + iv(items, 0), 'start', 'vl'); s.text(262, 138, iv(items, 1) && 'V_CE ' + iv(items, 1), 'start', 'vl'); s.text(226, pnp ? 92 : 172, iv(items, 3) && 'V_E ' + iv(items, 3), 'start', 'vl');
+  s.text(pnp ? 272 : 226, pnp ? 212 : 92, iv(items, 0) && 'I_C ' + iv(items, 0), 'start', 'vl'); s.text(222, 150, iv(items, 1) && 'V_CE ' + iv(items, 1), 'start', 'vl'); s.text(226, pnp ? 92 : 172, iv(items, 3) && 'V_E ' + iv(items, 3), 'start', 'vl');
   return s.svg;
 }
 
@@ -125,18 +126,18 @@ function schMosGate(G, items) {
   if (n && !hi) {
     s.wire([210, 30], [250, 30]); s.term(250, 30, 'Vs', 'r', vs); s.part('R', 210, 60, 90, tt('Yük', 'Load')); const m = s.mos(170, 130, false, false, 'N-MOS'); s.wire([210, 30], m.top); s.wire(m.bot, [210, 175]); s.gnd(210, 175);
     s.term(14, 130, 'Vdrv', 'l', sv(G, 'vd', 'V')); s.wire([14, 130], [50, 130]); s.part('R', 80, 130, 0, 'Rg', sv(G, 'rg', 'Ω')); s.wire([110, 130], [170, 130]); s.dot(140, 130);
-    s.text(140, 122, vg && 'V_GS ' + vg, 'middle', 'vl'); s.wire([140, 130], [140, 150]); s.part('R', 140, 180, 90, 'Rgs', '10–100 kΩ'); s.gnd(140, 210);
+    s.text(140, 122, vg && 'V_GS ' + vg, 'middle', 'vl'); s.wire([140, 130], [140, 150]); s.part('R', 140, 180, 90, 'Rgs', '10–100k'); s.gnd(140, 210);
     s.text(0, 246, tt('Düşük taraf', 'Low-side'), 'start', 'vl');
   } else if (!n && hi) {
     s.wire([140, 30], [250, 30]); s.term(250, 30, 'Vs', 'r', vs);
     const m = s.mos(170, 110, true, true, 'P-MOS'); s.wire([210, 30], m.top); s.dot(210, 30); s.wire(m.bot, [210, 150]); s.part('R', 210, 180, 90, tt('Yük', 'Load')); s.gnd(210, 210);
-    s.term(14, 110, 'Vdrv', 'l', sv(G, 'vd', 'V')); s.wire([14, 110], [50, 110]); s.part('R', 80, 110, 0, 'Rg', sv(G, 'rg', 'Ω')); s.wire([110, 110], [170, 110]); s.dot(140, 110);
-    s.text(140, 102, vg && '|V_GS| ' + vg, 'middle', 'vl'); s.wire([140, 30], [140, 50]); s.part('R', 140, 80, 90, 'Rgs', '10–100 kΩ'); s.dot(140, 30);
+    s.term(14, 110, 'Vdrv', 'l', sv(G, 'vd', 'V')); s.wire([14, 110], [40, 110]); s.part('R', 70, 110, 0, 'Rg', sv(G, 'rg', 'Ω')); s.wire([100, 110], [170, 110]); s.dot(140, 110);
+    s.text(140, 126, vg && '|V_GS| ' + vg, 'middle', 'vl'); s.wire([140, 30], [140, 50]); s.part('R', 140, 80, 90, 'Rgs', '10–100k', true); s.dot(140, 30);
     s.text(0, 246, tt('Yüksek taraf: gate 0 V → açık', 'High-side: gate 0 V → on'), 'start', 'vl');
   } else if (n && hi) {
     s.wire([210, 30], [250, 30]); s.term(250, 30, 'Vs', 'r', vs); const m = s.mos(170, 130, false, false, 'N-MOS'); s.wire([210, 30], m.top); s.wire(m.bot, [210, 170]); s.dot(210, 170); s.part('R', 210, 200, 90, tt('Yük', 'Load')); s.gnd(210, 230);
-    s.box(-8, 95, 78, 70, tt('Gate sürücü', 'Gate driver'), 'V_G > ' + (vs || 'Vs')); s.wire([70, 130], [80, 130]); s.part('R', 100, 130, 0, 'Rg', sv(G, 'rg', 'Ω')); s.wire([130, 130], [170, 130]); s.dot(145, 130);
-    s.wire([145, 130], [145, 150]); s.part('R', 145, 180, 90, 'Rgs', '10–100 kΩ'); s.wire([145, 210], [145, 235], [210, 235]); s.dot(210, 235);
+    s.box(-44, 100, 114, 60, tt('Gate sürücü', 'Gate driver'), 'V_G > ' + (vs || 'Vs')); s.wire([70, 130], [80, 130]); s.part('R', 100, 130, 0, 'Rg', sv(G, 'rg', 'Ω')); s.wire([130, 130], [170, 130]); s.dot(145, 130);
+    s.wire([145, 130], [145, 150]); s.part('R', 145, 180, 90, 'Rgs', '10–100k'); s.wire([145, 210], [145, 235], [210, 235]); s.dot(210, 235);
     s.text(0, 252, tt('Yüksek taraf: bootstrap / şarj pompası', 'High-side: bootstrap / charge pump'), 'start', 'vl');
   } else {
     s.text(170, 120, tt('P-kanal düşük taraf yaygın değildir (gate negatif gerilim ister).', 'P-channel low-side is uncommon (the gate needs a negative voltage).'), 'middle', 'vl');
@@ -150,7 +151,7 @@ const schMosLow = (kind) => (G, items) => {
   const m = s.mos(170, 130, false, false, 'N-MOS'); s.wire([210, 30], m.top); s.wire(m.bot, [210, 175]); s.gnd(210, 175);
   if (sw) { s.text(226, 92, iv(items, 0) && 'I_D ' + iv(items, 0), 'start', 'vl'); s.text(262, 138, 'R_DS(on) ' + nz(iv(items, 2), sv(G, 'rds', 'Ω')), 'start', 'vl'); s.text(262, 152, iv(items, 1) && 'V_DS ' + iv(items, 1), 'start', 'vl'); }
   s.term(14, 130, 'Vdrv', 'l', sw ? sv(G, 'vgs', 'V') && '' : sv(G, 'vd', 'V')); s.wire([14, 130], [50, 130]); s.part('R', 80, 130, 0, 'Rg', sw ? '' : nz(iv(items, 1), iv(items, 0))); s.wire([110, 130], [170, 130]); s.dot(140, 130);
-  s.wire([140, 130], [140, 150]); s.part('R', 140, 180, 90, 'Rgs', '10–100 kΩ'); s.gnd(140, 210);
+  s.wire([140, 130], [140, 150]); s.part('R', 140, 180, 90, 'Rgs', '10–100k'); s.gnd(140, 210);
   if (!sw) s.text(226, 92, iv(items, 2) && 'I_g(pk) ' + iv(items, 2), 'start', 'vl');
   return s.svg;
 };
@@ -160,19 +161,19 @@ const schMosHigh = (kind) => (G, items) => {
   s.wire([140, 30], [250, 30]); s.term(250, 30, 'Vdd', 'r', sw ? sv(G, 'vdd', 'V') : '');
   const m = s.mos(170, 110, true, true, 'P-MOS'); s.wire([210, 30], m.top); s.dot(210, 30); s.wire(m.bot, [210, 150]); s.part('R', 210, 180, 90, tt('Yük', 'Load'), sw ? sv(G, 'rl', 'Ω') : ''); s.gnd(210, 210);
   if (sw) { s.text(226, 166, iv(items, 0) && 'I_D ' + iv(items, 0), 'start', 'vl'); s.text(262, 104, 'R_DS(on) ' + nz(iv(items, 2), sv(G, 'rds', 'Ω')), 'start', 'vl'); s.text(262, 118, iv(items, 1) && '|V_DS| ' + iv(items, 1), 'start', 'vl'); }
-  s.term(14, 110, 'Vdrv', 'l', sw ? '' : sv(G, 'vd', 'V')); s.wire([14, 110], [50, 110]); s.part('R', 80, 110, 0, 'Rg', sw ? '' : nz(iv(items, 1), iv(items, 0))); s.wire([110, 110], [170, 110]); s.dot(140, 110);
-  s.wire([140, 30], [140, 50]); s.part('R', 140, 80, 90, 'Rgs', '10–100 kΩ'); s.dot(140, 30);
+  s.term(14, 110, 'Vdrv', 'l', sw ? '' : sv(G, 'vd', 'V')); s.wire([14, 110], [40, 110]); s.part('R', 70, 110, 0, 'Rg', sw ? '' : nz(iv(items, 1), iv(items, 0))); s.wire([100, 110], [170, 110]); s.dot(140, 110);
+  s.wire([140, 30], [140, 50]); s.part('R', 140, 80, 90, 'Rgs', '10–100k', true); s.dot(140, 30);
   if (!sw) s.text(226, 166, iv(items, 2) && 'I_g(pk) ' + iv(items, 2), 'start', 'vl');
   s.text(0, 246, tt('Yüksek taraf: gate aşağı çekilince iletir, Rgs beslemeye çeker (kapalı)', 'High-side: conducts when the gate is pulled low; Rgs pulls it to the supply (off)'), 'start', 'vl');
   return s.svg;
 };
 function schRevPol(G, items) {
-  const s = newSch(300, 260);
+  const s = newSch(300, 272);
   s.term(210, 24, 'Vbat', null, sv(G, 'vb', 'V')); const m = s.mos(170, 130, true, false, 'P-MOS'); s.wire([210, 24], m.top);
   s.text(262, 138, 'R_DS(on) ' + sv(G, 'rds', 'Ω'), 'start', 'vl'); s.text(262, 152, iv(items, 0) && tt('düşüm ', 'drop ') + iv(items, 0), 'start', 'vl');
   s.wire(m.bot, [210, 170]); s.part('R', 210, 200, 90, tt('Yük', 'Load'), sv(G, 'i', 'A')); s.gnd(210, 230);
   s.wire([170, 130], [140, 130]); s.dot(140, 130); s.wire([140, 130], [140, 150]); s.part('R', 140, 180, 90, 'Rg', '100 kΩ'); s.gnd(140, 210);
-  s.text(0, 252, tt('Drain batarya tarafında, source yük tarafında; gate GND\'ye çekilir', 'Drain on the battery side, source on the load side; gate pulled to GND'), 'start', 'vl');
+  s.text(0, 266, tt('Drain batarya tarafında, source yük tarafında; gate GND\'ye çekilir', 'Drain on the battery side, source on the load side; gate pulled to GND'), 'start', 'vl');
   return s.svg;
 }
 
@@ -185,17 +186,17 @@ function schLed(G, items) {
   return s.svg;
 }
 function schZener(G, items) {
-  const s = newSch(320, 175), range = sv(G, 'vmin', 'V') && sv(G, 'vmax', 'V') ? sv(G, 'vmin', 'V') + ' … ' + sv(G, 'vmax', 'V') : '';
-  s.term(14, 50, 'Vin', 'l', range); s.wire([14, 50], [50, 50]); s.part('R', 80, 50, 0, 'Rs', iv(items, 1)); s.wire([110, 50], [250, 50]); s.dot(150, 50); s.wire([150, 50], [150, 70]); s.part('Z', 150, 100, 90, 'Dz', sv(G, 'vz', 'V')); s.wire([150, 130], [150, 140]); s.gnd(150, 140);
+  const s = newSch(320, 190), range = sv(G, 'vmin', 'V') && sv(G, 'vmax', 'V') ? sv(G, 'vmin', 'V') + ' … ' + sv(G, 'vmax', 'V') : '';
+  s.term(14, 50, 'Vin', 'l', range); s.wire([14, 50], [50, 50]); s.part('R', 80, 50, 0, 'Rs', iv(items, 1)); s.wire([110, 50], [250, 50]); s.dot(150, 50); s.wire([150, 50], [150, 70]); s.part('Z', 150, 100, -90, 'Dz', sv(G, 'vz', 'V')); s.wire([150, 130], [150, 140]); s.gnd(150, 140);
   s.dot(220, 50); s.wire([220, 50], [220, 70]); s.part('R', 220, 100, 90, tt('Yük', 'Load'), sv(G, 'ilmax', 'A') && 'I_L ≤ ' + sv(G, 'ilmax', 'A')); s.wire([220, 130], [220, 140]); s.gnd(220, 140); s.term(250, 50, 'Vout', 'r', sv(G, 'vz', 'V'));
-  s.text(150, 158, iv(items, 2) && 'I_Z(max) ' + iv(items, 2), 'middle', 'vl');
+  s.text(150, 182, iv(items, 2) && 'I_Z(max) ' + iv(items, 2), 'middle', 'vl');
   return s.svg;
 }
 function schTvs(G, items) {
-  const s = newSch(300, 190);
-  s.wire([30, 60], [30, 71]); s.source(30, 85); s.wire([30, 99], [30, 150]); s.gnd(30, 150); s.text(48, 88, tt('Sürge', 'Surge'), 'start', 'nm'); s.text(48, 102, sv(G, 'vs', 'V'), 'start', 'vl');
-  s.wire([30, 60], [60, 60]); s.part('R', 90, 60, 0, 'Rs', sv(G, 'rs', 'Ω')); s.wire([120, 60], [215, 60]); s.dot(150, 60); s.wire([150, 60], [150, 70]); s.part('TVS', 150, 100, 90, 'TVS', sv(G, 'vbr', 'V') && 'V_BR ' + sv(G, 'vbr', 'V')); s.wire([150, 130], [150, 150]); s.dot(150, 150);
-  s.wire([215, 60], [215, 75]); s.box(190, 75, 60, 60, tt('Yük', 'Load')); s.wire([215, 135], [215, 150]); s.wire([30, 150], [215, 150]);
+  const s = newSch(340, 190);
+  s.wire([30, 60], [30, 71]); s.source(30, 85); s.wire([30, 99], [30, 150]); s.gnd(30, 150); s.text(10, 88, tt('Sürge', 'Surge'), 'end', 'nm'); s.text(10, 102, sv(G, 'vs', 'V'), 'end', 'vl');
+  s.wire([30, 60], [60, 60]); s.part('R', 90, 60, 0, 'Rs', sv(G, 'rs', 'Ω')); s.wire([120, 60], [265, 60]); s.dot(150, 60); s.wire([150, 60], [150, 70]); s.part('TVS', 150, 100, 90, 'TVS', sv(G, 'vbr', 'V') && 'V_BR ' + sv(G, 'vbr', 'V')); s.wire([150, 130], [150, 150]); s.dot(150, 150);
+  s.wire([265, 60], [265, 75]); s.box(240, 75, 60, 60, tt('Yük', 'Load')); s.wire([265, 135], [265, 150]); s.wire([30, 150], [265, 150]);
   s.text(150, 170, (iv(items, 0) && 'V_C ' + iv(items, 0)) + (iv(items, 1) ? '  ·  I_PP ' + iv(items, 1) : ''), 'middle', 'vl');
   return s.svg;
 }
@@ -207,9 +208,9 @@ function schDivider(G, items) {
 function schShunt(G, items) {
   const s = newSch(430, 200), rs = sv(G, 'r', 'Ω'), I = G.r('imax'), vsen = iv(items, 0);
   s.text(80, 14, tt('Düşük taraf algılama', 'Low-side sensing'), 'middle', 'nm'); s.term(80, 30, 'Vs', 'r'); s.wire([80, 30], [80, 50]); s.box(58, 50, 44, 44, tt('Yük', 'Load'), isFinite(I) ? I + ' A' : ''); s.wire([80, 94], [80, 110]); s.part('R', 80, 140, 90, 'Rs', rs); s.gnd(80, 170); s.dot(80, 110);
-  s.text(112, 150, vsen && 'Vsense ' + vsen, 'start', 'vl');
+  s.text(96, 106, vsen && 'Vsense ' + vsen, 'start', 'vl');
   s.text(320, 14, tt('Yüksek taraf algılama', 'High-side sensing'), 'middle', 'nm'); s.term(320, 30, 'Vs', 'r'); s.wire([320, 30], [320, 40]); s.part('R', 320, 70, 90, 'Rs', rs); s.wire([320, 100], [320, 115]); s.box(298, 115, 44, 44, tt('Yük', 'Load'), isFinite(I) ? I + ' A' : ''); s.wire([320, 159], [320, 170]); s.gnd(320, 170);
-  s.text(352, 82, vsen && 'Vsense ' + vsen, 'start', 'vl');
+  s.text(336, 112, vsen && 'Vsense ' + vsen, 'start', 'vl');
   return s.svg;
 }
 function schInrush(G, items) {
@@ -229,9 +230,9 @@ function schRc(G, items) {
   return s.svg;
 }
 function schHold(G, items) {
-  const s = newSch(300, 175);
-  s.term(14, 40, 'Vin', 'l', sv(G, 'v1', 'V')); s.wire([14, 40], [60, 40]); s.part('D', 90, 40, 0, 'D'); s.wire([120, 40], [230, 40]); s.dot(150, 40); s.wire([150, 40], [150, 55]); s.part('C', 150, 85, 90, 'C hold-up', iv(items, 0)); s.wire([150, 115], [150, 130]); s.wire([150, 130], [230, 130]); s.gnd(150, 130);
-  s.wire([230, 40], [230, 55]); s.box(205, 55, 50, 55, tt('Yük', 'Load'), sv(G, 'p', 'W')); s.wire([230, 110], [230, 130]);
+  const s = newSch(340, 175);
+  s.term(14, 40, 'Vin', 'l', sv(G, 'v1', 'V')); s.wire([14, 40], [60, 40]); s.part('D', 90, 40, 0, 'D'); s.wire([120, 40], [280, 40]); s.dot(150, 40); s.wire([150, 40], [150, 55]); s.part('C', 150, 85, 90, 'C hold-up', iv(items, 0)); s.wire([150, 115], [150, 130]); s.wire([150, 130], [280, 130]); s.gnd(150, 130);
+  s.wire([280, 40], [280, 55]); s.box(255, 55, 50, 55, tt('Yük', 'Load'), sv(G, 'p', 'W')); s.wire([280, 110], [280, 130]);
   s.text(150, 160, G.v('t') > 0 ? tt('Hold-up süresi ', 'Hold-up time ') + sv(G, 't', 's') + ' · V ≥ ' + sv(G, 'v2', 'V') : '', 'middle', 'vl');
   return s.svg;
 }
@@ -287,7 +288,7 @@ function schOpCmp(G, items) {
   return s.svg;
 }
 function schOpSchmitt(G, items) {
-  const non = G.s('tp') !== 'inv', s = newSch(380, 240), th = iv(items, 1) && iv(items, 2) ? tt('Eşikler: ', 'Thresholds: ') + iv(items, 2) + ' / ' + iv(items, 1) : '';
+  const non = G.s('tp') !== 'inv', s = newSch(380, non ? 240 : 275), th = iv(items, 1) && iv(items, 2) ? tt('Eşikler: ', 'Thresholds: ') + iv(items, 2) + ' / ' + iv(items, 1) : '';
   if (non) {
     const oa = s.opamp(230, 116, true);
     s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('R', 70, 100, 0, 'R1', sv(G, 'r1', 'Ω')); s.wire([100, 100], [230, 100]); s.dot(130, 100);
@@ -299,16 +300,16 @@ function schOpSchmitt(G, items) {
     s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [230, 100]);
     s.wire(oa.plus, [200, 132]); s.dot(200, 132); s.wire([200, 132], [150, 132]); s.part('R', 150, 162, 90, 'R1', sv(G, 'r1', 'Ω')); s.wire([150, 192], [150, 198]); s.term(150, 198, 'Vref', 'l', sv(G, 'vref', 'V'));
     s.wire(oa.out, [320, 116]); s.dot(320, 116); s.wire([320, 116], [320, 200], [280, 200]); s.part('R', 250, 200, 0, 'R2', sv(G, 'r2', 'Ω')); s.wire([220, 200], [200, 200], [200, 132]); s.wire([320, 116], [350, 116]); s.term(350, 116, 'Vout', 'r');
-    s.text(0, 232, tt('Evirici Schmitt: giriş − uçta, R1/R2 bölücüsü + uçta', 'Inverting Schmitt: input on the − input, R1/R2 divider on the + input'), 'start', 'vl'); s.text(0, 246, th, 'start', 'nm');
+    s.text(0, 252, tt('Evirici Schmitt: giriş − uçta, R1/R2 bölücüsü + uçta', 'Inverting Schmitt: input on the − input, R1/R2 divider on the + input'), 'start', 'vl'); s.text(0, 268, th, 'start', 'nm');
   }
   return s.svg;
 }
 function schOpSum(G, items) {
-  const s = newSch(380, 200), oa = s.opamp(230, 116, false);
-  [['V1', 40, 'v1', 'r1'], ['V2', 80, 'v2', 'r2'], ['V3', 120, 'v3', 'r3']].forEach(([n, y, vid, id]) => { s.term(14, y, n, 'l', sv(G, vid, 'V')); s.wire([14, y], [40, y]); s.part('R', 70, y, 0, id.toUpperCase(), sv(G, id, 'Ω')); s.wire([100, y], [140, y]); });
-  s.wire([140, 20], [140, 120]); s.wire([140, 100], [230, 100]); s.dot(140, 100);
-  s.wire([140, 20], [180, 20]); s.part('R', 210, 20, 0, 'Rf', sv(G, 'rf', 'Ω')); s.wire([240, 20], [340, 20], [340, 116]); s.wire(oa.out, [340, 116]); s.dot(340, 116); s.wire([340, 116], [366, 116]); s.term(366, 116, 'Vout', 'r', iv(items, 0));
-  s.wire(oa.plus, [210, oa.plus[1]], [210, 168]); s.gnd(210, 168);
+  const s = newSch(380, 250), oa = s.opamp(230, 136, false);
+  [['V1', 90, 'v1', 'r1'], ['V2', 150, 'v2', 'r2'], ['V3', 210, 'v3', 'r3']].forEach(([n, y, vid, id]) => { s.term(14, y, n, 'l', sv(G, vid, 'V')); s.wire([14, y], [40, y]); s.part('R', 70, y, 0, id.toUpperCase(), sv(G, id, 'Ω')); s.wire([100, y], [140, y]); });
+  s.wire([140, 30], [140, 210]); s.wire([140, 120], [230, 120]); s.dot(140, 120); s.dot(140, 150); s.dot(140, 90);
+  s.wire([140, 30], [180, 30]); s.part('R', 210, 30, 0, 'Rf', sv(G, 'rf', 'Ω')); s.wire([240, 30], [340, 30], [340, 136]); s.wire(oa.out, [340, 136]); s.dot(340, 136); s.wire([340, 136], [366, 136]); s.term(366, 136, 'Vout', 'r', iv(items, 0));
+  s.wire(oa.plus, [210, oa.plus[1]], [210, 188]); s.gnd(210, 188);
   return s.svg;
 }
 function schOpDiff(G, items) {
@@ -344,32 +345,32 @@ function schOpSk(G, items) {
   const lp = G.s('__kind') !== 'hp', s = newSch(430, 290), oa = s.opamp(260, 116, true), ox = 370;
   const a = lp ? ['R', 'R1', sv(G, 'r1', 'Ω')] : ['C', 'C1', sv(G, 'c1', 'F')], b = lp ? ['R', 'R2', sv(G, 'r2', 'Ω')] : ['C', 'C2', sv(G, 'c2', 'F')];
   const fb = lp ? ['C', 'C1', sv(G, 'c1', 'F')] : ['R', 'R1', sv(G, 'r1', 'Ω')], gnd = lp ? ['C', 'C2', sv(G, 'c2', 'F')] : ['R', 'R2', sv(G, 'r2', 'Ω')];
-  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part(a[0], 70, 100, 0, a[1], a[2]); s.wire([100, 100], [110, 100]); s.dot(110, 100); s.part(b[0], 140, 100, 0, b[1], b[2]); s.wire([170, 100], [260, 100]); s.dot(200, 100);
-  s.wire([200, 100], [200, 130]); s.part(gnd[0], 200, 160, 90, gnd[1], gnd[2]); s.gnd(200, 190);
+  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part(a[0], 70, 100, 0, a[1], a[2]); s.wire([100, 100], [110, 100]); s.dot(110, 100); s.part(b[0], 140, 100, 0, b[1], b[2]); s.wire([170, 100], [260, 100]); s.dot(190, 100);
+  s.wire([190, 100], [190, 130]); s.part(gnd[0], 190, 160, 90, gnd[1], gnd[2]); s.gnd(190, 190);
   s.wire([110, 100], [110, 40], [150, 40]); s.part(fb[0], 180, 40, 0, fb[1], fb[2]); s.wire([210, 40], [ox, 40], [ox, 116]);
-  s.wire(oa.minus, [230, 132], [230, 190], [ox, 190], [ox, 116]); s.wire(oa.out, [ox, 116]); s.dot(ox, 116); s.wire([ox, 116], [400, 116]); s.term(400, 116, 'Vout', 'r', iv(items, 0) && 'f_c = ' + iv(items, 0));
+  s.wire(oa.minus, [252, 132], [252, 200], [ox, 200], [ox, 116]); s.wire(oa.out, [ox, 116]); s.dot(ox, 116); s.wire([ox, 116], [400, 116]); s.term(400, 116, 'Vout', 'r', iv(items, 0) && 'f_c = ' + iv(items, 0));
   s.text(300, 80, iv(items, 1) && 'Q = ' + iv(items, 1), 'middle', 'nm');
   schExStrip(s, 240, 430);
   return s.svg;
 }
 function schOpLp(G, items) {
   const s = newSch(380, 290), b = schOpBuf(s, 210, 116); schExStrip(s, 240, 380);
-  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('R', 70, 100, 0, 'R', sv(G, 'r', 'Ω')); s.wire([100, 100], [210, 100]); s.dot(140, 100);
-  s.wire([140, 100], [140, 130]); s.part('C', 140, 160, 90, 'C', sv(G, 'c', 'F')); s.gnd(140, 190);
+  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('R', 70, 100, 0, 'R', sv(G, 'r', 'Ω')); s.wire([100, 100], [210, 100]); s.dot(110, 100);
+  s.wire([110, 100], [110, 130]); s.part('C', 110, 160, 90, 'C', sv(G, 'c', 'F')); s.gnd(110, 190);
   s.wire([b.ox, 116], [350, 116]); s.term(350, 116, 'Vout', 'r', iv(items, 0) && 'f_c = ' + iv(items, 0));
   return s.svg;
 }
 function schOpHp(G, items) {
   const s = newSch(380, 290), b = schOpBuf(s, 210, 116); schExStrip(s, 240, 380);
-  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('C', 70, 100, 0, 'C', sv(G, 'c', 'F')); s.wire([100, 100], [210, 100]); s.dot(140, 100);
-  s.wire([140, 100], [140, 130]); s.part('R', 140, 160, 90, 'R', sv(G, 'r', 'Ω')); s.gnd(140, 190);
+  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('C', 70, 100, 0, 'C', sv(G, 'c', 'F')); s.wire([100, 100], [210, 100]); s.dot(110, 100);
+  s.wire([110, 100], [110, 130]); s.part('R', 110, 160, 90, 'R', sv(G, 'r', 'Ω')); s.gnd(110, 190);
   s.wire([b.ox, 116], [350, 116]); s.term(350, 116, 'Vout', 'r', iv(items, 0) && 'f_c = ' + iv(items, 0));
   return s.svg;
 }
 function schOpBp(G, items) {
   const s = newSch(520, 290), b = schOpBuf(s, 210, 116); schExStrip(s, 240, 520);
-  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('C', 70, 100, 0, 'C1', sv(G, 'c1', 'F')); s.wire([100, 100], [210, 100]); s.dot(140, 100);
-  s.wire([140, 100], [140, 130]); s.part('R', 140, 160, 90, 'R1', sv(G, 'r1', 'Ω')); s.gnd(140, 190);
+  s.term(14, 100, 'Vin', 'l'); s.wire([14, 100], [40, 100]); s.part('C', 70, 100, 0, 'C1', sv(G, 'c1', 'F')); s.wire([100, 100], [210, 100]); s.dot(110, 100);
+  s.wire([110, 100], [110, 130]); s.part('R', 110, 160, 90, 'R1', sv(G, 'r1', 'Ω')); s.gnd(110, 190);
   s.part('R', b.ox + 30 + 20, 116, 0, 'R2', sv(G, 'r2', 'Ω')); s.wire([b.ox, 116], [b.ox + 20, 116]); const nx = b.ox + 80; s.wire([nx, 116], [nx + 20, 116]); s.dot(nx + 20, 116);
   s.wire([nx + 20, 116], [nx + 20, 130]); s.part('C', nx + 20, 160, 90, 'C2', sv(G, 'c2', 'F')); s.gnd(nx + 20, 190);
   s.wire([nx + 20, 116], [nx + 60, 116]); s.term(nx + 60, 116, 'Vout', 'r', iv(items, 0) && 'f_0 = ' + iv(items, 0));
@@ -713,3 +714,92 @@ function simBjtPd(pnp, G) { // V_CE and I_C set by the collector rail and a 10 �
   L.push(SIM.sc(1, vcc, 1)); return L.join('\n');
 }
 Object.assign(SIM_MAP, SIM_REST);
+
+/* ---- CircuitJS text → LTspice schematic (.asc) ----
+   The CircuitJS geometry is kept and scaled ×2 (both use a 16-unit grid), wires stay wires, every part becomes the stock
+   LTspice symbol. Pin offsets are those of LTspice's lib/sym/*.asy at R0. Orientation: R90 (x,y)→(−y,x), R180 (−x,−y),
+   R270 (y,−x), M180 (x,−y). The op-amp is an ideal behavioural source (bv) drawn inside a triangle, joined by net labels. */
+const ASC_SYM = {   // [symbol, pin1 (R0), pin2 (R0), instance prefix]
+  r: ['res', [16, 16], [16, 96], 'R'], c: ['cap', [16, 0], [16, 64], 'C'], l: ['ind', [16, 16], [16, 96], 'L'],
+  d: ['diode', [16, 0], [16, 64], 'D'], 162: ['LED', [16, 0], [16, 64], 'D'], z: ['zener', [16, 0], [16, 64], 'D'],
+  v: ['voltage', [0, 16], [0, 96], 'V'], i: ['current', [0, 0], [0, 80], 'I'], bv: ['bv', [0, 16], [0, 96], 'B'],
+};
+const ASC_ROT = { R0: ([x, y]) => [x, y], R90: ([x, y]) => [-y, x], R180: ([x, y]) => [-x, -y], R270: ([x, y]) => [y, -x], M180: ([x, y]) => [x, -y] };
+function cjsToAsc(text, title) {
+  const ascii = (t) => String(t).normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/µ/g, 'u').replace(/Ω/g, 'Ohm').replace(/[^\x20-\x7e]/g, '');
+  const f = (v) => { const x = Number(v); return Number.isFinite(x) ? String(Number(x.toPrecision(6))) : v; };
+  const els = text.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => l.split(/\s+/));
+  const out = [], cnt = {}, models = {}, K = 2, P = (v) => Number(v) * K;
+  const id = (p) => p + (cnt[p] = (cnt[p] || 0) + 1);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const seen = (x, y) => { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); };
+  const wire = (a, b) => { if (a[0] === b[0] && a[1] === b[1]) return; out.push('WIRE ' + a[0] + ' ' + a[1] + ' ' + b[0] + ' ' + b[1]); seen(...a); seen(...b); };
+  const flag = (p, name) => { out.push('FLAG ' + p[0] + ' ' + p[1] + ' ' + name); seen(...p); };
+  const symbol = (sym, org, rot, name, value) => { out.push('SYMBOL ' + sym + ' ' + org[0] + ' ' + org[1] + ' ' + rot, 'SYMATTR InstName ' + name); if (value != null) out.push('SYMATTR Value ' + value); seen(...org); };
+  // two-terminal part between A (pin1 side) and B, centred on the segment, joined to both ends with wires
+  const two = (kind, A, B, value, name) => {
+    const [sym, p1, p2, pre] = ASC_SYM[kind], dx = Math.sign(B[0] - A[0]), dy = Math.sign(B[1] - A[1]);
+    const rot = dy > 0 ? 'R0' : dy < 0 ? 'R180' : dx < 0 ? 'R90' : 'R270', T = ASC_ROT[rot], q1 = T(p1), q2 = T(p2);
+    const M = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2], org = [M[0] - (q1[0] + q2[0]) / 2, M[1] - (q1[1] + q2[1]) / 2];
+    const pin1 = [org[0] + q1[0], org[1] + q1[1]], pin2 = [org[0] + q2[0], org[1] + q2[1]];
+    symbol(sym, org, rot, name || id(pre), value); wire(A, pin1); wire(pin2, B); return { pin1, pin2 };
+  };
+  const dirOf = (t) => { const dx = Math.sign(Number(t[3]) - Number(t[1])), dy = Math.sign(Number(t[4]) - Number(t[2])); return [dx, dy]; };
+  const source = (t, value) => { // rail / sweep: + on the node, − on ground, laid out in the CircuitJS direction
+    const A = [P(t[1]), P(t[2])], [dx, dy] = dirOf(t), B = [A[0] + dx * 80, A[1] + dy * 80];
+    const r = two('v', A, B, value); flag(r.pin2, '0');
+  };
+  const par = {}, fnd = (q) => { while (par[q] !== undefined && par[q] !== q) q = par[q]; return q; }, key = (x, y) => x + ',' + y;
+  for (const t of els) if (t[0] === 'w') { const a = fnd(key(t[1], t[2])), b = fnd(key(t[3], t[4])); if (a !== b) par[a] = b; }
+  const gset = new Set(els.filter((t) => t[0] === 'g').map((t) => fnd(key(t[1], t[2]))));
+  const onGnd = (x, y) => gset.has(fnd(key(x, y)));
+  let opn = 0, outn = 0, dt = 1e-6;
+  const vt = 0.02585, isFor = (vf, n) => f(0.01 / Math.exp(vf / (n * vt)));
+  for (const t of els) {
+    const k = t[0], A = () => [P(t[1]), P(t[2])], B = () => [P(t[3]), P(t[4])];
+    if (k === '$') dt = Number(t[2]) || dt;
+    else if (k === 'w') wire(A(), B());
+    else if (k === 'g') flag(A(), '0');
+    else if (k === 'O') flag(A(), outn++ ? 'out' + outn : 'out');
+    else if (k === 'o') continue;
+    else if (k === 'r' || k === 'c' || k === 'l') two(k, A(), B(), f(t[6]));
+    else if (k === 'd' || k === '162') { const vf = Number(t[6]) || 0.7, m = (k === '162' ? 'DLED' : 'DF') + f(vf).replace('.', 'p'); models[m] = '.model ' + m + ' D(Is=' + isFor(vf, 1.5) + ' N=1.5)'; two(k, A(), B(), m); }
+    else if (k === 'z') { const vz = Number(t[7]) || 5.1, m = 'DZ' + f(vz).replace('.', 'p'); models[m] = '.model ' + m + ' D(Is=1e-14 N=1.2 BV=' + f(vz) + ' Ibv=5m)'; two('z', A(), B(), m); }
+    else if (k === 'i') two('i', A(), B(), f(t[6]));
+    else if (k === 'R') source(t, f(t[8]));
+    else if (k === '170') source(t, 'AC 1');
+    else if (k === 'v') { // CircuitJS: point2 is +
+      const wf = Number(t[6]), fr = Number(t[7]), amp = Number(t[8]), bias = Number(t[9]) || 0, duty = Number(t[11]) || 0.5, per = 1 / fr, edge = Math.min(10e-9, per / 1000);
+      const spec = wf === 1 ? 'SIN(' + f(bias) + ' ' + f(amp) + ' ' + f(fr) + ')' : wf === 3 ? 'PULSE(' + f(bias - amp) + ' ' + f(bias + amp) + ' 0 ' + f(per / 2) + ' ' + f(per / 2) + ' 1n ' + f(per) + ')'
+        : 'PULSE(' + f(bias - amp) + ' ' + f(bias + amp) + ' 0 ' + f(edge) + ' ' + f(edge) + ' ' + f(duty * per) + ' ' + f(per) + ')';
+      two('v', B(), A(), spec);
+    } else if (k === 't') { // base at point1; NPN collector above, PNP emitter above (LTspice pnp has C on top → mirrored)
+      const pnp = Number(t[6]) < 0, X = P(t[3]), Y = P(t[4]), m = pnp ? 'QP' : 'QN';
+      models[m] = '.model ' + m + ' ' + (pnp ? 'PNP' : 'NPN') + '(BF=' + f(t[9] || 100) + ' IS=1e-14)';
+      if (!pnp) { symbol('npn', [X - 64, Y - 48], 'R0', id('Q'), m); } else symbol('pnp', [X - 64, Y + 48], 'M180', id('Q'), m);
+      wire([X, Y - 32], [X, Y - 48]); wire([X, Y + 32], [X, Y + 48]); wire(A(), [X - 64, Y]);
+    } else if (k === 'f') { // gate at point1; N: drain on top; P (flag 1): source on top; flag 8 swaps
+      const fl = Number(t[5]), p = !!(fl & 1), flip = !!(fl & 8), X = P(t[3]), Y = P(t[4]), sTop = p !== flip;   // LTspice R0: drain on top
+      const m = (p ? 'MP' : 'MN') + f(t[6]).replace('.', 'p').replace('-', 'm');
+      models[m] = '.model ' + m + ' ' + (p ? 'PMOS' : 'NMOS') + '(VTO=' + f(p ? -Math.abs(Number(t[6])) : t[6]) + ' KP=' + f(t[7] || 0.02) + ' LAMBDA=0.01)';
+      if (!sTop) symbol(p ? 'pmos' : 'nmos', [X - 48, Y - 48], 'R0', id('M'), m); else symbol(p ? 'pmos' : 'nmos', [X - 48, Y + 48], 'M180', id('M'), m);
+      const gy = sTop ? Y - 32 : Y + 32;
+      wire([X, Y - 32], [X, Y - 48]); wire([X, Y + 32], [X, Y + 48]); wire(A(), [X - 48, Y]); wire([X - 48, Y], [X - 48, gy]);
+    } else if (k === 'a') { // ideal op-amp: labelled inputs/output, bv inside a drawn triangle
+      const x1 = P(t[1]), y1 = P(t[2]), x2 = P(t[3]), plusTop = Number(t[5]) & 1, n = ++opn, cy1 = Number(t[2]), cx1 = Number(t[1]);
+      const gp = onGnd(cx1, plusTop ? cy1 - 16 : cy1 + 16), gn = onGnd(cx1, plusTop ? cy1 + 16 : cy1 - 16), np = gp ? '0' : 'op' + n + '_p', nm = gn ? '0' : 'op' + n + '_n', no = 'op' + n + '_o';
+      if (!gp) flag([x1, plusTop ? y1 - 32 : y1 + 32], np); if (!gn) flag([x1, plusTop ? y1 + 32 : y1 - 32], nm); flag([x2, y1], no);
+      out.push('LINE Normal ' + x1 + ' ' + (y1 - 64) + ' ' + x1 + ' ' + (y1 + 64), 'LINE Normal ' + x1 + ' ' + (y1 - 64) + ' ' + x2 + ' ' + y1, 'LINE Normal ' + x1 + ' ' + (y1 + 64) + ' ' + x2 + ' ' + y1);
+      out.push('TEXT ' + (x1 + 6) + ' ' + (plusTop ? y1 - 32 : y1 + 32) + ' Left 2 ;+', 'TEXT ' + (x1 + 6) + ' ' + (plusTop ? y1 + 32 : y1 - 32) + ' Left 2 ;-');
+      const cx = Math.round((x1 + x2) / 2 / 16) * 16 - 16, org = [cx, y1 - 56];
+      symbol('bv', org, 'R0', id('B'), 'V=limit(' + f(t[8] || 1e6) + '*(V(' + np + ')-V(' + nm + ')),' + f(t[7]) + ',' + f(t[6]) + ')');
+      flag([cx, y1 - 40], no); flag([cx, y1 + 40], '0');
+    }
+  }
+  // directives: analysis from the SPICE converter (same rules), models collected above
+  const dirs = cjsToSpice(text, title).split('\n').filter((l) => /^\.(tran|ac|op)\b/.test(l));
+  const y0 = (isFinite(maxY) ? maxY : 0) + 64, x0 = isFinite(minX) ? minX : 0;
+  out.push('TEXT ' + x0 + ' ' + y0 + ' Left 2 ;' + ascii(title) + ' - Elektronik Araclar / Components');
+  [...dirs, ...Object.values(models)].forEach((d, i) => out.push('TEXT ' + x0 + ' ' + (y0 + 32 * (i + 1)) + ' Left 2 !' + d));
+  return ['Version 4', 'SHEET 1 ' + Math.max(880, (isFinite(maxX) ? maxX : 0) + 200) + ' ' + Math.max(680, y0 + 64 + 32 * dirs.length), ...out].join('\r\n') + '\r\n';
+}

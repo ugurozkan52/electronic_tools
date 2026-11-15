@@ -60,6 +60,7 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 56px}
 .tab:hover{color:var(--ink)}
 .tab[aria-selected=true]{background:var(--c);color:var(--c-ink)}
 .tab:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+.subparts{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.subparts[hidden]{display:none}.part.sub{font-size:12.5px;padding:6px 14px}.part.sub[aria-selected=true]{background:var(--c-bg);border-color:var(--c);color:var(--ink)}
 .cgrp{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
 .cg{border:1.5px solid var(--line);background:var(--line2);color:var(--ink);border-radius:9px;padding:10px 20px;cursor:pointer;font-weight:700;font-size:14px}
 .cg:hover{border-color:var(--c)}
@@ -149,6 +150,7 @@ svg.sch .vl{fill:var(--mute);font-size:11px}
     <h1 id="pageTitle"></h1>
     <p id="pageSub"></p>
     <div class="parts" id="parts" aria-label="Components"></div>
+    <div class="parts subparts" id="subparts" role="tablist" hidden></div>
   </div>
 
   <div class="tabs" role="tablist" id="tabs"></div>
@@ -213,7 +215,7 @@ function applyLang() {
   $('#lTR').setAttribute('aria-pressed', LANG === 'tr' ? 'true' : 'false'); $('#lEN').setAttribute('aria-pressed', LANG === 'en' ? 'true' : 'false');
   const C = CMP[cur];
   if (C) { $('#pageTitle').textContent = tt(...C.title); $('#pageSub').textContent = tt(...C.sub); document.title = 'Components · ' + tt(...C.name); }
-  document.querySelectorAll('.part:not(.soon)').forEach((b) => { b.textContent = tt(...CMP[b.dataset.comp].name); });
+  document.querySelectorAll('.part[data-comp]').forEach((b) => { b.textContent = tt(...(b.dataset.group ? PARENT_NAME[b.dataset.group] : CMP[b.dataset.comp].name)); });
   recalcAll();
 }
 function setLang(l) { LANG = l; try { localStorage.setItem('et-lang', l); } catch (e) { /* ignore */ } applyLang(); }
@@ -279,10 +281,11 @@ function showTab(id) {
 }
 function buildParts() {
   const box = $('#parts'); box.innerHTML = '';
+  const groups = {};   // components with a parent (e.g. the sensors) share one part button and get a sub-row
   Object.keys(CMP).forEach((k) => {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.dataset.comp = k; b.onclick = () => selectComp(k); box.appendChild(b);
+    const par = CMP[k].parent; if (par) { if (groups[par]) return; groups[par] = k; }
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.dataset.comp = k; if (par) b.dataset.group = par; b.onclick = () => selectComp(par ? (lastChild[par] || k) : k); box.appendChild(b);
   });
-  [['Sensör', 'Sensor']].forEach(([a, b]) => { const s = document.createElement('span'); s.className = 'part soon'; s.innerHTML = `${I(a, b)}<small data-tr="yakında" data-en="soon"></small>`; box.appendChild(s); });
 }
 function buildGuide(params) {
   $('#p-guide').innerHTML = `<div class="card"><h2>${I('Parametre rehberi', 'Parameter guide')}</h2><p class="sub">${I('Her parametre ne anlama gelir', 'What each parameter means')}</p>
@@ -329,7 +332,7 @@ function buildCalcs(calcs) {
   const inGrp = groups ? calcs.filter((c) => c.group === sel) : calcs, pick = groups ? (inGrp.some((c) => c.id === calcPick[cur + '|' + sel]) ? calcPick[cur + '|' + sel] : (inGrp[0] || {}).id) : null;
   const sub = groups ? `<div class="cpick" role="tablist" aria-label="${esc(tt('Uygulama', 'Application'))}">${inGrp.map((c) => `<button type="button" class="cp" role="tab" data-c="${c.id}" aria-selected="${c.id === pick}">${I(...c.title)}</button>`).join('')}</div>` : '';
   const head = groups ? `<div class="cgrp" role="tablist" aria-label="${esc(tt('Hesaplayıcı grubu', 'Calculator group'))}">${groups.map(([g, tr, en]) => `<button type="button" class="cg" role="tab" data-g="${g}" aria-selected="${g === sel}">${I(tr, en)}</button>`).join('')}</div>${(() => { const d = groups.find((x) => x[0] === sel); return d && d[3] ? `<p class="sub cgdesc">${I(d[3], d[4])}</p>` : ''; })()}${sub}` : '';
-  $('#p-calc').innerHTML = head + `<div class="grid${groups ? ' one' : ''}">${calcs.map((c) => `<div class="card" id="c_${c.id}"${groups && c.id !== pick ? ' hidden' : ''}><h2>${I(...c.title)}</h2><p class="sub">${I(...c.sub)}</p><div class="two">${c.fields.map((f) => fieldHTML(c.id, f)).join('')}</div><div class="res" id="o_${c.id}"></div>${exHTML(c)}<div class="sch-wrap" id="s_${c.id}" hidden></div><div class="plot-wrap" id="pl_${c.id}" hidden></div><div class="simrow" id="sim_${c.id}" hidden><button type="button" class="btn primary" data-sim="${c.id}" title="${esc(tt('Bu devreyi CircuitJS simülasyonunda yeni sekmede açar', 'Opens this circuit in the CircuitJS simulation in a new tab'))}">${I('Simülasyonda aç ↗', 'Open in simulation ↗')}</button><button type="button" class="btn spice" data-spice="${c.id}" title="${esc(tt('Devreyi SPICE netlist (.cir) olarak indirir; LTspice ile açıp çalıştırın', 'Downloads the circuit as a SPICE netlist (.cir); open and run it in LTspice'))}">${I('LTspice (.cir indir)', 'LTspice (download .cir)')}</button><span class="hint" id="simmsg_${c.id}"></span></div>${c.note ? `<p class="note">${I(...c.note)}</p>` : ''}</div>`).join('')}</div>`;
+  $('#p-calc').innerHTML = head + `<div class="grid${groups ? ' one' : ''}">${calcs.map((c) => `<div class="card" id="c_${c.id}"${groups && c.id !== pick ? ' hidden' : ''}><h2>${I(...c.title)}</h2><p class="sub">${I(...c.sub)}</p><div class="two">${c.fields.map((f) => fieldHTML(c.id, f)).join('')}</div><div class="res" id="o_${c.id}"></div>${exHTML(c)}<div class="sch-wrap" id="s_${c.id}" hidden></div><div class="plot-wrap" id="pl_${c.id}" hidden></div><div class="simrow" id="sim_${c.id}" hidden><button type="button" class="btn primary" data-sim="${c.id}" title="${esc(tt('Bu devreyi CircuitJS simülasyonunda yeni sekmede açar', 'Opens this circuit in the CircuitJS simulation in a new tab'))}">${I('Simülasyonda aç ↗', 'Open in simulation ↗')}</button><button type="button" class="btn spice" data-spice="${c.id}" title="${esc(tt('Devreyi LTspice şematiği (.asc) olarak indirir; LTspice ile açıp Run ile çalıştırın', 'Downloads the circuit as an LTspice schematic (.asc); open it in LTspice and press Run'))}">${I('LTspice şematiği (.asc)', 'LTspice schematic (.asc)')}</button><span class="hint" id="simmsg_${c.id}"></span></div>${c.note ? `<p class="note">${I(...c.note)}</p>` : ''}</div>`).join('')}</div>`;
   if (groups) {
     $('#p-calc').querySelectorAll('.cg').forEach((b) => { b.onclick = () => { calcGroup[cur] = b.dataset.g; buildCalcs(calcs); applyLang(); recalcAll(); }; });
     $('#p-calc').querySelectorAll('.cp').forEach((b) => { b.onclick = () => { calcPick[cur + '|' + sel] = b.dataset.c; buildCalcs(calcs); applyLang(); recalcAll(); }; });
@@ -343,9 +346,12 @@ function recalcAll() {
     const sf = SCH_MAP[cur + "." + c.id], sb = $("#s_" + c.id); if (sb) { if (sf) { try { sb.replaceChildren(sf(getter(c.id), items)); sb.hidden = false; } catch (e) { sb.hidden = true; } } else sb.hidden = true; } }
   runWiz();
 }
+const PARENT_NAME = { sensor: ['Sensör', 'Sensor'] }, lastChild = {};
 function selectComp(k, keepTab) {
-  cur = k; const C = CMP[k];
-  document.querySelectorAll('.part:not(.soon)').forEach((b) => b.setAttribute('aria-pressed', b.dataset.comp === k ? 'true' : 'false'));
+  cur = k; const C = CMP[k], par = C.parent; if (par) lastChild[par] = k;
+  document.querySelectorAll('.part[data-comp]').forEach((b) => b.setAttribute('aria-pressed', (par ? b.dataset.group === par : b.dataset.comp === k) ? 'true' : 'false'));
+  const sp = $('#subparts'); sp.hidden = !par;
+  if (par) { sp.innerHTML = Object.keys(CMP).filter((x) => CMP[x].parent === par).map((x) => `<button type="button" class="part sub" role="tab" data-sub="${x}" aria-selected="${x === k}">${I(...CMP[x].name)}</button>`).join(''); sp.querySelectorAll('[data-sub]').forEach((b) => { b.onclick = () => selectComp(b.dataset.sub); }); }
   buildGuide(C.params); buildTech(C.tech); buildWiz(C.wiz); buildCalcs(C.calcs);
   applyLang(); showTab(keepTab || curTab);
 }
@@ -358,6 +364,7 @@ function selectComp(k, keepTab) {
 <script src="transistor.js"></script>
 <script src="mosfet.js"></script>
 <script src="opamp.js"></script>
+<script src="sensor.js"></script>
 <script>
 /* ================================================================= boot */
 buildTabs(); buildParts();
@@ -373,7 +380,7 @@ $('#p-calc').addEventListener('click', (e) => {   // LTspice: convert the Circui
   const id = b.dataset.spice, fn = SIM_MAP[cur + '.' + id], msg = $('#simmsg_' + id), c = CMP[cur].calcs.find((x) => x.id === id);
   const say = (t) => { msg.textContent = t; setTimeout(() => { msg.textContent = ''; }, 4000); };
   if (!fn) return;
-  try { const txt = cjsToSpice(fn(getter(id)), tt(...c.title)); downloadText(cur + '-' + id + '.cir', txt); say(tt('İndirildi: LTspice’ta File → Open ile açın, Run ile çalıştırın.', 'Downloaded: open it in LTspice with File → Open and press Run.')); }
+  try { const txt = cjsToAsc(fn(getter(id)), tt(...c.title)); downloadText(cur + '-' + id + '.asc', txt); say(tt('İndirildi: LTspice’ta File → Open ile açın, Run ile çalıştırın.', 'Downloaded: open it in LTspice with File → Open and press Run.')); }
   catch (err) { say(tt('Netlist oluşturulamadı: ', 'Could not build the netlist: ') + err.message); }
 });
 $('#p-calc').addEventListener('click', (e) => {   // "open in simulation": build the CircuitJS text from the card's current values
