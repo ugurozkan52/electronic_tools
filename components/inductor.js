@@ -66,8 +66,15 @@ CMP.inductor = {
       return { main: R[0], why };
     },
   },
+  // calculators are shown in headed groups, one application at a time
+  calcGroups: [
+    ['smps', 'Güç dönüştürücü', 'Power converter', 'Buck/boost bobini seçimi, ripple akımı, doyma ve DCR ısınması.', 'Buck/boost inductor selection, ripple current, saturation and DCR heating.'],
+    ['design', 'Bobin tasarımı', 'Coil design', 'AL değerinden sarım sayısı ve doyma; hava çekirdekli bobin (Wheeler).', 'Turns from AL and saturation; air-core coil (Wheeler).'],
+    ['ac', 'Reaktans ve rezonans', 'Reactance and resonance', 'Enerji, reaktans, Q ve LC rezonans frekansı.', 'Energy, reactance, Q and LC resonant frequency.'],
+    ['val', 'Değer seçimi', 'Value selection', 'Hesaplanan değere en yakın standart (E-serisi) değer.', 'Nearest standard (E-series) value to the computed one.'],
+  ],
   calcs: [
-    { id: 'bb', title: ['Buck / boost bobini seçimi', 'Buck / boost inductor selection'], sub: ['L = (Vin − Vout)·D / (f·ΔI)', 'L = (Vin − Vout)·D / (f·ΔI)'],
+    { id: 'bb', group: 'smps', title: ['Buck / boost bobini seçimi', 'Buck / boost inductor selection'], sub: ['L = (Vin − Vout)·D / (f·ΔI)', 'L = (Vin − Vout)·D / (f·ΔI)'],
       fields: [
         { id: 'tp', tr: 'Topoloji', en: 'Topology', def: 'buck', sel: [['buck', 'Buck (düşüren)', 'Buck (step-down)'], ['boost', 'Boost (yükselten)', 'Boost (step-up)']] },
         { id: 'vin', tr: 'Giriş gerilimi', en: 'Input voltage', def: '12', u: 'V', ud: 1 }, { id: 'vo', tr: 'Çıkış gerilimi', en: 'Output voltage', def: '5', u: 'V', ud: 1 },
@@ -85,7 +92,7 @@ CMP.inductor = {
         const Ipk = Iavg + dI / 2, Irms = Math.sqrt(Iavg * Iavg + dI * dI / 12), e = nearestE(L, 'E12');
         return [[eng(L, 'H'), tt('Gereken endüktans', 'Required inductance'), 'big'], [eng(e.near, 'H'), tt('En yakın E12 değeri', 'Nearest E12 value')], [sig(D * 100, 3) + ' %', tt('Görev oranı D', 'Duty cycle D')], [eng(dI, 'A'), tt('Ripple akımı ΔI (p-p)', 'Ripple current ΔI (p-p)')], [eng(Ipk, 'A'), tt('Tepe akım', 'Peak current')], [eng(Irms, 'A'), tt('RMS akım', 'RMS current')], [eng(Ipk * 1.3, 'A'), tt('Önerilen min. I_sat (×1,3)', 'Suggested min. I_sat (×1.3)')]];
       } },
-    { id: 'en', title: ['Enerji, reaktans ve Q', 'Energy, reactance and Q'], sub: ['E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR', 'E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR'],
+    { id: 'en', group: 'ac', title: ['Enerji, reaktans ve Q', 'Energy, reactance and Q'], sub: ['E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR', 'E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR'],
       fields: [{ id: 'l', tr: 'Endüktans', en: 'Inductance', def: '10', u: 'L', ud: 1 }, { id: 'i', tr: 'Akım', en: 'Current', def: '1', u: 'A', ud: 2 }, { id: 'f', tr: 'Frekans', en: 'Frequency', def: '100', u: 'F', ud: 1 }, { id: 'dcr', tr: 'DCR', en: 'DCR', def: '50', u: 'R', ud: 0 }],
       compute(G) {
         const L = G.v('l'), I = G.v('i'), f = G.v('f'), R = G.v('dcr');
@@ -95,7 +102,7 @@ CMP.inductor = {
         if (R > 0) { items.push([sig(X / R, 3), tt('Q = X_L / DCR', 'Q = X_L / DCR')], [eng(L / R, 's'), tt('Zaman sabiti τ = L/R', 'Time constant τ = L/R')]); if (I > 0) items.push([eng(I * I * R, 'W'), tt('Bakır kaybı I²·DCR', 'Copper loss I²·DCR')]); }
         return items;
       } },
-    { id: 'tr', title: ['Isınma ve DCR (sıcaklığa bağlı)', 'Heating and DCR (temperature dependent)'], sub: ['DCR(T) = DCR₂₀·(1 + 0,00393·(T − 20))', 'DCR(T) = DCR₂₀·(1 + 0.00393·(T − 20))'],
+    { id: 'tr', group: 'smps', title: ['Isınma ve DCR (sıcaklığa bağlı)', 'Heating and DCR (temperature dependent)'], sub: ['DCR(T) = DCR₂₀·(1 + 0,00393·(T − 20))', 'DCR(T) = DCR₂₀·(1 + 0.00393·(T − 20))'],
       fields: [{ id: 'i', tr: 'RMS akım', en: 'RMS current', def: '3', u: 'A', ud: 2 }, { id: 'dcr', tr: 'DCR (20 °C)', en: 'DCR (20 °C)', def: '20', u: 'R', ud: 0 }, { id: 'rth', tr: 'Isıl direnç (K/W)', en: 'Thermal resistance (K/W)', def: '40' }, { id: 'ta', tr: 'Ortam sıcaklığı (°C)', en: 'Ambient (°C)', def: '60' }, { id: 'tm', tr: 'Maks. sıcaklık (°C)', en: 'Max temperature (°C)', def: '125' }],
       compute(G) {
         const I = G.v('i'), R20 = G.v('dcr'), Rth = G.r('rth'), Ta = G.r('ta'), Tm = G.r('tm');
@@ -104,7 +111,7 @@ CMP.inductor = {
         const P = I * I * R;
         return [[sig(T, 4) + ' °C', tt('Bobin sıcaklığı', 'Inductor temperature'), 'big ' + (T > Tm ? 'bad' : T > Tm - 15 ? 'warn' : 'good')], [eng(P, 'W'), tt('Bakır kaybı', 'Copper loss')], [eng(R, 'Ω'), tt('Sıcak DCR', 'Hot DCR')], [sig(T - Ta, 3) + ' °C', tt('Sıcaklık artışı', 'Temperature rise')], [Tm > 0 ? sig(Tm - T, 3) + ' °C' : '—', tt('Sınıra kalan pay', 'Margin to the limit')]];
       } },
-    { id: 'al', title: ['AL ile sarım sayısı ve doyma', 'Turns from AL and saturation'], sub: ['L = AL·N², B = L·I/(N·Ae)', 'L = AL·N², B = L·I/(N·Ae)'],
+    { id: 'al', group: 'design', title: ['AL ile sarım sayısı ve doyma', 'Turns from AL and saturation'], sub: ['L = AL·N², B = L·I/(N·Ae)', 'L = AL·N², B = L·I/(N·Ae)'],
       fields: [
         { id: 'al', tr: 'AL (nH/N²)', en: 'AL (nH/N²)', def: '100' }, { id: 'l', tr: 'Hedef endüktans', en: 'Target inductance', def: '100', u: 'L', ud: 1 },
         { id: 'ae', tr: 'Etkin kesit Ae (mm²)', en: 'Effective area Ae (mm²)', def: '60' }, { id: 'i', tr: 'Tepe akım', en: 'Peak current', def: '3', u: 'A', ud: 2 }, { id: 'bs', tr: 'B_sat (T)', en: 'B_sat (T)', def: '0.3', help: ['Çekirdek malzemesinin doyma akı yoğunluğu (ferrit ≈ 0,3, Sendust ≈ 1 T).', 'Saturation flux density of the core material (ferrite ≈ 0.3, Sendust ≈ 1 T).'] },
@@ -116,7 +123,7 @@ CMP.inductor = {
         if (Ae > 0 && I > 0) { const B = La * I / (N * Ae), m = Bs > 0 ? B / Bs * 100 : NaN; items.push([sig(B * 1000, 3) + ' mT', tt('Tepe akı yoğunluğu', 'Peak flux density')], isFinite(m) ? [sig(m, 3) + ' %', tt('B_sat\'ın oranı', 'Fraction of B_sat'), m > 80 ? 'bad' : m > 60 ? 'warn' : 'good'] : ['—', '']); }
         return items;
       } },
-    { id: 'ac', title: ['Hava çekirdekli bobin (Wheeler)', 'Air-core coil (Wheeler)'], sub: ['L(µH) = r²N² / (9r + 10ℓ)  [inç]', 'L(µH) = r²N² / (9r + 10ℓ)  [inch]'],
+    { id: 'ac', group: 'design', title: ['Hava çekirdekli bobin (Wheeler)', 'Air-core coil (Wheeler)'], sub: ['L(µH) = r²N² / (9r + 10ℓ)  [inç]', 'L(µH) = r²N² / (9r + 10ℓ)  [inch]'],
       fields: [{ id: 'd', tr: 'Sargı çapı (mm)', en: 'Coil diameter (mm)', def: '10' }, { id: 'len', tr: 'Sargı boyu (mm)', en: 'Coil length (mm)', def: '10' }, { id: 'n', tr: 'Sarım sayısı', en: 'Turns', def: '10' }],
       note: ['Tek katlı solenoid için yaklaşık formül (ℓ > 0,8·r); %1–2 doğruluk beklenir.', 'Approximate formula for a single-layer solenoid (ℓ > 0.8·r); expect 1–2 % accuracy.'],
       compute(G) {
@@ -124,13 +131,13 @@ CMP.inductor = {
         if (!(r > 0 && l > 0 && N > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         return [[eng(r * r * N * N / (9 * r + 10 * l) * 1e-6, 'H'), tt('Endüktans', 'Inductance'), 'big']];
       } },
-    { id: 'lc', title: ['LC rezonans', 'LC resonance'], sub: ['f₀ = 1/(2π√(LC)), Z₀ = √(L/C)', 'f₀ = 1/(2π√(LC)), Z₀ = √(L/C)'],
+    { id: 'lc', group: 'ac', title: ['LC rezonans', 'LC resonance'], sub: ['f₀ = 1/(2π√(LC)), Z₀ = √(L/C)', 'f₀ = 1/(2π√(LC)), Z₀ = √(L/C)'],
       fields: [{ id: 'l', tr: 'Endüktans', en: 'Inductance', def: '10', u: 'L', ud: 1 }, { id: 'c', tr: 'Kapasitans', en: 'Capacitance', def: '100', u: 'C', ud: 1 }],
       compute(G) {
         const L = G.v('l'), C = G.v('c'); if (!(L > 0 && C > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         return [[eng(1 / (2 * Math.PI * Math.sqrt(L * C)), 'Hz'), tt('Rezonans frekansı f₀', 'Resonant frequency f₀'), 'big'], [eng(Math.sqrt(L / C), 'Ω'), tt('Karakteristik empedans Z₀', 'Characteristic impedance Z₀')]];
       } },
-    { id: 'es', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
+    { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
       fields: [{ id: 'v', tr: 'Hesaplanan değer', en: 'Computed value', def: '4.2', u: 'L', ud: 1 }, { id: 's', tr: 'Seri', en: 'Series', def: 'E12', sel: SEL_E }],
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];

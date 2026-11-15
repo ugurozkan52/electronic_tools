@@ -41,8 +41,11 @@ header.top{display:flex;align-items:center;justify-content:space-between;gap:16p
 .brand strong{font-size:17px}
 .logo{width:36px;height:36px;border-radius:8px;background:var(--acc-bg);color:var(--acc);display:grid;place-items:center}
 .hdr-r{display:flex;gap:8px;align-items:center}
-.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap;text-decoration:none;color:var(--ink)}
-.btn:hover,.btn:focus-visible{border-color:var(--acc);outline:none}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--line2);border-radius:8px;padding:9px 16px;cursor:pointer;font-weight:600;font-size:14px;white-space:nowrap;text-decoration:none;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12);transition:border-color .12s,background .12s}
+.btn:hover,.btn:focus-visible{border-color:var(--acc);color:var(--acc);outline:none}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 2px 6px rgba(106,69,214,.35)}
+.btn.primary:hover,.btn.primary:focus-visible{background:#5a38c2;border-color:#5a38c2;color:#fff}
+header.top .btn{background:var(--line2)}
 .theme-btn{width:36px;padding:7px 0;justify-content:center;font-size:16px;line-height:1}
 main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
 .hero{padding:26px 0 18px;border-left:4px solid var(--acc);padding-left:18px;margin:14px 0 18px}
@@ -65,12 +68,14 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
 .layout .card{margin-bottom:0}
 .card h2{margin:0 0 12px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--acc);font-weight:700}
 .about p{margin:0 0 10px;line-height:1.6}
-.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
-.seg button{border:1px solid var(--line);background:var(--line2);border-radius:6px;padding:6px 11px;cursor:pointer;font-size:13px}
-.seg button[aria-pressed=true]{background:var(--acc-bg);border-color:var(--acc);color:var(--acc);font-weight:600}
+.seg{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.seg button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 16px;cursor:pointer;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.12);transition:border-color .12s,background .12s}
+.seg button:hover{border-color:var(--acc);color:var(--acc)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.seg button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 2px 6px rgba(106,69,214,.35)}
 .fld{display:block;margin:0 0 9px}
-.fld>span,.fld>label{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
-.qm{display:inline-grid;place-items:center;width:16px;height:16px;margin-left:6px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--line2);color:var(--mute);font-size:10.5px;font-weight:700;line-height:1;cursor:help;vertical-align:1px}
+.fld>span,.fld>label{display:block;font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:5px}
+.qm{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:7px;padding:0;border-radius:50%;border:1px solid var(--acc);background:var(--acc-bg);color:var(--acc);font-size:11.5px;font-weight:700;line-height:1;vertical-align:-2px;cursor:help;vertical-align:1px}
 .qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--acc);border-color:var(--acc);color:#fff;outline:none}
 .tipbox{margin:2px 0 6px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--acc);background:var(--line2);color:var(--ink);font-size:12.5px;line-height:1.5}
 .tipbox[hidden]{display:none}
@@ -80,13 +85,14 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 48px}
 .fin select:only-child{flex:1}
 .fin input:focus,.fin select:focus{outline:2px solid var(--acc);outline-offset:-1px}
 .fin input.bad{border-color:var(--err)}
-.hint{color:var(--mute);font-size:12px;margin:2px 0 8px}
+.hint{color:var(--mute);font-size:13px;margin:2px 0 8px}
 .msg{color:var(--err);font-size:13px;min-height:18px;margin:4px 0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 .res{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:12px}
 .res div{background:var(--line2);border-radius:8px;padding:8px 10px}
 .res b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
 .res small{color:var(--mute);font-size:11.5px}
+.res div .tipbox{background:var(--card);margin:8px 0 0;padding:8px 10px;font-size:12px}
 .chart{position:relative}
 canvas{display:block;width:100%;background:var(--plot);border:1px solid var(--line);border-radius:8px;touch-action:none}
 .readout{font-variant-numeric:tabular-nums;color:var(--mute);font-size:12.5px;min-height:20px;margin:6px 0 10px}
@@ -112,6 +118,8 @@ svg.sch .oa{font-size:16px;font-weight:700}
 .rt .rb{border-top:1.4px solid currentColor;padding:0 .15em;margin-top:.15em}
 .note{font-size:12px;color:var(--mute);border-left:3px solid var(--line);padding-left:10px;margin:8px 0 0}
 .range{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-top:8px}
+.simrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+#simHint{margin-top:6px}
 .range .fld{margin:0;flex:1;min-width:120px}
 </style>
 </head>
@@ -149,6 +157,12 @@ svg.sch .oa{font-size:16px;font-weight:700}
       <div class="sub-h" style="margin-top:6px">Belirli bir frekansta</div>
       <div class="grid2"><label class="fld"><span>Frekans</span><div class="fin"><input id="fq" inputmode="decimal" value="10"><select id="fqu"><option value="1">Hz</option><option value="1e3" selected>kHz</option><option value="1e6">MHz</option></select></div></label><div class="res" style="margin:0;align-self:end" id="qres"></div></div>
       <button class="btn" id="copyBtn" type="button" style="margin-top:6px">Sonucu kopyala</button> <span class="hint" id="copyMsg"></span>
+      <div class="simrow">
+        <button class="btn primary" id="simBtn" type="button" title="Bu filtreyi CircuitJS simülasyonunda yeni sekmede açar">Simülasyonda aç ↗</button>
+        <button class="btn" id="simCopy" type="button" title="CircuitJS'e File → Import from Text ile yapıştırılabilir">Devre metnini kopyala</button>
+        <span class="hint" id="simMsg"></span>
+      </div>
+      <p class="hint" id="simHint">Seçili filtre ve bileşen değerleri CircuitJS'e aktarılır; giriş kaynağı fc/10 – 10·fc arasında frekans taramasıdır, osiloskopta giriş ve çıkış görünür.</p>
     </section>
   </div>
 
@@ -446,7 +460,7 @@ const FAMILIES = [
       comps: ladderComps, extras: [RS, RLF], designFn: ladderDesign, model: ladderModel,
       note: 'Tek derecede kaynak ve yük R0\'a eşittir. Pi filtre kaynak/yükü kapasitif, T filtre endüktif görür.' },
   ] },
-  { id: "act", name: "Aktif", title: "Aktif Filtre Hesaplayıcı", sub: "Op-amp'lı Sallen-Key, MFB ve 1. derece aktif filtreler: Q seçeneklerini (Bessel, Butterworth, Chebyshev) ve bileşen değerlerini hesaplayın.",
+  { id: "act", name: "Aktif Filtre", title: "Aktif Filtre Hesaplayıcı", sub: "Op-amp'lı Sallen-Key, MFB ve 1. derece aktif filtreler: Q seçeneklerini (Bessel, Butterworth, Chebyshev) ve bileşen değerlerini hesaplayın.",
     about: ["Aktif filtreler direnç ve kondansatörün yanında bir işlemsel yükselteç kullanır; bobin gerekmez, düşük frekanslarda bile küçük bileşenlerle yüksek dereceli filtre kurulabilir.", "Q = 0,5 kritik sönümlü (aşım yok), 0,577 Bessel (en düz grup gecikmesi), 0,707 Butterworth (en düz geçiş bandı), 0,9 ve üzeri Chebyshev (daha dik kesim, geçiş bandında tepe). Sallen-Key birim kazançlıdır; MFB ters çevirir ve kazanç ayarlanabilir."],
     variants: [
     { id: 'sk_lp', label: 'Sallen-Key LP', desc: 'Birim kazançlı 2. derece Sallen-Key alçak geçiren. C1 geri besleme, C2 toprak kondansatörü. f₀ = 1/(2π√(R1R2C1C2)).', type: 'lp',
@@ -605,23 +619,49 @@ function fmtT(t) { const u = [["ns", 1e-9], ["µs", 1e-6], ["ms", 1e-3], ["s", 1
 function renderResults() {
   const m = S.model, r = S.res, v = S.vals, box = $('#res'); box.innerHTML = '';
   const lines = [];
-  const add = (big, small) => { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); lines.push(small + ': ' + big); };
+  // each tile gets a "?" that shows how the number was obtained, with the actual values substituted
+  const add = (big, small, help) => { const d = document.createElement('div'); d.innerHTML = '<b></b><small></small>'; d.firstChild.textContent = big; d.lastChild.textContent = small; box.appendChild(d); addHelp(d, d.lastChild, null, help); lines.push(small + ': ' + big); };
+  const si = (x, k) => fmtSI(x, k), id = S.v.id, isRC = !!v.C && !!v.R && S.v.hero, isRL = !!v.L && !!v.R && S.v.hero;
+  const f0How = isRC ? `fc = 1 / (2π·R·C) = 1 / (2π · ${si(v.R, 'R')} · ${si(v.C, 'C')}) = ${fmtF(m.f0)}`
+    : isRL ? `fc = R / (2π·L) = ${si(v.R, 'R')} / (2π · ${si(v.L, 'L')}) = ${fmtF(m.f0)}`
+    : id === 'sk_lp' || id === 'sk_hp' ? `f₀ = 1 / (2π·√(R1·R2·C1·C2)) = 1 / (2π·√(${si(v.R1, 'R')} · ${si(v.R2, 'R')} · ${si(v.C1, 'C')} · ${si(v.C2, 'C')})) = ${fmtF(m.f0)}`
+    : id === 'mfb_lp' ? `f₀ = 1 / (2π·√(R2·R3·C1·C2)) = 1 / (2π·√(${si(v.R2, 'R')} · ${si(v.R3, 'R')} · ${si(v.C1, 'C')} · ${si(v.C2, 'C')})) = ${fmtF(m.f0)}`
+    : id === 'ia_lp' ? `fc = 1 / (2π·Rf·Cf) = 1 / (2π · ${si(v.Rf, 'R')} · ${si(v.Cf, 'C')}) = ${fmtF(m.f0)}`
+    : id === 'ia_hp' ? `fc = 1 / (2π·Rin·Cin) = 1 / (2π · ${si(v.Rin, 'R')} · ${si(v.Cin, 'C')}) = ${fmtF(m.f0)}`
+    : `Tasarımda girdiğiniz kesim frekansı (${fmtF(m.f0)}); eleman değerleri prototip g-katsayılarından bu frekansa ve R0'a göre ölçeklenir.`;
+  const qHow = id === 'sk_lp' ? `Q = √(R1·R2·C1·C2) / (C2·(R1+R2)) = ${num(m.Q)}. Q = 0,707 Butterworth (düz), üstü tepe yapar, altı daha yumuşak kesim verir.`
+    : id === 'sk_hp' ? `Q = √(R1·R2·C1·C2) / (R1·(C1+C2)) = ${num(m.Q)}. Q = 0,707 Butterworth; üstü f₀ civarında tepe yapar.`
+    : id === 'mfb_lp' ? `Q = √(C1·C2·R2·R3) / (C2·(R2·R3/R1 + R2 + R3)) = ${num(m.Q)}. Q = 0,707 Butterworth; üstü f₀ civarında tepe yapar.`
+    : `Kutup kalite faktörü: Q = ${num(m.Q)}. Q = 0,707 Butterworth; büyüdükçe f₀ civarında tepe oluşur.`;
   // big result: the solved quantity for RC/RL, otherwise the -3 dB frequency
   const hero = S.v.hero ? S.v.hero(v, m, S.dv) : ['−3 dB frekansı', fmtF(r.f3), 'Teorik / tasarım f₀ = ' + fmtF(m.f0)];
   $('#hl').textContent = hero[0]; $('#hv').textContent = hero[1]; $('#hs').textContent = hero[2];
   const sl = r.slope == null ? null : Math.abs(r.slope);
   $('#hpill').textContent = S.v.label + (sl != null ? ' — kesimden sonra ' + (m.type === 'hp' ? '+' : '−') + num(parseFloat(sl.toFixed(1))) + " dB/dekad eğim" : '');
-  add(fmtF(r.f3), '−3 dB frekansı (hesaplanan)');
-  add(fmtF(m.f0), m.Q != null ? 'Kutup frekansı f₀' : 'Tasarım / teorik fc');
-  if (m.Q != null) add(num(m.Q), 'Kalite faktörü Q' + (m.Q > 0.7072 ? ' (tepe var)' : ''));
-  add(fdb(r.ref) + " dB", (m.type === 'hp' ? 'Yüksek frekans' : 'DC') + ' kazancı');
+  add(fmtF(r.f3), '−3 dB frekansı (hesaplanan)',
+    `Bode eğrisi üzerinde sayısal olarak bulunur: geçiş bandı kazancı ${fdb(r.ref)} dB'den 3,01 dB düşülen frekans. Tüm bileşenler (Rs ve RL dahil) hesaba katılır; teorik ${fmtF(m.f0)} değerinden farklıysa nedeni kaynak/yük yüklemesi veya Q'dur.`);
+  add(fmtF(m.f0), m.Q != null ? 'Kutup frekansı f₀' : 'Tasarım / teorik fc', f0How);
+  if (m.Q != null) add(num(m.Q), 'Kalite faktörü Q' + (m.Q > 0.7072 ? ' (tepe var)' : ''), qHow);
+  add(fdb(r.ref) + " dB", (m.type === 'hp' ? 'Yüksek frekans' : 'DC') + ' kazancı',
+    `Geçiş bandındaki kazanç: 20·log₁₀|H| ${m.type === 'hp' ? 'çok yüksek' : 'çok düşük'} frekansta. 0 dB = birim kazanç. ` +
+    (id === 'ia_lp' || id === 'ia_hp' ? `Eviren devrede |kazanç| = Rf/Rin = ${si(v.Rf, 'R')} / ${si(v.Rin, 'R')} = ${num(v.Rf / v.Rin)}.`
+      : id === 'mfb_lp' ? `MFB'de |DC kazancı| = R3/R1 = ${si(v.R3, 'R')} / ${si(v.R1, 'R')} = ${num(v.R3 / v.R1)}.`
+      : isFinite(v.RL) && v.RL != null ? `Rs ve RL'nin gerilim bölücü etkisi burada görünür (RL/(Rs+RL) = ${num(v.RL / ((v.Rs || 0) + v.RL))}).` : 'Rs = 0 ve RL açık devre iken 0 dB çıkar.'));
   if (S.v.hero) { // first order: time constant and angular cutoff
     const tau = v.C ? v.R * v.C : v.L / v.R;
-    add(fmtT(tau), "Zaman sabiti τ");
-    add(num(TAU * m.f0) + ' rad/s', 'Açısal kesim ω<sub>c</sub>'.replace(/<[^>]+>/g, ''));
+    add(fmtT(tau), "Zaman sabiti τ",
+      (v.C ? `τ = R·C = ${si(v.R, 'R')} · ${si(v.C, 'C')} = ${fmtT(tau)}` : `τ = L/R = ${si(v.L, 'L')} / ${si(v.R, 'R')} = ${fmtT(tau)}`) +
+      `. Basamak yanıtında çıkış τ sürede son değerin %63'üne ulaşır (5τ ≈ ${fmtT(5 * tau)} ile yerleşir). fc = 1/(2π·τ).`);
+    add(num(TAU * m.f0) + ' rad/s', 'Açısal kesim ω<sub>c</sub>'.replace(/<[^>]+>/g, ''),
+      `ωc = 2π·fc = 2π · ${fmtF(m.f0)} = ${num(TAU * m.f0)} rad/s = 1/τ. Transfer fonksiyonunda s = jω olarak kullanılır.`);
   }
   const h0 = m.H(TAU * m.f0);
-  add(fdb(dB(h0)) + " dB", "Genlik @ f₀"); add(num(carg(h0) * 180 / Math.PI) + '°', 'Faz @ f₀');
+  add(fdb(dB(h0)) + " dB", "Genlik @ f₀",
+    `Tam olarak f₀ = ${fmtF(m.f0)} frekansında 20·log₁₀|H(j·2π·f₀)| = ${fdb(dB(h0))} dB. ` +
+    (m.Q != null ? `2. derecede bu değer kazanç + 20·log₁₀(Q) = ${fdb(r.ref)} + ${fdb(20 * Math.log10(m.Q))} dB olur; Q = 0,707'de −3 dB.` : S.v.hero ? '1. derecede f₀ = fc olduğundan −3 dB (|H| = 1/√2) çıkar; Rs/RL varsa kazanç kadar kayar.' : 'LC merdivende f₀, −3 dB noktası ile aynı olmak zorunda değildir (Chebyshev\'de dalga sınırı).'));
+  add(num(carg(h0) * 180 / Math.PI) + '°', 'Faz @ f₀',
+    `f₀'da faz açısı: arg H(j·2π·f₀) = ${num(carg(h0) * 180 / Math.PI)}°. ` +
+    (S.v.hero ? `1. derece: alçak geçiren −45°, yüksek geçiren +45° (toplam faz kayması 90°).` : m.Q != null ? `2. derece: f₀'da ±90°${id === 'mfb_lp' ? ', eviren devrede buna 180° eklenir' : ''} (toplam 180°).` : 'Her derece f₀ civarında yaklaşık 90° faz katar; eviren devrelerde 180° eklenir.'));
   S.summary = [hero[0] + ': ' + hero[1], hero[2]].concat(lines);
   queryProbe();
 }
@@ -911,6 +951,85 @@ function hover(e) {
   draw();
 }
 function leave() { S.hoverF = null; draw(); }
+
+/* ----------------------------------------------------------------- CircuitJS export */
+// Builds the CircuitJS text format of the filter on screen (current component values) and opens it in the
+// simulation tool. Elements are placed on CircuitJS's 16-unit grid; wires only connect at end points.
+function circuitText() {
+  const m = S.model, v = S.vals, id = S.v.id, f0 = m.f0;
+  const fmin = f0 / 10, fmax = f0 * 10, dt = 1 / (fmax * 50), sweepT = 8 / fmin;
+  const n = (x) => String(Number(Number(x).toPrecision(6)));
+  const E = {
+    r: (a, b, c, d, val) => 'r ' + a + ' ' + b + ' ' + c + ' ' + d + ' 0 ' + n(val),
+    c: (a, b, c, d, val) => 'c ' + a + ' ' + b + ' ' + c + ' ' + d + ' 0 ' + n(val) + ' 0',
+    l: (a, b, c, d, val) => 'l ' + a + ' ' + b + ' ' + c + ' ' + d + ' 0 ' + n(val) + ' 0',
+    w: (a, b, c, d) => 'w ' + a + ' ' + b + ' ' + c + ' ' + d + ' 0',
+    g: (x, y) => 'g ' + x + ' ' + y + ' ' + x + ' ' + (y + 32) + ' 0',
+    op: (x, y, swap) => 'a ' + x + ' ' + y + ' ' + (x + 144) + ' ' + y + ' ' + (swap ? 1 : 0),
+  };
+  const part = (k, ...a) => E[k.toLowerCase()](...a);
+  const body = []; let src, out;
+  if (m.els) { // passive ladder: series parts along the top line, shunt parts down to ground
+    const items = [];
+    if (m.Rs > 0) items.push(['S', 'R', m.Rs]);
+    m.els.forEach((e) => items.push(e));
+    if (isFinite(m.RL)) items.push(['P', 'R', m.RL]);
+    const y = 160, yg = 288; let x = 240, prevShunt = false;
+    src = [x, y];
+    for (const [t, k, val] of items) {
+      if (t === 'S') { body.push(part(k, x, y, x + 96, y, val)); x += 96; prevShunt = false; }
+      else {
+        if (prevShunt) { body.push(E.w(x, y, x + 64, y)); x += 64; }
+        body.push(part(k, x, y, x, yg, val), E.g(x, yg)); prevShunt = true;
+      }
+    }
+    out = [x, y];
+  } else if (id === 'ia_lp') { // inverting: Rin, Rf || Cf feedback
+    src = [96, 160]; out = [480, 240];
+    body.push(E.r(96, 160, 224, 160, v.Rin), E.w(224, 160, 224, 224), E.w(224, 224, 336, 224), E.op(336, 240, false),
+      E.w(224, 160, 224, 96), E.w(224, 96, 256, 96), E.r(256, 96, 384, 96, v.Rf), E.w(384, 96, 480, 96),
+      E.w(224, 96, 224, 32), E.w(224, 32, 256, 32), E.c(256, 32, 384, 32, v.Cf), E.w(384, 32, 480, 32), E.w(480, 32, 480, 96), E.w(480, 96, 480, 240),
+      E.w(336, 256, 336, 304), E.g(336, 304));
+  } else if (id === 'ia_hp') { // inverting: Cin, Rin in series, Rf feedback
+    src = [96, 160]; out = [576, 240];
+    body.push(E.c(96, 160, 224, 160, v.Cin), E.r(224, 160, 352, 160, v.Rin), E.w(352, 160, 352, 224), E.w(352, 224, 432, 224), E.op(432, 240, false),
+      E.w(352, 160, 352, 96), E.w(352, 96, 384, 96), E.r(384, 96, 512, 96, v.Rf), E.w(512, 96, 576, 96), E.w(576, 96, 576, 240),
+      E.w(432, 256, 432, 304), E.g(432, 304));
+  } else if (id === 'sk_lp' || id === 'sk_hp') { // Sallen-Key: s1, s2 in series, g to ground, f feedback; unity-gain follower (+ on top)
+    const lp = id === 'sk_lp', s1 = lp ? ['R', v.R1] : ['C', v.C1], s2 = lp ? ['R', v.R2] : ['C', v.C2], g = lp ? ['C', v.C2] : ['R', v.R2], f = lp ? ['C', v.C1] : ['R', v.R1];
+    src = [96, 224]; out = [560, 240];
+    body.push(part(s1[0], 96, 224, 208, 224, s1[1]), part(s2[0], 208, 224, 320, 224, s2[1]), E.w(320, 224, 416, 224), E.op(416, 240, true),
+      part(g[0], 320, 224, 320, 288, g[1]), E.g(320, 288),
+      E.w(208, 224, 208, 128), E.w(208, 128, 240, 128), part(f[0], 240, 128, 368, 128, f[1]), E.w(368, 128, 560, 128), E.w(560, 128, 560, 240),
+      E.w(416, 256, 384, 256), E.w(384, 256, 384, 320), E.w(384, 320, 560, 320), E.w(560, 320, 560, 240));
+  } else if (id === 'mfb_lp') { // multiple feedback: R1 in, R2 to the inverting input, C1 to ground, R3 and C2 feedback
+    src = [96, 160]; out = [624, 240];
+    body.push(E.r(96, 160, 208, 160, v.R1), E.c(208, 160, 208, 256, v.C1), E.g(208, 256), E.r(208, 160, 336, 160, v.R2),
+      E.w(336, 160, 336, 224), E.w(336, 224, 480, 224), E.op(480, 240, false),
+      E.w(208, 160, 208, 32), E.w(208, 32, 240, 32), E.r(240, 32, 368, 32, v.R3), E.w(368, 32, 624, 32), E.w(624, 32, 624, 96),
+      E.w(336, 160, 336, 96), E.w(336, 96, 368, 96), E.c(368, 96, 496, 96, v.C2), E.w(496, 96, 624, 96), E.w(624, 96, 624, 240),
+      E.w(480, 256, 480, 304), E.g(480, 304));
+  } else return null;
+  const lines = ['$ 1 ' + n(dt) + ' 6.499443210467817 50 5.0 50',
+    '170 ' + src[0] + ' ' + src[1] + ' ' + (src[0] - 32) + ' ' + src[1] + ' 3 ' + n(fmin) + ' ' + n(fmax) + ' 1 ' + n(sweepT),   // element 0: sweep source (log, 1 V)
+    'O ' + out[0] + ' ' + out[1] + ' ' + (out[0] + 64) + ' ' + out[1] + ' 0'];                                                    // element 1: output marker
+  body.forEach((b) => lines.push(b));
+  lines.push('o 0 128 0 34 0.5 9.765625E-5 0 -1', 'o 1 128 0 34 0.5 9.765625E-5 1 -1');                                        // scopes: Vin, Vout
+  return lines.join('\n');
+}
+function simUrl() { return '../simulation/circuitjs.html?cct=' + encodeURIComponent(circuitText()); }
+function simMsg(t) { $('#simMsg').textContent = t; setTimeout(() => { $('#simMsg').textContent = ''; }, 3500); }
+$('#simBtn').onclick = () => {
+  if (!S.model || !circuitText()) { simMsg('Önce geçerli bileşen değerleri girin.'); return; }
+  if (!/^https?:$/.test(location.protocol)) { simMsg('Bu düğme sayfa bir sunucudan (http) açıldığında çalışır; dosya ön izlemesinden simülasyona geçilemez.'); return; }
+  const w = window.open(simUrl(), '_blank');
+  if (!w) simMsg('Yeni sekme açılamadı: açılır pencere engelini kaldırın.');
+};
+$('#simCopy').onclick = async () => {
+  const t = S.model && circuitText();
+  if (!t) { simMsg('Önce geçerli bileşen değerleri girin.'); return; }
+  try { await navigator.clipboard.writeText(t); simMsg('Devre metni kopyalandı (CircuitJS: File → Import from Text).'); } catch (e) { simMsg('Kopyalanamadı (tarayıcı izni).'); }
+};
 
 /* ----------------------------------------------------------------- boot */
 buildTabs();

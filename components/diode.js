@@ -87,8 +87,13 @@ CMP.diode = {
       return { main: R[0], why };
     },
   },
+  // calculators are shown in headed groups, one application at a time
+  calcGroups: [
+    ['app', 'Uygulama devreleri', 'Application circuits', 'LED seri direnci, zener regülatörü ve TVS kıskaç devresi.', 'LED series resistor, zener regulator and TVS clamp circuit.'],
+    ['loss', 'Kayıp ve sıcaklık', 'Loss and temperature', 'İletim kaybı, eklem sıcaklığı, ters kaçak ve ters toparlanma kaybı.', 'Conduction loss, junction temperature, reverse leakage and reverse-recovery loss.'],
+  ],
   calcs: [
-    { id: 'led', title: ['LED seri direnci', 'LED series resistor'], sub: ['R = (V_s − n·V_F) / I_F', 'R = (V_s − n·V_F) / I_F'],
+    { id: 'led', group: 'app', title: ['LED seri direnci', 'LED series resistor'], sub: ['R = (V_s − n·V_F) / I_F', 'R = (V_s − n·V_F) / I_F'],
       fields: [
         { id: 'vs', tr: 'Besleme gerilimi', en: 'Supply voltage', def: '5', u: 'V', ud: 1 }, { id: 'vf', tr: 'LED V_F', en: 'LED V_F', def: '2', u: 'V', ud: 1, help: ['Kırmızı ≈ 1,8–2,2 V, yeşil ≈ 2–3,3 V, mavi/beyaz ≈ 2,8–3,6 V.', 'Red ≈ 1.8–2.2 V, green ≈ 2–3.3 V, blue/white ≈ 2.8–3.6 V.'] },
         { id: 'i', tr: 'LED akımı', en: 'LED current', def: '20', u: 'A', ud: 1 }, { id: 'n', tr: 'Seri LED sayısı', en: 'LEDs in series', def: '1' },
@@ -101,7 +106,7 @@ CMP.diode = {
         const e = nearestE(R, "E24"), up = e.hi, Ia = (Vs - n * Vf) / up;
         return [[eng(R, 'Ω'), tt('Hesaplanan direnç', 'Calculated resistor'), 'big'], [eng(up, 'Ω'), tt('Standart E24 (eşit/büyük)', 'Standard E24 (equal / higher)')], [eng(Ia, 'A'), tt('Standart direnç ile LED akımı', 'LED current with the standard resistor')], [eng(Ia * Ia * up, 'W'), tt('Dirençte harcanan güç', 'Power in the resistor')], [sig(n * Vf / Vs * 100, 3) + ' %', tt('Verim (LED gerilimi / besleme)', 'Efficiency (LED voltage / supply)')], [eng(Ia * d, 'A'), tt('Ortalama akım (PWM)', 'Average current (PWM)')]];
       } },
-    { id: 'zn', title: ['Zener regülatörü', 'Zener regulator'], sub: ['R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)', 'R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)'],
+    { id: 'zn', group: 'app', title: ['Zener regülatörü', 'Zener regulator'], sub: ['R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)', 'R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)'],
       fields: [
         { id: 'vmin', tr: 'Min. giriş gerilimi', en: 'Min input voltage', def: '12', u: 'V', ud: 1 }, { id: 'vmax', tr: 'Maks. giriş gerilimi', en: 'Max input voltage', def: '15', u: 'V', ud: 1 },
         { id: 'vz', tr: 'Zener gerilimi V_Z', en: 'Zener voltage V_Z', def: '5.1', u: 'V', ud: 1 }, { id: 'ilmin', tr: 'Min. yük akımı', en: 'Min load current', def: '0', u: 'A', ud: 1 },
@@ -115,7 +120,7 @@ CMP.diode = {
         const izmax = (b - z) / std - l0, Pz = z * izmax, Prs = (b - z) * (b - z) / std;
         return [[eng(Rs, 'Ω'), tt('Hesaplanan seri direnç', 'Calculated series resistor'), 'big'], [eng(std, 'Ω'), tt('Standart E24 (eşit/küçük)', 'Standard E24 (equal / lower)')], [eng(izmax, 'A'), tt('Maks. Zener akımı', 'Max Zener current')], [eng(Pz, 'W'), tt('Zener gücü (en kötü durum)', 'Zener power (worst case)'), Pz > pz ? 'bad' : Pz > pz * 0.5 ? 'warn' : 'good'], [eng(Prs, 'W'), tt('Seri dirençte güç', 'Series resistor power')]];
       } },
-    { id: 'pw', title: ['İletim kaybı ve eklem sıcaklığı', 'Conduction loss and junction temperature'], sub: ['P = V_F·I_F·D, T_j = T_a + P·R_θJA', 'P = V_F·I_F·D, T_j = T_a + P·R_θJA'],
+    { id: 'pw', group: 'loss', title: ['İletim kaybı ve eklem sıcaklığı', 'Conduction loss and junction temperature'], sub: ['P = V_F·I_F·D, T_j = T_a + P·R_θJA', 'P = V_F·I_F·D, T_j = T_a + P·R_θJA'],
       fields: [
         { id: 'i', tr: 'Ortalama ileri akım', en: 'Average forward current', def: '3', u: 'A', ud: 2 }, { id: 'vf', tr: 'V_F (o akımda)', en: 'V_F (at that current)', def: '0.45', u: 'V', ud: 1 },
         { id: 'd', tr: 'İletim oranı (%)', en: 'Conduction ratio (%)', def: '100', help: ['Akım ortalama olarak verildiyse 100 bırakın.', 'Leave at 100 if the current is already an average.'] },
@@ -127,7 +132,7 @@ CMP.diode = {
         const P = Vf * I * d, Tj = Ta + P * Rth;
         return [[sig(Tj, 4) + ' °C', tt('Eklem sıcaklığı T_j', 'Junction temperature T_j'), 'big ' + (Tj > Tm ? 'bad' : Tj > Tm - 20 ? 'warn' : 'good')], [eng(P, 'W'), tt('İletim kaybı', 'Conduction loss')], [sig(Tm - Tj, 3) + ' °C', tt('T_j(max)\'a kalan pay', 'Margin to T_j(max)')]];
       } },
-    { id: 'tv', title: ['TVS kıskaç ve darbe gücü', 'TVS clamp and pulse power'], sub: ['I_PP = (V_surge − V_BR) / (R_s + r_d)', 'I_PP = (V_surge − V_BR) / (R_s + r_d)'],
+    { id: 'tv', group: 'app', title: ['TVS kıskaç ve darbe gücü', 'TVS clamp and pulse power'], sub: ['I_PP = (V_surge − V_BR) / (R_s + r_d)', 'I_PP = (V_surge − V_BR) / (R_s + r_d)'],
       fields: [
         { id: 'vs', tr: 'Sürge gerilimi', en: 'Surge voltage', def: '1000', u: 'V', ud: 1 }, { id: 'rs', tr: 'Kaynak empedansı', en: 'Source impedance', def: '2', u: 'R', ud: 1 },
         { id: 'vbr', tr: 'TVS V_BR (min)', en: 'TVS V_BR (min)', def: '6.4', u: 'V', ud: 1 }, { id: 'vc', tr: 'V_C (anma I_PP\'de)', en: 'V_C (at rated I_PP)', def: '10.5', u: 'V', ud: 1 },
@@ -140,7 +145,7 @@ CMP.diode = {
         const rd = (Vc - Vbr) / Ipr, Ip = (Vs - Vbr) / (Rs + rd), Vca = Vbr + rd * Ip, P = Vca * Ip;
         return [[eng(Vca, 'V'), tt('Gerçek kıskaç gerilimi', 'Actual clamping voltage'), 'big ' + (Ip > Ipr ? 'bad' : 'good')], [eng(Ip, 'A'), tt('Tepe darbe akımı', 'Peak pulse current'), Ip > Ipr ? 'bad' : ''], [eng(P, 'W'), tt('Tepe darbe gücü', 'Peak pulse power')], [Pp > 0 ? sig(P / Pp * 100, 3) + ' %' : '—', tt('Anma gücü kullanımı', 'Use of rated power'), P > Pp ? 'bad' : ''], [eng(rd, 'Ω'), tt('Dinamik direnç r_d', 'Dynamic resistance r_d')]];
       } },
-    { id: 'lk', title: ['Ters kaçak akım ve sıcaklık', 'Reverse leakage vs temperature'], sub: ['I_R(T) = I_R(25)·2^((T − 25)/ΔT)', 'I_R(T) = I_R(25)·2^((T − 25)/ΔT)'],
+    { id: 'lk', group: 'loss', title: ['Ters kaçak akım ve sıcaklık', 'Reverse leakage vs temperature'], sub: ['I_R(T) = I_R(25)·2^((T − 25)/ΔT)', 'I_R(T) = I_R(25)·2^((T − 25)/ΔT)'],
       fields: [
         { id: 'ir', tr: 'I_R (25 °C)', en: 'I_R (25 °C)', def: '100', u: 'A', ud: 0 }, { id: 'vr', tr: 'Ters gerilim', en: 'Reverse voltage', def: '40', u: 'V', ud: 1 },
         { id: 't', tr: 'Eklem sıcaklığı (°C)', en: 'Junction temperature (°C)', def: '125' }, { id: 'dt', tr: 'Katlanma ΔT (°C)', en: 'Doubling ΔT (°C)', def: '10', help: ['Kaçak akımın iki katına çıktığı sıcaklık adımı; veri sayfası eğrisinden tahmin edin (Si ≈ 10 °C).', 'Temperature step for doubling of leakage; estimate from the datasheet curve (Si ≈ 10 °C).'] },
@@ -152,7 +157,7 @@ CMP.diode = {
         const I = I0 * Math.pow(2, (T - 25) / dt);
         return [[eng(I, 'A'), tt('Tahmini kaçak akım', 'Estimated leakage current'), 'big'], [sig(I / I0, 3) + '×', tt('25 °C\'ye göre artış', 'Increase vs 25 °C')], [eng(I * Vr, 'W'), tt('Ters yönde kayıp', 'Reverse-bias loss')]];
       } },
-    { id: 'rr', title: ['Ters toparlanma kaybı', 'Reverse recovery loss'], sub: ['P ≈ Q_rr·V_R·f', 'P ≈ Q_rr·V_R·f'],
+    { id: 'rr', group: 'loss', title: ['Ters toparlanma kaybı', 'Reverse recovery loss'], sub: ['P ≈ Q_rr·V_R·f', 'P ≈ Q_rr·V_R·f'],
       fields: [{ id: 'q', tr: 'Q_rr (nC)', en: 'Q_rr (nC)', def: '50' }, { id: 'v', tr: 'Ters gerilim', en: 'Reverse voltage', def: '400', u: 'V', ud: 1 }, { id: 'f', tr: 'Anahtarlama frekansı', en: 'Switching frequency', def: '100', u: 'F', ud: 1 }],
       compute(G) {
         const Q = G.r('q') * 1e-9, V = G.v('v'), f = G.v('f'); if (!(Q > 0 && V > 0 && f > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];

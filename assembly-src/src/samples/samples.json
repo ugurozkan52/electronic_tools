@@ -1,0 +1,12 @@
+{
+ "psu-28v-5v": {
+  "title": "28VDC -> 5VDC 3A - TPS5430 Rev.B (örnek)",
+  "revision": "B",
+  "company": "Örnek",
+  "ipc": "PSU_28V_5V_REVB.xml",
+  "bom": "PSU_28V_5V_REVB.csv",
+  "step": "REVB.step",
+  "serial": "ORNEK-001",
+  "operator": "Örnek"
+ }
+}

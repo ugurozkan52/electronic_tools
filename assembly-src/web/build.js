@@ -27,6 +27,7 @@ async function main() {
   // 1. pages and their scripts, same relative layout as in the app
   copyDir(path.join(ROOT, 'src', 'renderer'), path.join(OUT, 'src', 'renderer'));
   copyDir(path.join(ROOT, 'src', 'i18n'), path.join(OUT, 'src', 'i18n'));
+  copyDir(path.join(ROOT, 'src', 'samples'), path.join(OUT, 'src', 'samples'));   // bundled sample board (Örnek proje)
   copy(path.join(ROOT, 'src', 'core', 'testplan.js'), path.join(OUT, 'src', 'core', 'testplan.js'));
 
   const API = '<script src="../../../web/asm-web.js"></script>';

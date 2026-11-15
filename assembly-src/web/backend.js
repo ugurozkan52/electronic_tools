@@ -195,6 +195,23 @@ async function attachStep(id, stepAbs, pcb, report) {
 }
 
 // ---------------------------------------------------------------- projects
+// Bundled sample board: fetched from <root>/src/samples/<name>/ into the browser file store, imported once, reused afterwards.
+async function openSample(name) {
+  name = name || 'psu-28v-5v';
+  const get = async (p) => { const r = await fetch(ROOT + 'src/samples/' + p); if (!r.ok) throw new Error(p + ': HTTP ' + r.status); return new Uint8Array(await r.arrayBuffer()); };
+  const sm = JSON.parse(new TextDecoder().decode(await get('samples.json')))[name];
+  if (!sm) throw new Error(t('Örnek bulunamadı: {file}', { file: name }));
+  let id = (store.listProjects().find((p) => p.name === sm.title) || {}).id;
+  if (!id) {
+    const dir = '/samples/' + name + '/', f = (x) => dir + x;
+    for (const x of [sm.ipc, sm.bom, sm.step].filter(Boolean)) fs.writeFileSync(f(x), await get(name + '/' + x));
+    const tb = tab.readTableFile(f(sm.bom)), mapping = tab.suggestBomMapping(tb.rows);
+    const spec = { ipcFile: f(sm.ipc), stepFile: sm.step ? f(sm.step) : null, bom: mapping.cols && mapping.cols.designator >= 0 ? { path: f(sm.bom), sheet: null, mapping } : null, meta: { title: sm.title, revision: sm.revision, company: sm.company } };
+    const dz = t('Dizildi');
+    id = (await createProject(spec, { checkboxes: dz, markWhenChecked: dz })).id;
+  }
+  return { id, serial: sm.serial, operator: sm.operator };
+}
 async function createProject(spec, options) {
   const meta = spec.meta || {};
   const id = store.newProjectId(meta.title || 'proje');
@@ -332,6 +349,7 @@ const api = {
     return { report: r.report, fieldNames: r.fieldNames, pcbdata: r.pcbdata };
   }),
   createProject: call(({ spec, options }) => createProject(spec, options)),
+  openSample: call((name) => openSample(name)),
   reimportProject: call(({ id, spec, options }) => reimportProject(id, spec, options)),
   listProjects: call(() => store.listProjects()),
   getProject: call((id) => {

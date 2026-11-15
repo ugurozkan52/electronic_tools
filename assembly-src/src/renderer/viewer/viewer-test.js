@@ -178,10 +178,10 @@ var TEST = (function () {
     (S.plan.nets || []).forEach(function (n) {
       if (cfg.selection) {
         var r = cfg.nets && cfg.nets[n.net];
-        d[n.net] = { on: !!r && r !== 'none', role: r && r !== 'none' ? r : (n.suggest || ''), nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal };
+        d[n.net] = { on: !!r && r !== 'none', role: r && r !== 'none' ? r : (n.suggest || ''), nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: cfg.funcs && cfg.funcs[n.net] || '' };
       } else {
         var role = n.cls && n.cls !== 'signal' ? n.cls : n.suggest || '';
-        d[n.net] = { on: !!n.cls || (!!n.suggest && n.suggest !== 'signal'), role: role, nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal };
+        d[n.net] = { on: !!n.cls || (!!n.suggest && n.suggest !== 'signal'), role: role, nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: cfg.funcs && cfg.funcs[n.net] || '' };
       }
     });
     return d;
@@ -218,7 +218,7 @@ var TEST = (function () {
       ]),
     ]);
     root.appendChild(head);
-    root.appendChild(asmEl('p', { class: 'ns-help', text: 'Test edilecek netleri işaretleyin ve rolünü seçin. Öneriler net adından ve kart yapısından gelir. Bir nete tıklayınca kartta gösterilir. Seçim bu projenin tüm kartları için kaydedilir.' }));
+    root.appendChild(asmEl('p', { class: 'ns-help', text: 'Test edilecek netleri işaretleyin ve rolünü seçin. Sinyal hatlarında İşlev sütunundan hattın ne iş yaptığını (UART, SPI, I²C, PWM, GPIO …) seçebilirsiniz; "Otomatik" ad kalıbından tahmin eder. Öneriler net adından ve kart yapısından gelir. Bir nete tıklayınca kartta gösterilir. Seçim bu projenin tüm kartları için kaydedilir.' }));
     var search = asmEl('input', { id: 'ns-q', class: 'asm-input', type: 'search', placeholder: 'Net ara…', 'aria-label': 'Net ara', value: S.netQuery || '' });
     search.addEventListener('input', function () { S.netQuery = search.value; renderTable(); });
     var fsel = asmEl('select', { id: 'ns-f', class: 'asm-select', 'aria-label': T('Filtre') });
@@ -259,12 +259,21 @@ var TEST = (function () {
         var cb = asmEl('input', { type: 'checkbox', class: 'ns-on', 'aria-label': T('{net} test edilsin', { net: n.net }) });
         cb.checked = d.on; cb.disabled = !n.pads;
         var tr;
-        var sync = function () { tr.classList.toggle('on', d.on); cb.checked = d.on; rs.value = d.role || ''; nom.hidden = d.role !== 'power'; updSum(); };
+        var sync = function () { tr.classList.toggle('on', d.on); cb.checked = d.on; rs.value = d.role || ''; fs.disabled = !n.pads || d.role !== 'signal'; fs.value = d.func || ''; nom.hidden = d.role !== 'power'; updSum(); };
         cb.onchange = function () { d.on = cb.checked; if (d.on && !d.role) d.role = n.suggest || 'signal'; sync(); };
         var rs = asmEl('select', { class: 'asm-select ns-role', 'aria-label': T('{net} rolü', { net: n.net }) });
         [['', '—']].concat(ROLE_OPTS).forEach(function (o) { var op = asmEl('option', { value: o[0], text: o[1] }); if (o[0] === (d.role || '')) op.selected = true; rs.appendChild(op); });
         rs.disabled = !n.pads;
         rs.onchange = function () { d.role = rs.value; d.on = !!rs.value; sync(); };
+        // what the pin / line does: drives the test steps (UART, SPI, I²C, PWM …); "Otomatik" = guessed from the name
+        var fs = asmEl('select', { class: 'asm-select ns-func', 'aria-label': T('{net} işlevi', { net: n.net }), title: T('Hattın ne iş yaptığı: test adımlarını belirler') });
+        var auto = n.func ? (TESTPLAN.FUNCS.filter(function (f) { return f.id === n.func; })[0] || {}).label : '';
+        fs.appendChild(asmEl('option', { value: '', text: auto ? T('Otomatik: {f}', { f: auto }) : T('Otomatik (ad tanınmadı)'), raw: 1 }));
+        TESTPLAN.FUNCS.forEach(function (f) { fs.appendChild(asmEl('option', { value: f.id, text: f.id === 'sens' ? T('Sensör / analog') : f.label, raw: 1 })); });
+        fs.appendChild(asmEl('option', { value: 'none', text: T('Yok (genel I/O)'), raw: 1 }));
+        fs.value = d.func || '';
+        fs.disabled = !n.pads || d.role !== 'signal';
+        fs.onchange = function () { d.func = fs.value; if (d.func && d.func !== 'none' && d.role !== 'signal') { d.role = 'signal'; } if (d.func) d.on = true; sync(); };
         var nom = asmEl('input', { class: 'asm-input ns-nom', type: 'text', inputmode: 'decimal', placeholder: n.nominal != null ? String(n.nominal) : 'V', value: d.nominal != null ? String(d.nominal) : '',
           'aria-label': T('{net} nominal gerilim (V)', { net: n.net }) });
         nom.hidden = d.role !== 'power';
@@ -276,11 +285,12 @@ var TEST = (function () {
           asmEl('td', { class: 'ns-ncell' }, [nameBtn, sug ? asmEl('div', { class: 'ns-why', raw: 1, text: n.suggest === 'signal' || !n.why ? sug + (n.why ? ' · ' + n.why : '') : n.why, title: n.why || null }) : null]),
           asmEl('td', { class: 'num', raw: 1, text: n.pads ? String(n.pads) : T('pad yok') }),
           asmEl('td', {}, [rs]),
+          asmEl('td', {}, [fs]),
           asmEl('td', {}, [nom]),
         ]));
       });
       var table = asmEl('table', { class: 'ns-table' }, [
-        asmEl('thead', {}, [asmEl('tr', {}, ['Test', 'Net', 'Pad', 'Rol', 'Nominal (V)'].map(function (h) { return asmEl('th', { scope: 'col', text: h }); }))]),
+        asmEl('thead', {}, [asmEl('tr', {}, ['Test', 'Net', 'Pad', 'Rol', 'İşlev', 'Nominal (V)'].map(function (h) { return asmEl('th', { scope: 'col', text: h }); }))]),
         tb,
       ]);
       wrap.appendChild(table);
@@ -297,9 +307,11 @@ var TEST = (function () {
     if (!sel.some(function (k) { return D[k].role === 'ground'; })) { asmToast(T('En az bir toprak (GND) neti seçin: ölçümler ona göre yapılır.'), 'warn'); return; }
     cfg.selection = true;
     cfg.nets = {};
+    cfg.funcs = {};
     cfg.rails = cfg.rails || {};
     sel.forEach(function (k) {
       cfg.nets[k] = D[k].role;
+      if (D[k].role === 'signal' && D[k].func) cfg.funcs[k] = D[k].func;
       if (D[k].role === 'power') cfg.rails[k] = Object.assign({}, cfg.rails[k], D[k].nominal != null ? { nominal: D[k].nominal, include: true } : { include: true });
     });
     writeStorage('testConfig', JSON.stringify(cfg));
@@ -374,7 +386,7 @@ var TEST = (function () {
       if (unpoweredFails.length) {
         box.appendChild(asmEl('div', { class: 'tp-banner danger', role: 'alert', raw: 1, text: T('⚠ Enerjisiz testlerde {n} KALDI sonucu var ({list}). Kısa devre giderilmeden karta enerji vermeyin.', { n: unpoweredFails.length, list: unpoweredFails.slice(0, 3).map(function (x) { return x.no + '. ' + x.title; }).join(', ') }) }));
       } else {
-        box.appendChild(asmEl('div', { class: 'tp-banner power', raw: 1, text: T('⚡ Bu aşama enerji gerektirir. Multimetre DC V kademesinde; probları kısa devre yapmamaya dikkat edin.') }));
+        box.appendChild(asmEl('div', { class: 'tp-banner power', raw: 1, text: st.kind === 'bus' ? T('⚡ Bu aşama enerji gerektirir. Önce GND klipsini bağlayın; probu yalnızca ilgili hatta değdirin, komşu pinlere kısa devre yapmayın.') : T('⚡ Bu aşama enerji gerektirir. Multimetre DC V kademesinde; probları kısa devre yapmamaya dikkat edin.') }));
       }
     }
     box.appendChild(asmEl('ul', { class: 'tp-text' }, st.text.map(function (t) { return asmEl('li', { text: t, raw: 1 }); })));
@@ -390,17 +402,22 @@ var TEST = (function () {
           altRow(st, which),
         ]);
       };
-      box.appendChild(asmEl('div', { class: 'tp-probes' }, [pcard('pos', '+', 'Kırmızı prob (+)'), pcard('neg', 'COM', 'Siyah prob (COM)')]));
+      box.appendChild(asmEl('div', { class: 'tp-probes' }, [st.kind === 'bus' ? pcard('pos', 'CH1', 'Kanal 1 (sinyal)') : pcard('pos', '+', 'Kırmızı prob (+)'), st.kind === 'bus' ? pcard('neg', 'GND', 'GND klipsi') : pcard('neg', 'COM', 'Siyah prob (COM)')]));
       box.appendChild(asmEl('p', { class: 'tp-hint', text: 'Kartta probların değdiği netlerin tüm pad\'leri halkayla işaretlenir; aynı nete bağlı herhangi bir pad ölçüm için kullanılabilir.' }));
     }
     box.appendChild(asmEl('div', { class: 'tp-expect' }, [asmEl('span', { text: 'Beklenen:' }), asmEl('b', { text: st.expectText, raw: 1 })]));
+    if (st.debug && st.debug.length) {
+      // what to look at when the check fails
+      box.appendChild(asmEl('details', { class: 'tp-debug' }, [asmEl('summary', { text: 'Sorun olursa (hata ayıklama)' }),
+        asmEl('ul', {}, st.debug.map(function (d) { return asmEl('li', { text: d, raw: 1 }); }))]));
+    }
     // measurement
     var inp = asmEl('input', { id: 'tp-val', class: 'asm-input tp-val', type: 'text', inputmode: 'decimal', autocomplete: 'off',
       'aria-describedby': 'tp-verdict', placeholder: st.kind === 'prep' ? 'ör. 0.2' : st.unit === 'V' ? 'ör. 3.29 · -12.1 · 250m' : st.unit === 'mA' ? 'ör. 85' : 'ör. 0.4 · 12k · OL', value: r && r.text ? r.text : '' });
     inp.setAttribute('aria-label', T('Ölçülen değer'));
     var unit = asmEl('select', { id: 'tp-unit', class: 'asm-select tp-unit', 'aria-label': 'Birim' }, (UNITS[st.unit] || UNITS['Ω']).map(function (u) { return asmEl('option', { value: u, text: u, raw: 1 }); }));
     var verdict = asmEl('div', { id: 'tp-verdict', class: 'tp-verdict', role: 'status', 'aria-live': 'polite' });
-    var note = asmEl('input', { id: 'tp-note', class: 'asm-input tp-note', type: 'text', placeholder: 'Not (isteğe bağlı)', value: r && r.note ? r.note : '' });
+    var note = asmEl('input', { id: 'tp-note', class: 'asm-input tp-note', type: 'text', placeholder: st.kind === 'bus' ? 'Ölçülen değer / not (ör. 115200 baud, %50, 1 kHz)' : 'Not (isteğe bağlı)', value: r && r.note ? r.note : '' });
     note.setAttribute('aria-label', T('Not'));
     var update = function () {
       var o = TESTPLAN.parseValue(inp.value, unit.value);
@@ -418,7 +435,7 @@ var TEST = (function () {
       if (e.key === 'Enter') { e.preventDefault(); var u = update(); if (u.verdict) save(u.verdict); else if (st.optionalValue && !inp.value.trim()) save('pass'); else el('tp-pass').focus(); }
     });
     var ol = asmEl('button', { class: 'asm-btn tp-ol', text: 'OL', title: 'Açık devre (aşırı yük / sonsuz)', onclick: function () { inp.value = 'OL'; update(); inp.focus(); } });
-    box.appendChild(asmEl('div', { class: 'tp-meas' }, [asmEl('label', { class: 'tp-lbl', for: 'tp-val', text: st.kind === 'prep' ? 'Prob direnci' : st.kind === 'power-on' ? 'Çekilen akım' : 'Ölçülen' }), inp, unit, st.unit === 'Ω' ? ol : null]));
+    if (st.kind !== 'bus') box.appendChild(asmEl('div', { class: 'tp-meas' }, [asmEl('label', { class: 'tp-lbl', for: 'tp-val', text: st.kind === 'prep' ? 'Prob direnci' : st.kind === 'power-on' ? 'Çekilen akım' : 'Ölçülen' }), inp, unit, st.unit === 'Ω' ? ol : null]));
     box.appendChild(verdict);
     box.appendChild(note);
     var save = function (status) {
@@ -647,6 +664,7 @@ var TEST = (function () {
         });
         // net roles and the saved selection are owned by the "Net seçimi" view: keep them
         cfg.nets = cur.nets || {};
+        cfg.funcs = cur.funcs || {};
         if (cur.selection) cfg.selection = true;
         writeStorage('testConfig', JSON.stringify(cfg));
         asmCloseModal();

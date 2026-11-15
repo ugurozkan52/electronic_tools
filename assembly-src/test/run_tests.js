@@ -223,6 +223,11 @@ console.log('OK turkish');
   assert.ok(Math.abs(step('sens:VREF_2V5').expect.nominal - 2.5) < 1e-9);
   assert.ok(step('io:DI_1'), 'connector line → I/O phase');
   assert.strictEqual(step('comm:I2C_SDA').group, 'I²C');
+  // function recognition by name roots, and the manual override
+  assert.deepStrictEqual(['IIC_SDA', 'MCU_RXD', 'FLASH_CS_N', 'RS485_DE', 'FDCAN1_TX', 'AIN3', 'LED_PWM', 'TIM2_CH1', 'STATUS_LED', 'NRST', 'DI_1'].map((n) => TP.funcOf(n) || 'none'),
+    ['i2c', 'uart', 'spi', 'rs485', 'can', 'adc', 'pwm', 'timer', 'gpio', 'none']);
+  assert.strictEqual(TP.funcOf('FOO', 'uart'), 'uart');
+  assert.strictEqual(TP.funcOf('UART1_TX', 'none'), '');
   assert.strictEqual(step('comm:UART1_TX').group, 'UART');
   assert.ok(!plan.phases.flatMap((p) => p.steps).some((s) => s.id === 'io:I2C_SDA'), 'a line is tested in one phase only');
   // settings: nominal override, exclusion, disabled phase
