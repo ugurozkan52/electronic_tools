@@ -43,7 +43,7 @@ function bjtCalcs(pnp) {
       } },
     { id: 'vd' + sfx, group: grp, title: [T + ' gerilim bölücü polarma (kararlı)', T + ' voltage-divider bias (stable)'], sub: pnp ? ['V_th = V_cc·R₁/(R₁+R₂) (emiterden ölçülen), I_C ≈ (V_th − V_BE)/R_E', 'V_th = V_cc·R₁/(R₁+R₂) (measured from the emitter), I_C ≈ (V_th − V_BE)/R_E'] : ['V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E', 'V_th = V_cc·R₂/(R₁+R₂), I_C ≈ (V_th − V_BE)/R_E'],
       fields: [
-        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'r1', tr: 'R1 (üst)', en: 'R1 (top)', def: '47', u: 'R', ud: 2 }, { id: 'r2', tr: 'R2 (alt)', en: 'R2 (bottom)', def: '10', u: 'R', ud: 2 },
+        { id: 'vcc', tr: 'Besleme V_cc', en: 'Supply V_cc', def: '12', u: 'V', ud: 1 }, { id: 'r1', tr: 'R1 (üst)', en: 'R1 (top)', def: pnp ? '10' : '47', u: 'R', ud: 2 }, { id: 'r2', tr: 'R2 (alt)', en: 'R2 (bottom)', def: pnp ? '47' : '10', u: 'R', ud: 2 },
         { id: 'rc', tr: 'R_C', en: 'R_C', def: '2.2', u: 'R', ud: 2 }, { id: 're', tr: 'R_E', en: 'R_E', def: '1', u: 'R', ud: 2 }, { id: 'b', tr: 'β (h_FE)', en: 'β (h_FE)', def: '200' }, { id: 'vbe', tr: 'V_BE', en: 'V_BE', def: '0.7', u: 'V', ud: 1 },
       ],
       note: ['İyi polarmada bölücü akımı taban akımının en az 10 katı olmalı; böylece I_C β\'ya az duyarlı olur.', 'In good biasing the divider current should be at least 10× the base current, so I_C is only weakly dependent on β.'],

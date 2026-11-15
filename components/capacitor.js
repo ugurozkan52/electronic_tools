@@ -202,7 +202,7 @@ function capZPlot(G, items) {
   if (ZP.par && saved.length > 1) curves.push({ par: true, fn: (f) => zPar(saved, f), col: 'var(--ink)', dash: '6 4', name: tt('Paralel (kayıtlı izler)', 'Parallel (saved traces)') });
   const N = 240, lf0 = Math.log10(fmin), lf1 = Math.log10(fmax), F = Array.from({ length: N + 1 }, (_, i) => Math.pow(10, lf0 + (lf1 - lf0) * i / N));
   let zlo = Infinity, zhi = 0; for (const c of curves) for (const f of F) { const z = c.fn(f); if (z > 0 && isFinite(z)) { zlo = Math.min(zlo, z); zhi = Math.max(zhi, z); } }
-  const zmin = Math.pow(10, Math.floor(Math.log10(zlo))), zmax = Math.pow(10, Math.ceil(Math.log10(zhi)));
+  const zmin = Math.pow(10, Math.floor(Math.log10(zlo) - 0.3)), zmax = Math.pow(10, Math.ceil(Math.log10(zhi) + 0.15));   // margin: the ESR floor must not sit on the axis
   const W = 640, H = 360, L = 58, R = 16, T = 26, B = 42, pw = W - L - R, ph = H - T - B;
   const X = (f) => L + (Math.log10(f) - lf0) / (lf1 - lf0) * pw, Y = (z) => T + (Math.log10(zmax) - Math.log10(z)) / (Math.log10(zmax) - Math.log10(zmin)) * ph;
   const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('role', 'img');
