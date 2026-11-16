@@ -93,9 +93,18 @@ CMP.resistor = {
         if (!(R > 0) || !(Pr > 0)) return [['—', tt('Direnç ve anma gücü girin', 'Enter resistance and rated power')]];
         let P; if (V > 0) { P = V * V / R; I = V / R; } else if (I > 0) { P = I * I * R; V = I * R; } else return [['—', tt('Gerilim veya akım girin', 'Enter voltage or current')]];
         const der = Ta > 70 && Tm > 70 ? Math.max(0, Pr * (Tm - Ta) / (Tm - 70)) : Pr, load = P / der * 100, cls = load > 100 ? 'bad' : load > 50 ? 'warn' : 'good';
-        const items = [[pctF(load), tt('Kullanım oranı (derating sonrası)', 'Load ratio (after derating)'), 'big ' + cls], [eng(P, 'W'), tt('Harcanan güç', 'Dissipated power')], [eng(der, 'W'), tt('Sıcaklığa göre izin verilen güç', 'Allowed power at temperature')], [eng(V, 'V') + ' / ' + eng(I, 'A'), tt('Gerilim / akım', 'Voltage / current')], [eng(P / 0.5, 'W'), tt('Önerilen min. anma gücü (%50 kuralı)', 'Suggested min. rating (50 % rule)')], [eng(Math.min(Math.sqrt(der * R), Vm), 'V'), tt('Güç ve gerilim sınırından küçük olan', 'Smaller of power and voltage limit')], [eng(Vm * Vm / der, 'Ω'), tt('Kritik direnç (V²/P)', 'Critical resistance (V²/P)')]];
-        if (V > Vm) items.push([tt('AŞILIYOR', 'EXCEEDED'), tt('Maksimum çalışma gerilimi', 'Max working voltage'), 'bad']);
-        if (Rth > 0) items.push([sig(P * Rth, 3) + ' °C', tt('Kendi ısınması ΔT = P·Rth', 'Self-heating ΔT = P·Rth')], [sig(Ta + P * Rth, 3) + ' °C', tt('Tahmini gövde sıcaklığı', 'Estimated body temperature')]);
+        const derHow = Ta > 70 && Tm > 70 ? `P_izin = P_anma·(T_maks − T_a)/(T_maks − 70) = ${eng(Pr, 'W')} · (${Tm} − ${Ta})/(${Tm} − 70) = ${eng(der, 'W')}` : `T_a = ${Ta} °C ≤ 70 °C: tam anma gücü kullanılır, P_izin = ${eng(Pr, 'W')}`;
+        const derHowEn = Ta > 70 && Tm > 70 ? `P_allow = P_rated·(T_max − T_a)/(T_max − 70) = ${eng(Pr, 'W')} · (${Tm} − ${Ta})/(${Tm} − 70) = ${eng(der, 'W')}` : `T_a = ${Ta} °C ≤ 70 °C: full rated power applies, P_allow = ${eng(Pr, 'W')}`;
+        const pHow = G.v('v') > 0 ? `P = V²/R = (${eng(V, 'V')})² / ${eng(R, 'Ω')} = ${eng(P, 'W')}` : `P = I²·R = (${eng(I, 'A')})² · ${eng(R, 'Ω')} = ${eng(P, 'W')}`;
+        const items = [[pctF(load), tt('Kullanım oranı (derating sonrası)', 'Load ratio (after derating)'), 'big ' + cls, tt(`Oran = P / P_izin = ${eng(P, 'W')} / ${eng(der, 'W')} = ${pctF(load)}. %50 altı rahat, %50–100 sınırda, %100 üstü aşırı yük.`, `Ratio = P / P_allow = ${eng(P, 'W')} / ${eng(der, 'W')} = ${pctF(load)}. Below 50 % is comfortable, 50–100 % marginal, above 100 % overloaded.`)],
+          [eng(P, 'W'), tt('Harcanan güç', 'Dissipated power'), '', pHow],
+          [eng(der, 'W'), tt('Sıcaklığa göre izin verilen güç', 'Allowed power at temperature'), '', tt(derHow + '. Güç 70 °C\'den sonra maksimum sıcaklıkta sıfıra doğrusal azalır.', derHowEn + '. Power falls linearly from 70 °C to zero at the maximum temperature.')],
+          [eng(V, 'V') + ' / ' + eng(I, 'A'), tt('Gerilim / akım', 'Voltage / current'), '', G.v('v') > 0 ? `I = V/R = ${eng(V, 'V')} / ${eng(R, 'Ω')} = ${eng(I, 'A')}` : `V = I·R = ${eng(I, 'A')} · ${eng(R, 'Ω')} = ${eng(V, 'V')}`],
+          [eng(P / 0.5, 'W'), tt('Önerilen min. anma gücü (%50 kuralı)', 'Suggested min. rating (50 % rule)'), '', tt(`P_anma ≥ P / 0,5 = ${eng(P, 'W')} / 0,5 = ${eng(P / 0.5, 'W')} (sıcaklık azaltması ayrıca uygulanır).`, `P_rated ≥ P / 0.5 = ${eng(P, 'W')} / 0.5 = ${eng(P / 0.5, 'W')} (temperature derating applies on top).`)],
+          [eng(Math.min(Math.sqrt(der * R), Vm), 'V'), tt('Güç ve gerilim sınırından küçük olan', 'Smaller of power and voltage limit'), '', tt(`V_izin = min(√(P_izin·R), V_maks) = min(√(${eng(der, 'W')} · ${eng(R, 'Ω')}) = ${eng(Math.sqrt(der * R), 'V')}, ${eng(Vm, 'V')}) = ${eng(Math.min(Math.sqrt(der * R), Vm), 'V')}`, `V_allow = min(√(P_allow·R), V_max) = min(√(${eng(der, 'W')} · ${eng(R, 'Ω')}) = ${eng(Math.sqrt(der * R), 'V')}, ${eng(Vm, 'V')}) = ${eng(Math.min(Math.sqrt(der * R), Vm), 'V')}`)],
+          [eng(Vm * Vm / der, 'Ω'), tt('Kritik direnç (V²/P)', 'Critical resistance (V²/P)'), '', tt(`R_krit = V_maks² / P_izin = (${eng(Vm, 'V')})² / ${eng(der, 'W')} = ${eng(Vm * Vm / der, 'Ω')}. R bunun altındaysa güç, üstündeyse gerilim sınırlar.`, `R_crit = V_max² / P_allow = (${eng(Vm, 'V')})² / ${eng(der, 'W')} = ${eng(Vm * Vm / der, 'Ω')}. Below it power limits, above it voltage limits.`)]];
+        if (V > Vm) items.push([tt('AŞILIYOR', 'EXCEEDED'), tt('Maksimum çalışma gerilimi', 'Max working voltage'), 'bad', tt(`Uygulanan ${eng(V, 'V')} > V_maks ${eng(Vm, 'V')}: daha büyük paket veya seri direnç zinciri kullanın.`, `Applied ${eng(V, 'V')} > V_max ${eng(Vm, 'V')}: use a larger package or a series chain.`)]);
+        if (Rth > 0) items.push([sig(P * Rth, 3) + ' °C', tt('Kendi ısınması ΔT = P·Rth', 'Self-heating ΔT = P·Rth'), '', `ΔT = P·R_th = ${eng(P, 'W')} · ${Rth} K/W = ${sig(P * Rth, 3)} °C`], [sig(Ta + P * Rth, 3) + ' °C', tt('Tahmini gövde sıcaklığı', 'Estimated body temperature'), '', `T = T_a + ΔT = ${Ta} + ${sig(P * Rth, 3)} = ${sig(Ta + P * Rth, 3)} °C`]);
         return items;
       } },
     { id: 'dv', group: 'circ', title: ['Gerilim bölücü ve hata bütçesi', 'Voltage divider and error budget'], sub: ['Vout = Vin·R2/(R1+R2)', 'Vout = Vin·R2/(R1+R2)'],
@@ -115,15 +124,19 @@ CMP.resistor = {
         const Vin = G.v('vin'), R1 = G.v('r1'), R2 = G.v('r2'), tol = G.r('tol') || 0, tcr = G.r('tcr') || 0, dT = G.r('dt') || 0, dr = G.r('dr') || 0, rt = G.r('rt'), rc = G.r('rc');
         if (!(Vin > 0 && R1 > 0 && R2 > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const k = R1 / (R1 + R2), vo = Vin * R2 / (R1 + R2);
-        const items = [[eng(vo, 'V'), tt('Nominal çıkış', 'Nominal output'), 'big'], [sig(R2 / (R1 + R2), 5), tt('Bölme oranı', 'Division ratio')], [eng(R1 * R2 / (R1 + R2), 'Ω'), tt('Çıkış (Thevenin) direnci', 'Output (Thevenin) resistance')]];
+        const items = [[eng(vo, 'V'), tt('Nominal çıkış', 'Nominal output'), 'big', `Vout = Vin·R2/(R1+R2) = ${eng(Vin, 'V')} · ${eng(R2, 'Ω')} / (${eng(R1, 'Ω')} + ${eng(R2, 'Ω')}) = ${eng(vo, 'V')}`],
+          [sig(R2 / (R1 + R2), 5), tt('Bölme oranı', 'Division ratio'), '', `k = R2/(R1+R2) = ${eng(R2, 'Ω')} / ${eng(R1 + R2, 'Ω')} = ${sig(R2 / (R1 + R2), 5)}`],
+          [eng(R1 * R2 / (R1 + R2), 'Ω'), tt('Çıkış (Thevenin) direnci', 'Output (Thevenin) resistance'), '', tt(`R_th = R1∥R2 = R1·R2/(R1+R2) = ${eng(R1 * R2 / (R1 + R2), 'Ω')}. Yükün (ADC girişi vb.) bundan en az 10–100 kat büyük olması gerekir.`, `R_th = R1∥R2 = R1·R2/(R1+R2) = ${eng(R1 * R2 / (R1 + R2), 'Ω')}. The load (ADC input etc.) should be 10–100× larger.`)]];
         let dMax, dMin, rss;
-        if (rt > 0 || rc > 0) { const d = (rt || 0) + (rc || 0) * dT / 1e4; dMax = k * d; dMin = -dMax; rss = dMax; items.push([sig(d, 3) + ' %', tt('Oran hatası (toplam)', 'Ratio error (total)')]); }
+        if (rt > 0 || rc > 0) { const d = (rt || 0) + (rc || 0) * dT / 1e4; dMax = k * d; dMin = -dMax; rss = dMax; items.push([sig(d, 3) + ' %', tt('Oran hatası (toplam)', 'Ratio error (total)'), '', tt(`δ = oran toleransı + oran TCR·ΔT = ${rt || 0} % + ${rc || 0} ppm/°C · ${dT} °C = ${sig(d, 3)} %. Çıkış hatası = R1/(R1+R2)·δ.`, `δ = ratio tolerance + ratio TCR·ΔT = ${rt || 0} % + ${rc || 0} ppm/°C · ${dT} °C = ${sig(d, 3)} %. Output error = R1/(R1+R2)·δ.`)]); }
         else {
           const d = tol + tcr * dT / 1e4 + dr, a = 1 + d / 100, b = 1 - d / 100;
           dMax = (Vin * R2 * a / (R1 * b + R2 * a) / vo - 1) * 100; dMin = (Vin * R2 * b / (R1 * a + R2 * b) / vo - 1) * 100; rss = k * Math.sqrt(2) * d;
-          items.push([sig(d, 3) + ' %', tt('Her direncin toplam sapması', 'Total drift of each resistor')]);
+          items.push([sig(d, 3) + ' %', tt('Her direncin toplam sapması', 'Total drift of each resistor'), '', tt(`δ = tolerans + TCR·ΔT + drift = ${tol} % + ${tcr} ppm/°C · ${dT} °C (= ${sig(tcr * dT / 1e4, 3)} %) + ${dr} % = ${sig(d, 3)} %`, `δ = tolerance + TCR·ΔT + drift = ${tol} % + ${tcr} ppm/°C · ${dT} °C (= ${sig(tcr * dT / 1e4, 3)} %) + ${dr} % = ${sig(d, 3)} %`)]);
         }
-        items.push([eng(vo * (1 + dMin / 100), 'V') + ' … ' + eng(vo * (1 + dMax / 100), 'V'), tt('En kötü durum aralığı', 'Worst-case range'), 'warn'], ['±' + sig(Math.max(Math.abs(dMax), Math.abs(dMin)), 3) + ' %', tt('En kötü durum çıkış hatası', 'Worst-case output error')], [sig(rss, 3) + ' %', tt('RSS (istatistiksel) tahmin', 'RSS (statistical) estimate')]);
+        items.push([eng(vo * (1 + dMin / 100), 'V') + ' … ' + eng(vo * (1 + dMax / 100), 'V'), tt('En kötü durum aralığı', 'Worst-case range'), 'warn', tt(`R1 −δ, R2 +δ (üst sınır) ve R1 +δ, R2 −δ (alt sınır) ile Vout yeniden hesaplanır: ${eng(vo, 'V')} · (1 ${sig(dMin, 3)} % … 1 + ${sig(dMax, 3)} %).`, `Vout recomputed with R1 −δ, R2 +δ (upper) and R1 +δ, R2 −δ (lower): ${eng(vo, 'V')} · (1 ${sig(dMin, 3)} % … 1 + ${sig(dMax, 3)} %).`)],
+          ['±' + sig(Math.max(Math.abs(dMax), Math.abs(dMin)), 3) + ' %', tt('En kötü durum çıkış hatası', 'Worst-case output error'), '', tt(`max(|${sig(dMin, 3)} %|, |${sig(dMax, 3)} %|). Yaklaşık olarak 2·δ·R1/(R1+R2) = 2 · δ · ${sig(k, 3)}.`, `max(|${sig(dMin, 3)} %|, |${sig(dMax, 3)} %|). Approximately 2·δ·R1/(R1+R2) = 2 · δ · ${sig(k, 3)}.`)],
+          [sig(rss, 3) + ' %', tt('RSS (istatistiksel) tahmin', 'RSS (statistical) estimate'), '', tt(`Hatalar bağımsız kabul edilirse: √2·δ·R1/(R1+R2) = ${sig(rss, 3)} %. Gerçek üretimde beklenen dağılım; en kötü durumdan küçüktür.`, `With independent errors: √2·δ·R1/(R1+R2) = ${sig(rss, 3)} %. The spread expected in production; smaller than worst case.`)]);
         return items;
       } },
     { id: 'cs', group: 'circ', title: ['Akım algılama direnci', 'Current-sense resistor'], sub: ['V = I·R, P = I²R', 'V = I·R, P = I²R'],
@@ -139,9 +152,13 @@ CMP.resistor = {
         const R = G.v('r'), Imax = G.r('imax'), Imin = G.r('imin'), tol = G.r('tol') || 0, tcr = G.r('tcr') || 0, dT = G.r('dt') || 0, Rth = G.r('rth') || 0, emf = G.r('emf') || 0;
         if (!(R > 0 && Imax > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const P = Imax * Imax * R, dTs = P * Rth, th = tcr * (dTs + dT) / 1e4;
-        const items = [[eng(Imax * R, 'V'), tt('Maks. algılama gerilimi', 'Max sense voltage'), 'big'], [eng(P, 'W'), tt('Maks. güç', 'Max power')], [eng(P / 0.5, 'W'), tt('Önerilen min. anma gücü (%50)', 'Suggested min. rating (50 %)')], [sig(dTs, 3) + ' °C', tt('Kendi ısınması', 'Self-heating')], [sig(th, 3) + ' %', tt('TCR hatası (ısınma + ortam)', 'TCR error (heating + ambient)')]];
-        if (Imin > 0) { const vmin = Imin * R, em = emf * 1e-6 / vmin * 100; items.push([eng(vmin, 'V'), tt('Min. algılama gerilimi', 'Min sense voltage')], [sig(em, 3) + ' %', tt('Termal EMF hatası (min. akımda)', 'Thermal EMF error (at min current)'), em > 1 ? 'warn' : '']); }
-        items.push([sig(tol + th, 3) + ' %', tt('Toplam yaklaşık hata (tolerans + TCR)', 'Approx. total error (tolerance + TCR)')]);
+        const items = [[eng(Imax * R, 'V'), tt('Maks. algılama gerilimi', 'Max sense voltage'), 'big', tt(`V = I_maks·R = ${Imax} A · ${eng(R, 'Ω')} = ${eng(Imax * R, 'V')}. Akım algılama yükselticisinin giriş aralığına uymalı; 50–100 mV tipiktir.`, `V = I_max·R = ${Imax} A · ${eng(R, 'Ω')} = ${eng(Imax * R, 'V')}. Must fit the current-sense amplifier input range; 50–100 mV is typical.`)],
+          [eng(P, 'W'), tt('Maks. güç', 'Max power'), '', `P = I_max²·R = (${Imax} A)² · ${eng(R, 'Ω')} = ${eng(P, 'W')}`],
+          [eng(P / 0.5, 'W'), tt('Önerilen min. anma gücü (%50)', 'Suggested min. rating (50 %)'), '', `P / 0,5 = ${eng(P, 'W')} / 0,5 = ${eng(P / 0.5, 'W')}`],
+          [sig(dTs, 3) + ' °C', tt('Kendi ısınması', 'Self-heating'), '', `ΔT = P·R_th = ${eng(P, 'W')} · ${Rth} K/W = ${sig(dTs, 3)} °C`],
+          [sig(th, 3) + ' %', tt('TCR hatası (ısınma + ortam)', 'TCR error (heating + ambient)'), '', `TCR·(ΔT_self + ΔT_amb) = ${tcr} ppm/°C · (${sig(dTs, 3)} + ${dT}) °C = ${sig(th, 3)} %`]];
+        if (Imin > 0) { const vmin = Imin * R, em = emf * 1e-6 / vmin * 100; items.push([eng(vmin, 'V'), tt('Min. algılama gerilimi', 'Min sense voltage'), '', tt(`V = I_min·R = ${Imin} A · ${eng(R, 'Ω')} = ${eng(vmin, 'V')}. Yükselticinin ofset gerilimi bununla kıyaslanmalı.`, `V = I_min·R = ${Imin} A · ${eng(R, 'Ω')} = ${eng(vmin, 'V')}. Compare the amplifier offset voltage with it.`)], [sig(em, 3) + ' %', tt('Termal EMF hatası (min. akımda)', 'Thermal EMF error (at min current)'), em > 1 ? 'warn' : '', tt(`Hata = EMF / V_min = ${emf} µV / ${eng(vmin, 'V')} = ${sig(em, 3)} %. Pedler arasındaki sıcaklık farkı (°C başına) bu gerilimi üretir.`, `Error = EMF / V_min = ${emf} µV / ${eng(vmin, 'V')} = ${sig(em, 3)} %. Temperature difference between the pads (per °C) produces this voltage.`)]); }
+        items.push([sig(tol + th, 3) + ' %', tt('Toplam yaklaşık hata (tolerans + TCR)', 'Approx. total error (tolerance + TCR)'), '', tt(`${tol} % + ${sig(th, 3)} % = ${sig(tol + th, 3)} % (lineer toplam, en kötü durum).`, `${tol} % + ${sig(th, 3)} % = ${sig(tol + th, 3)} % (linear sum, worst case).`)]);
         return items;
       } },
     { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
@@ -149,7 +166,10 @@ CMP.resistor = {
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];
         const r = nearestE(v, s);
-        return [[eng(r.near, 'Ω'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big'], [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation')], [eng(r.lo, 'Ω') + ' / ' + eng(r.hi, 'Ω'), tt('Alt / üst komşu', 'Lower / upper neighbour')], [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series')]];
+        return [[eng(r.near, 'Ω'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big', tt(`${s} serisinin her dekadındaki değerler arasından ${eng(v, 'Ω')} değerine en yakın olanı.`, `The value of the ${s} series (in every decade) closest to ${eng(v, 'Ω')}.`)],
+          [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation'), '', `(${eng(r.near, 'Ω')} − ${eng(v, 'Ω')}) / ${eng(v, 'Ω')} = ${sig(r.err, 3)} %`],
+          [eng(r.lo, 'Ω') + ' / ' + eng(r.hi, 'Ω'), tt('Alt / üst komşu', 'Lower / upper neighbour'), '', tt('Hesaplanan değerin hemen altındaki ve üstündeki seri değerleri; güvenli tarafta kalmak için birini bilinçli seçin.', 'Series values just below and above the computed value; pick one deliberately to stay on the safe side.')],
+          [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series'), '', tt('Seri adımları toleransa göre seçilmiştir: E6 %20, E12 %10, E24 %5, E48 %2, E96 %1.', 'Series steps follow the tolerance: E6 20 %, E12 10 %, E24 5 %, E48 2 %, E96 1 %.')]];
       } },
   ],
 };

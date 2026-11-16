@@ -106,6 +106,7 @@ main{max-width:1240px;margin:0 auto;padding:8px 24px 56px}
 .qm:hover,.qm:focus-visible,.qm[aria-expanded=true]{background:var(--c);border-color:var(--c);color:var(--c-ink);outline:none}
 .tipbox{margin:2px 0 8px;padding:8px 10px;border-radius:8px;border-left:3px solid var(--c);background:var(--line2);font-size:12.5px;line-height:1.5}
 .tipbox[hidden]{display:none}
+.res div .tipbox{background:var(--card);margin:8px 0 0;padding:8px 10px;font-size:12px;border-radius:7px}
 .tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
 table{border-collapse:collapse;width:100%;font-size:13.5px}
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line2);vertical-align:top}
@@ -234,7 +235,7 @@ document.addEventListener('click', (e) => {
     const tpl = document.querySelector(`template[data-for="${id}"]`);
     box = document.createElement('div'); box.className = 'tipbox'; box.id = id; box.hidden = true; box.dataset.tr = tpl.dataset.tr; box.dataset.en = tpl.dataset.en;
     box.textContent = tt(tpl.dataset.tr, tpl.dataset.en);
-    const fld = b.closest('.fld') || b.parentElement, fin = fld.querySelector('.fin, .sel');
+    const fld = b.closest('.fld') || b.closest('.res > div') || b.parentElement, fin = b.closest('.fld') ? fld.querySelector('.fin, .sel') : null;
     fld.insertBefore(box, fin || null);
   }
   box.hidden = !box.hidden; b.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
@@ -243,7 +244,8 @@ document.addEventListener('click', (e) => {
 /* ----------------------------------------------------------------- generic forms */
 // field spec: {id,tr,en,def,u:'R'|…,ud:unitIndex,help:[tr,en],sel:[[v,tr,en]…],txt:true,wide:true}
 function fieldHTML(cid, f) {
-  const id = `${cid}_${f.id}`, label = `<span>${I(f.tr, f.en)}${f.help ? qm(f.help[0], f.help[1]) : ''}</span>`, w = f.wide ? ' wide' : '';
+  const fh = f.help || (typeof FIELD_HELP !== 'undefined' && FIELD_HELP[f.tr]);
+  const id = `${cid}_${f.id}`, label = `<span>${I(f.tr, f.en)}${fh ? qm(fh[0], fh[1]) : ''}</span>`, w = f.wide ? ' wide' : '';
   if (f.sel) return `<label class="fld${w}" for="${id}">${label}<select class="sel" id="${id}">${f.sel.map(([v, a, b]) => `<option value="${esc(v)}"${String(v) === String(f.def) ? ' selected' : ''} data-tr="${esc(a)}" data-en="${esc(b)}"></option>`).join('')}</select></label>`;
   if (f.txt) return `<label class="fld${w}" for="${id}">${label}<div class="fin"><input id="${id}" value="${esc(f.def ?? '')}" autocomplete="off"></div></label>`;
   const units = f.u ? UNITS[f.u] : null, ud = f.ud ?? (units ? units.findIndex((x) => x[1] === 1) : 0);
@@ -258,9 +260,17 @@ function getter(cid) {
     s(id) { const e = el(id); return e ? e.value : ''; },
   };
 }
-function out(box, items) { // items: [bigText, label, cls]
+// result tile help: text already in the current language (how the number was obtained, values substituted)
+function qmT(text, key) {
+  const id = 'tip' + (++tipN); text = String(text).replace(/\bNaN\b/g, '—');
+  return `<button type="button" class="qm" data-tip="${id}" data-k="${esc(key)}" aria-label="Info" aria-expanded="false" aria-describedby="${id}">?</button><template data-for="${id}" data-tr="${esc(text)}" data-en="${esc(text)}"></template>`;
+}
+function out(box, items) { // items: [bigText, label, cls, help]
   const eb = $(box); if (!eb) return;
-  eb.innerHTML = items.map(([b, l, c]) => `<div class="${c || ''}"><b>${esc(b)}</b><small>${esc(l)}</small></div>`).join('');
+  // keep the explanations the user opened while the values are recalculated
+  const open = new Set([...eb.querySelectorAll('.qm[aria-expanded="true"]')].map((b) => b.dataset.k));
+  eb.innerHTML = items.map(([b, l, c, h], i) => `<div class="${c || ''}"><b>${esc(b)}</b><small>${esc(l)}${h ? qmT(h, l || String(i)) : ''}</small></div>`).join('');
+  if (open.size) eb.querySelectorAll('.qm').forEach((q) => { if (open.has(q.dataset.k)) q.click(); });
 }
 
 /* ----------------------------------------------------------------- panes */
@@ -356,6 +366,7 @@ function selectComp(k, keepTab) {
   applyLang(); showTab(keepTab || curTab);
 }
 </script>
+<script src="field-help.js"></script>
 <script src="spice.js"></script>
 <script src="schem.js"></script>
 <script src="resistor.js"></script>
