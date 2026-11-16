@@ -630,9 +630,11 @@ var V3D = (function () {
       nets.forEach(function (n) {
         ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.fillStyle = n.color; ctx.strokeStyle = n.color;   // pads only: pours / traces would cover the board
-        pcbdata.footprints.forEach(function (fp) {
-          fp.pads.forEach(function (pad) {
+        pcbdata.footprints.forEach(function (fp, fi) {
+          fp.pads.forEach(function (pad, pi) {
             if (NN(pad.net) !== n.net || pad.layers.indexOf(L) < 0) return;
+            // test mode: only the shown probe places of the net (n.pts from viewer-test.js)
+            if (n.pts && !n.pts.has(fi + '|' + (pad.pin != null ? String(pad.pin) : String(pi + 1)))) return;
             any = true;
             try { drawPad(ctx, pad, n.color, false); } catch (e) { /* skip */ }
             ctx.lineWidth = 0.35;

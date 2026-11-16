@@ -104,7 +104,12 @@ CMP.diode = {
         if (!(Vs > 0 && Vf > 0 && I > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const R = (Vs - n * Vf) / I; if (R <= 0) return [['—', tt('Besleme gerilimi LED gerilimlerinin toplamından büyük olmalı', 'Supply must exceed the total LED voltage'), 'bad']];
         const e = nearestE(R, "E24"), up = e.hi, Ia = (Vs - n * Vf) / up;
-        return [[eng(R, 'Ω'), tt('Hesaplanan direnç', 'Calculated resistor'), 'big'], [eng(up, 'Ω'), tt('Standart E24 (eşit/büyük)', 'Standard E24 (equal / higher)')], [eng(Ia, 'A'), tt('Standart direnç ile LED akımı', 'LED current with the standard resistor')], [eng(Ia * Ia * up, 'W'), tt('Dirençte harcanan güç', 'Power in the resistor')], [sig(n * Vf / Vs * 100, 3) + ' %', tt('Verim (LED gerilimi / besleme)', 'Efficiency (LED voltage / supply)')], [eng(Ia * d, 'A'), tt('Ortalama akım (PWM)', 'Average current (PWM)')]];
+        return [[eng(R, 'Ω'), tt('Hesaplanan direnç', 'Calculated resistor'), 'big', `R = (V_s − n·V_F)/I_F = (${eng(Vs, 'V')} − ${n} · ${eng(Vf, 'V')}) / ${eng(I, 'A')} = ${eng(R, 'Ω')}`],
+          [eng(up, 'Ω'), tt('Standart E24 (eşit/büyük)', 'Standard E24 (equal / higher)'), '', tt('Büyük olan komşu seçilir; böylece LED akımı hedefin üstüne çıkmaz.', 'The higher neighbour is chosen so the LED current does not exceed the target.')],
+          [eng(Ia, 'A'), tt('Standart direnç ile LED akımı', 'LED current with the standard resistor'), '', `I = (V_s − n·V_F)/R = (${eng(Vs, 'V')} − ${eng(n * Vf, 'V')}) / ${eng(up, 'Ω')} = ${eng(Ia, 'A')}`],
+          [eng(Ia * Ia * up, 'W'), tt('Dirençte harcanan güç', 'Power in the resistor'), '', tt(`P = I²·R = (${eng(Ia, 'A')})² · ${eng(up, 'Ω')} = ${eng(Ia * Ia * up, 'W')}; anma gücü bunun en az 2 katı olmalı.`, `P = I²·R = (${eng(Ia, 'A')})² · ${eng(up, 'Ω')} = ${eng(Ia * Ia * up, 'W')}; the rating should be at least twice this.`)],
+          [sig(n * Vf / Vs * 100, 3) + ' %', tt('Verim (LED gerilimi / besleme)', 'Efficiency (LED voltage / supply)'), '', tt(`η = n·V_F / V_s = ${eng(n * Vf, 'V')} / ${eng(Vs, 'V')} = ${sig(n * Vf / Vs * 100, 3)} %. Kalanı dirençte ısıya dönüşür; düşükse sabit akım sürücü düşünün.`, `η = n·V_F / V_s = ${eng(n * Vf, 'V')} / ${eng(Vs, 'V')} = ${sig(n * Vf / Vs * 100, 3)} %. The rest is heat in the resistor; if low, consider a constant-current driver.`)],
+          [eng(Ia * d, 'A'), tt('Ortalama akım (PWM)', 'Average current (PWM)'), '', tt(`I_ort = I·D = ${eng(Ia, 'A')} · ${sig(d * 100, 3)} % = ${eng(Ia * d, 'A')}. Algılanan parlaklık ortalama akımla orantılıdır.`, `I_avg = I·D = ${eng(Ia, 'A')} · ${sig(d * 100, 3)} % = ${eng(Ia * d, 'A')}. Perceived brightness follows the average current.`)]];
       } },
     { id: 'zn', group: 'app', title: ['Zener regülatörü', 'Zener regulator'], sub: ['R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)', 'R_s = (V_in,min − V_Z) / (I_Z,min + I_L,max)'],
       fields: [
@@ -118,7 +123,11 @@ CMP.diode = {
         if (!(a > z && b >= a && z > 0 && l1 >= 0 && iz > 0)) return [['—', tt('Değerleri girin (V_in,min > V_Z)', 'Enter the values (V_in,min > V_Z)')]];
         const Rs = (a - z) / (iz + l1), std = nearestE(Rs, "E24").lo;
         const izmax = (b - z) / std - l0, Pz = z * izmax, Prs = (b - z) * (b - z) / std;
-        return [[eng(Rs, 'Ω'), tt('Hesaplanan seri direnç', 'Calculated series resistor'), 'big'], [eng(std, 'Ω'), tt('Standart E24 (eşit/küçük)', 'Standard E24 (equal / lower)')], [eng(izmax, 'A'), tt('Maks. Zener akımı', 'Max Zener current')], [eng(Pz, 'W'), tt('Zener gücü (en kötü durum)', 'Zener power (worst case)'), Pz > pz ? 'bad' : Pz > pz * 0.5 ? 'warn' : 'good'], [eng(Prs, 'W'), tt('Seri dirençte güç', 'Series resistor power')]];
+        return [[eng(Rs, 'Ω'), tt('Hesaplanan seri direnç', 'Calculated series resistor'), 'big', tt(`R_s = (V_in,min − V_Z)/(I_Z,min + I_L,max) = (${eng(a, 'V')} − ${eng(z, 'V')}) / (${eng(iz, 'A')} + ${eng(l1, 'A')}) = ${eng(Rs, 'Ω')}. En düşük girişte ve en büyük yükte zenerde hâlâ I_Z,min kalır.`, `R_s = (V_in,min − V_Z)/(I_Z,min + I_L,max) = (${eng(a, 'V')} − ${eng(z, 'V')}) / (${eng(iz, 'A')} + ${eng(l1, 'A')}) = ${eng(Rs, 'Ω')}. At minimum input and maximum load the zener still carries I_Z,min.`)],
+          [eng(std, 'Ω'), tt('Standart E24 (eşit/küçük)', 'Standard E24 (equal / lower)'), '', tt('Küçük olan komşu seçilir; zener akımı minimumun altına düşmez.', 'The lower neighbour is chosen so the zener current never falls below the minimum.')],
+          [eng(izmax, 'A'), tt('Maks. Zener akımı', 'Max Zener current'), '', `I_Z,max = (V_in,max − V_Z)/R_s − I_L,min = (${eng(b, 'V')} − ${eng(z, 'V')}) / ${eng(std, 'Ω')} − ${eng(l0, 'A')} = ${eng(izmax, 'A')}`],
+          [eng(Pz, 'W'), tt('Zener gücü (en kötü durum)', 'Zener power (worst case)'), Pz > pz ? 'bad' : Pz > pz * 0.5 ? 'warn' : 'good', tt(`P_Z = V_Z·I_Z,max = ${eng(z, 'V')} · ${eng(izmax, 'A')} = ${eng(Pz, 'W')} (anma ${eng(pz, 'W')}). %50 altı önerilir.`, `P_Z = V_Z·I_Z,max = ${eng(z, 'V')} · ${eng(izmax, 'A')} = ${eng(Pz, 'W')} (rated ${eng(pz, 'W')}). Below 50 % is recommended.`)],
+          [eng(Prs, 'W'), tt('Seri dirençte güç', 'Series resistor power'), '', `P = (V_in,max − V_Z)²/R_s = (${eng(b - z, 'V')})² / ${eng(std, 'Ω')} = ${eng(Prs, 'W')}`]];
       } },
     { id: 'pw', group: 'loss', title: ['İletim kaybı ve eklem sıcaklığı', 'Conduction loss and junction temperature'], sub: ['P = V_F·I_F·D, T_j = T_a + P·R_θJA', 'P = V_F·I_F·D, T_j = T_a + P·R_θJA'],
       fields: [
@@ -130,7 +139,9 @@ CMP.diode = {
         const I = G.v('i'), Vf = G.v('vf'), d = (G.r('d') || 100) / 100, Rth = G.r('rth'), Ta = G.r('ta'), Tm = G.r('tj');
         if (!(I > 0 && Vf > 0 && Rth > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const P = Vf * I * d, Tj = Ta + P * Rth;
-        return [[sig(Tj, 4) + ' °C', tt('Eklem sıcaklığı T_j', 'Junction temperature T_j'), 'big ' + (Tj > Tm ? 'bad' : Tj > Tm - 20 ? 'warn' : 'good')], [eng(P, 'W'), tt('İletim kaybı', 'Conduction loss')], [sig(Tm - Tj, 3) + ' °C', tt('T_j(max)\'a kalan pay', 'Margin to T_j(max)')]];
+        return [[sig(Tj, 4) + ' °C', tt('Eklem sıcaklığı T_j', 'Junction temperature T_j'), 'big ' + (Tj > Tm ? 'bad' : Tj > Tm - 20 ? 'warn' : 'good'), `T_j = T_a + P·R_θJA = ${Ta} + ${eng(P, 'W')} · ${Rth} K/W = ${sig(Tj, 4)} °C`],
+          [eng(P, 'W'), tt('İletim kaybı', 'Conduction loss'), '', tt(`P = V_F·I_F·D = ${eng(Vf, 'V')} · ${eng(I, 'A')} · ${sig(d, 3)} = ${eng(P, 'W')}. Ters toparlanma ve sızıntı kaybı ayrıca eklenir.`, `P = V_F·I_F·D = ${eng(Vf, 'V')} · ${eng(I, 'A')} · ${sig(d, 3)} = ${eng(P, 'W')}. Reverse-recovery and leakage losses add on top.`)],
+          [sig(Tm - Tj, 3) + ' °C', tt('T_j(max)\'a kalan pay', 'Margin to T_j(max)'), '', tt(`${Tm} − ${sig(Tj, 4)} = ${sig(Tm - Tj, 3)} °C. Güvenilirlik için en az 20–25 °C pay bırakın.`, `${Tm} − ${sig(Tj, 4)} = ${sig(Tm - Tj, 3)} °C. Leave at least 20–25 °C for reliability.`)]];
       } },
     { id: 'tv', group: 'app', title: ['TVS kıskaç ve darbe gücü', 'TVS clamp and pulse power'], sub: ['I_PP = (V_surge − V_BR) / (R_s + r_d)', 'I_PP = (V_surge − V_BR) / (R_s + r_d)'],
       fields: [
@@ -143,7 +154,11 @@ CMP.diode = {
         const Vs = G.v('vs'), Rs = G.v('rs'), Vbr = G.v('vbr'), Vc = G.v('vc'), Ipr = G.v('ipp'), Pp = G.v('pp');
         if (!(Vs > Vbr && Rs >= 0 && Vc > Vbr && Ipr > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const rd = (Vc - Vbr) / Ipr, Ip = (Vs - Vbr) / (Rs + rd), Vca = Vbr + rd * Ip, P = Vca * Ip;
-        return [[eng(Vca, 'V'), tt('Gerçek kıskaç gerilimi', 'Actual clamping voltage'), 'big ' + (Ip > Ipr ? 'bad' : 'good')], [eng(Ip, 'A'), tt('Tepe darbe akımı', 'Peak pulse current'), Ip > Ipr ? 'bad' : ''], [eng(P, 'W'), tt('Tepe darbe gücü', 'Peak pulse power')], [Pp > 0 ? sig(P / Pp * 100, 3) + ' %' : '—', tt('Anma gücü kullanımı', 'Use of rated power'), P > Pp ? 'bad' : ''], [eng(rd, 'Ω'), tt('Dinamik direnç r_d', 'Dynamic resistance r_d')]];
+        return [[eng(Vca, 'V'), tt('Gerçek kıskaç gerilimi', 'Actual clamping voltage'), 'big ' + (Ip > Ipr ? 'bad' : 'good'), tt(`V_C = V_BR + r_d·I_PP = ${eng(Vbr, 'V')} + ${eng(rd, 'Ω')} · ${eng(Ip, 'A')} = ${eng(Vca, 'V')}. Korunan devrenin mutlak maksimumunun altında olmalı.`, `V_C = V_BR + r_d·I_PP = ${eng(Vbr, 'V')} + ${eng(rd, 'Ω')} · ${eng(Ip, 'A')} = ${eng(Vca, 'V')}. Must stay below the absolute maximum of the protected circuit.`)],
+          [eng(Ip, 'A'), tt('Tepe darbe akımı', 'Peak pulse current'), Ip > Ipr ? 'bad' : '', tt(`I_PP = (V_surge − V_BR)/(R_s + r_d) = (${eng(Vs, 'V')} − ${eng(Vbr, 'V')}) / (${eng(Rs, 'Ω')} + ${eng(rd, 'Ω')}) = ${eng(Ip, 'A')} (anma ${eng(Ipr, 'A')})`, `I_PP = (V_surge − V_BR)/(R_s + r_d) = (${eng(Vs, 'V')} − ${eng(Vbr, 'V')}) / (${eng(Rs, 'Ω')} + ${eng(rd, 'Ω')}) = ${eng(Ip, 'A')} (rated ${eng(Ipr, 'A')})`)],
+          [eng(P, 'W'), tt('Tepe darbe gücü', 'Peak pulse power'), '', `P = V_C·I_PP = ${eng(Vca, 'V')} · ${eng(Ip, 'A')} = ${eng(P, 'W')}`],
+          [Pp > 0 ? sig(P / Pp * 100, 3) + ' %' : '—', tt('Anma gücü kullanımı', 'Use of rated power'), P > Pp ? 'bad' : '', tt(`P / P_PPM = ${eng(P, 'W')} / ${eng(Pp, 'W')}. P_PPM 10/1000 µs içindir; 8/20 µs darbede izin verilen güç daha yüksektir (veri sayfası eğrisi).`, `P / P_PPM = ${eng(P, 'W')} / ${eng(Pp, 'W')}. P_PPM is for 10/1000 µs; for an 8/20 µs pulse the allowed power is higher (datasheet curve).`)],
+          [eng(rd, 'Ω'), tt('Dinamik direnç r_d', 'Dynamic resistance r_d'), '', tt(`r_d = (V_C − V_BR)/I_PP,anma = (${eng(Vc, 'V')} − ${eng(Vbr, 'V')}) / ${eng(Ipr, 'A')} = ${eng(rd, 'Ω')}; veri sayfası iki noktasından doğrusal model.`, `r_d = (V_C − V_BR)/I_PP,rated = (${eng(Vc, 'V')} − ${eng(Vbr, 'V')}) / ${eng(Ipr, 'A')} = ${eng(rd, 'Ω')}; a linear model from two datasheet points.`)]];
       } },
     { id: 'lk', group: 'loss', title: ['Ters kaçak akım ve sıcaklık', 'Reverse leakage vs temperature'], sub: ['I_R(T) = I_R(25)·2^((T − 25)/ΔT)', 'I_R(T) = I_R(25)·2^((T − 25)/ΔT)'],
       fields: [
@@ -155,13 +170,15 @@ CMP.diode = {
         const I0 = G.v('ir'), Vr = G.v('vr'), T = G.r('t'), dt = G.r('dt') || 10;
         if (!(I0 > 0 && Vr > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const I = I0 * Math.pow(2, (T - 25) / dt);
-        return [[eng(I, 'A'), tt('Tahmini kaçak akım', 'Estimated leakage current'), 'big'], [sig(I / I0, 3) + '×', tt('25 °C\'ye göre artış', 'Increase vs 25 °C')], [eng(I * Vr, 'W'), tt('Ters yönde kayıp', 'Reverse-bias loss')]];
+        return [[eng(I, 'A'), tt('Tahmini kaçak akım', 'Estimated leakage current'), 'big', tt(`I_R(T) = I_R(25)·2^((T − 25)/ΔT) = ${eng(I0, 'A')} · 2^((${T} − 25)/${dt}) = ${eng(I, 'A')}. Schottky\'de sızıntı yüksek sıcaklıkta ısıl kaçağa yol açabilir.`, `I_R(T) = I_R(25)·2^((T − 25)/ΔT) = ${eng(I0, 'A')} · 2^((${T} − 25)/${dt}) = ${eng(I, 'A')}. In Schottky diodes leakage can cause thermal runaway at high temperature.`)],
+          [sig(I / I0, 3) + '×', tt('25 °C\'ye göre artış', 'Increase vs 25 °C'), '', tt(`2^((${T} − 25)/${dt}) = ${sig(I / I0, 3)}×; sızıntı her ${dt} °C\'de iki katına çıkar.`, `2^((${T} − 25)/${dt}) = ${sig(I / I0, 3)}×; leakage doubles every ${dt} °C.`)],
+          [eng(I * Vr, 'W'), tt('Ters yönde kayıp', 'Reverse-bias loss'), '', `P = I_R·V_R = ${eng(I, 'A')} · ${eng(Vr, 'V')} = ${eng(I * Vr, 'W')}`]];
       } },
     { id: 'rr', group: 'loss', title: ['Ters toparlanma kaybı', 'Reverse recovery loss'], sub: ['P ≈ Q_rr·V_R·f', 'P ≈ Q_rr·V_R·f'],
       fields: [{ id: 'q', tr: 'Q_rr (nC)', en: 'Q_rr (nC)', def: '50' }, { id: 'v', tr: 'Ters gerilim', en: 'Reverse voltage', def: '400', u: 'V', ud: 1 }, { id: 'f', tr: 'Anahtarlama frekansı', en: 'Switching frequency', def: '100', u: 'F', ud: 1 }],
       compute(G) {
         const Q = G.r('q') * 1e-9, V = G.v('v'), f = G.v('f'); if (!(Q > 0 && V > 0 && f > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        return [[eng(Q * V * f, 'W'), tt('Toparlanma kaybı', 'Recovery loss'), 'big']];
+        return [[eng(Q * V * f, 'W'), tt('Toparlanma kaybı', 'Recovery loss'), 'big', tt(`P ≈ Q_rr·V_R·f = ${sig(Q * 1e9, 4)} nC · ${eng(V, 'V')} · ${eng(f, 'Hz')} = ${eng(Q * V * f, 'W')}. Kayıp büyük ölçüde karşı anahtarda (MOSFET) oluşur; Q_rr sıcaklık ve dI/dt ile artar.`, `P ≈ Q_rr·V_R·f = ${sig(Q * 1e9, 4)} nC · ${eng(V, 'V')} · ${eng(f, 'Hz')} = ${eng(Q * V * f, 'W')}. Most of this loss appears in the opposite switch (MOSFET); Q_rr rises with temperature and dI/dt.`)]];
       } },
   ],
 };

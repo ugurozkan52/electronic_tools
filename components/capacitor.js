@@ -89,7 +89,12 @@ CMP.capacitor = {
         const C = G.v('c'), f = G.v('f'), esr = G.v('esr') || 0, esl = G.v('esl') || 0;
         if (!(C > 0 && f > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const w = 2 * Math.PI * f, Xc = 1 / (w * C), Xl = w * esl, X = Xl - Xc, Z = Math.hypot(esr, X), fs = esl > 0 ? 1 / (2 * Math.PI * Math.sqrt(esl * C)) : Infinity;
-        return [[eng(Z, 'Ω'), tt('Toplam empedans |Z|', 'Total impedance |Z|'), 'big'], [eng(Xc, 'Ω'), 'X_C'], [eng(Xl, 'Ω'), 'X_L (ESL)'], [fs === Infinity ? '—' : eng(fs, 'Hz'), tt('Kendinden rezonans (SRF)', 'Self-resonant frequency (SRF)')], [f < fs ? tt('Kapasitif', 'Capacitive') : tt('Endüktif', 'Inductive'), tt('Bu frekanstaki davranış', 'Behaviour at this frequency'), f < fs ? 'good' : 'warn'], [sig(esr / Xc * 100, 3) + ' %', 'tan δ = ESR/X_C']];
+        return [[eng(Z, 'Ω'), tt('Toplam empedans |Z|', 'Total impedance |Z|'), 'big', `|Z| = √(ESR² + (X_L − X_C)²) = √(${eng(esr, 'Ω')}² + (${eng(Xl, 'Ω')} − ${eng(Xc, 'Ω')})²) = ${eng(Z, 'Ω')}`],
+          [eng(Xc, 'Ω'), 'X_C', '', `X_C = 1/(2π·f·C) = 1 / (2π · ${eng(f, 'Hz')} · ${eng(C, 'F')}) = ${eng(Xc, 'Ω')}`],
+          [eng(Xl, 'Ω'), 'X_L (ESL)', '', tt(`X_L = 2π·f·ESL = 2π · ${eng(f, 'Hz')} · ${eng(esl, 'H')} = ${eng(Xl, 'Ω')}. Bacak ve pad endüktansı; yüksek frekansta baskın olur.`, `X_L = 2π·f·ESL = 2π · ${eng(f, 'Hz')} · ${eng(esl, 'H')} = ${eng(Xl, 'Ω')}. Lead and pad inductance; dominates at high frequency.`)],
+          [fs === Infinity ? '—' : eng(fs, 'Hz'), tt('Kendinden rezonans (SRF)', 'Self-resonant frequency (SRF)'), '', fs === Infinity ? tt('ESL girilmediği için SRF hesaplanmadı.', 'No ESL given, so the SRF is not computed.') : tt(`f_SRF = 1/(2π·√(ESL·C)) = 1 / (2π·√(${eng(esl, 'H')} · ${eng(C, 'F')})) = ${eng(fs, 'Hz')}. Burada X_L = X_C ve |Z| = ESR (en düşük).`, `f_SRF = 1/(2π·√(ESL·C)) = 1 / (2π·√(${eng(esl, 'H')} · ${eng(C, 'F')})) = ${eng(fs, 'Hz')}. Here X_L = X_C and |Z| = ESR (minimum).`)],
+          [f < fs ? tt('Kapasitif', 'Capacitive') : tt('Endüktif', 'Inductive'), tt('Bu frekanstaki davranış', 'Behaviour at this frequency'), f < fs ? 'good' : 'warn', tt(`f = ${eng(f, 'Hz')} ${f < fs ? '<' : '≥'} SRF: ${f < fs ? 'X_C baskın, parça kondansatör gibi davranır.' : 'X_L baskın, parça bobin gibi davranır; dekuplaj için daha küçük paket/değer ekleyin.'}`, `f = ${eng(f, 'Hz')} ${f < fs ? '<' : '≥'} SRF: ${f < fs ? 'X_C dominates, the part behaves as a capacitor.' : 'X_L dominates, the part behaves as an inductor; add a smaller package/value for decoupling.'}`)],
+          [sig(esr / Xc * 100, 3) + ' %', 'tan δ = ESR/X_C', '', tt(`tan δ = ESR / X_C = ${eng(esr, 'Ω')} / ${eng(Xc, 'Ω')} = ${sig(esr / Xc * 100, 3)} %. Kayıp faktörü (DF); veri sayfasında genelde 120 Hz veya 1 kHz\'de verilir.`, `tan δ = ESR / X_C = ${eng(esr, 'Ω')} / ${eng(Xc, 'Ω')} = ${sig(esr / Xc * 100, 3)} %. Dissipation factor (DF); datasheets usually give it at 120 Hz or 1 kHz.`)]];
       } },
     { id: 'ir', group: 'time', title: ['Inrush (kalkış) akımı', 'Inrush current'], sub: ['Besleme takılınca boş kondansatörler kısa devre gibi davranır: I_pk = V / R_seri (ani) ya da C·dV/dt (yumuşak kalkış), τ = R·C, I²t = V²·C / (2R)', 'Empty capacitors look like a short when the supply is applied: I_pk = V / R_series (step) or C·dV/dt (soft start), τ = R·C, I²t = V²·C / (2R)'],
       fields: [
@@ -108,14 +113,18 @@ CMP.capacitor = {
         const R = rs + rl, tau = R * C, ipkStep = V / R, i2tStep = V * V * C / (2 * R);
         // linear ramp over t_r: current settles to C·V/t_r after ≈ τ, but can never exceed the step value
         const ramp = tr > 0 && tr > 2 * tau, ipk = ramp ? Math.min(C * V / tr, ipkStep) : ipkStep, i2t = ramp ? ipk * ipk * tr : i2tStep, tEnd = ramp ? tr + 5 * tau : 5 * tau;
-        const items = [[eng(ipk, 'A'), tt('Tepe inrush akımı', 'Peak inrush current'), 'big ' + (imax > 0 ? (ipk > imax ? 'bad' : 'good') : '')],
-          [ramp ? tt('Yumuşak kalkış: I ≈ C·V/t_r', 'Soft start: I ≈ C·V/t_r') : tt('Ani basamak: I = V/R', 'Step: I = V/R'), tt('Sınırlayan etken', 'Limiting factor')],
-          [eng(tau, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C')], [eng(tEnd, 's'), tt('Inrush süresi (≈ %99 şarj)', 'Inrush duration (≈ 99 % charged)')],
-          [eng(C * V, 'C'), tt('Aktarılan yük Q = C·V', 'Charge delivered Q = C·V')], [eng(i2t, 'A²s'), tt('Inrush I²t', 'Inrush I²t'), i2tF > 0 ? (i2t > 0.3 * i2tF ? 'bad' : 'good') : ''],
-          [eng(0.5 * C * V * V, 'J'), tt('Seri dirençte ısınan enerji (½CV²)', 'Energy heated in the series resistance (½CV²)')]];
-        if (rl > 0) items.push([eng(0.5 * C * V * V * rl / R, 'J'), tt('Sınırlayıcıdaki enerji (darbe gücü kontrolü)', 'Energy in the limiter (check its pulse rating)')]);
-        if (i2tF > 0) items.push([sig(i2t / i2tF * 100, 3) + ' %', tt('Sigorta I²t\'sinin yüzdesi (< %30 iyi)', 'Percent of the fuse I²t (< 30 % is good)'), i2t > 0.3 * i2tF ? 'bad' : 'good']);
-        if (imax > 0 && ipk > imax) { items.push([eng(V / imax - rs, 'Ω'), tt('Gereken toplam sınırlayıcı direnç', 'Required limiter resistance'), 'warn'], [eng(C * V / imax, 's'), tt('Veya gereken yükselme süresi t_r', 'Or the required rise time t_r'), 'warn']); }
+        const ipkHow = ramp ? tt(`Yumuşak kalkış (t_r = ${eng(tr, 's')} > 2τ): I = C·V/t_r = ${eng(C, 'F')} · ${eng(V, 'V')} / ${eng(tr, 's')} = ${eng(ipk, 'A')} (V/R = ${eng(ipkStep, 'A')} ile sınırlı).`, `Soft start (t_r = ${eng(tr, 's')} > 2τ): I = C·V/t_r = ${eng(C, 'F')} · ${eng(V, 'V')} / ${eng(tr, 's')} = ${eng(ipk, 'A')} (capped at V/R = ${eng(ipkStep, 'A')}).`)
+          : tt(`Ani basamak: I = V/R = ${eng(V, 'V')} / (${eng(rs, 'Ω')} + ${eng(rl, 'Ω')}) = ${eng(ipk, 'A')}. R = kaynak + kablo + ESR + sınırlayıcı.`, `Step: I = V/R = ${eng(V, 'V')} / (${eng(rs, 'Ω')} + ${eng(rl, 'Ω')}) = ${eng(ipk, 'A')}. R = source + cable + ESR + limiter.`);
+        const items = [[eng(ipk, 'A'), tt('Tepe inrush akımı', 'Peak inrush current'), 'big ' + (imax > 0 ? (ipk > imax ? 'bad' : 'good') : ''), ipkHow],
+          [ramp ? tt('Yumuşak kalkış: I ≈ C·V/t_r', 'Soft start: I ≈ C·V/t_r') : tt('Ani basamak: I = V/R', 'Step: I = V/R'), tt('Sınırlayan etken', 'Limiting factor'), '', tt('Yükselme süresi t_r, 2τ\'dan uzunsa akımı dV/dt sınırlar; değilse yalnızca seri direnç sınırlar.', 'If the rise time t_r is longer than 2τ the current is set by dV/dt; otherwise only the series resistance limits it.')],
+          [eng(tau, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C'), '', `τ = R·C = ${eng(R, 'Ω')} · ${eng(C, 'F')} = ${eng(tau, 's')}`],
+          [eng(tEnd, 's'), tt('Inrush süresi (≈ %99 şarj)', 'Inrush duration (≈ 99 % charged)'), '', ramp ? `t_r + 5τ = ${eng(tr, 's')} + 5 · ${eng(tau, 's')} = ${eng(tEnd, 's')}` : `5τ = 5 · ${eng(tau, 's')} = ${eng(tEnd, 's')}`],
+          [eng(C * V, 'C'), tt('Aktarılan yük Q = C·V', 'Charge delivered Q = C·V'), '', `Q = C·V = ${eng(C, 'F')} · ${eng(V, 'V')} = ${eng(C * V, 'C')}`],
+          [eng(i2t, 'A²s'), tt('Inrush I²t', 'Inrush I²t'), i2tF > 0 ? (i2t > 0.3 * i2tF ? 'bad' : 'good') : '', ramp ? `I²t ≈ I²·t_r = (${eng(ipk, 'A')})² · ${eng(tr, 's')} = ${eng(i2t, 'A²s')}` : tt(`I²t = ∫i²dt = V²·C/(2R) = (${eng(V, 'V')})² · ${eng(C, 'F')} / (2 · ${eng(R, 'Ω')}) = ${eng(i2t, 'A²s')}. Sigortanın erime I²t\'si ile kıyaslanır.`, `I²t = ∫i²dt = V²·C/(2R) = (${eng(V, 'V')})² · ${eng(C, 'F')} / (2 · ${eng(R, 'Ω')}) = ${eng(i2t, 'A²s')}. Compared with the fuse melting I²t.`)],
+          [eng(0.5 * C * V * V, 'J'), tt('Seri dirençte ısınan enerji (½CV²)', 'Energy heated in the series resistance (½CV²)'), '', tt(`E = ½·C·V² = ½ · ${eng(C, 'F')} · (${eng(V, 'V')})² = ${eng(0.5 * C * V * V, 'J')}. Bir RC şarjında, kondansatöre aktarılan kadar enerji dirençte ısıya dönüşür (R\'den bağımsız).`, `E = ½·C·V² = ½ · ${eng(C, 'F')} · (${eng(V, 'V')})² = ${eng(0.5 * C * V * V, 'J')}. Charging through a resistor heats as much energy as is stored (independent of R).`)]];
+        if (rl > 0) items.push([eng(0.5 * C * V * V * rl / R, 'J'), tt('Sınırlayıcıdaki enerji (darbe gücü kontrolü)', 'Energy in the limiter (check its pulse rating)'), '', tt(`½CV²·R_lim/R_toplam = ${eng(0.5 * C * V * V, 'J')} · ${eng(rl, 'Ω')} / ${eng(R, 'Ω')} = ${eng(0.5 * C * V * V * rl / R, 'J')}. NTC/direncin tek darbe enerji değeriyle kıyaslayın.`, `½CV²·R_lim/R_total = ${eng(0.5 * C * V * V, 'J')} · ${eng(rl, 'Ω')} / ${eng(R, 'Ω')} = ${eng(0.5 * C * V * V * rl / R, 'J')}. Compare with the NTC/resistor single-pulse energy rating.`)]);
+        if (i2tF > 0) items.push([sig(i2t / i2tF * 100, 3) + ' %', tt('Sigorta I²t\'sinin yüzdesi (< %30 iyi)', 'Percent of the fuse I²t (< 30 % is good)'), i2t > 0.3 * i2tF ? 'bad' : 'good', tt(`${eng(i2t, 'A²s')} / ${eng(i2tF, 'A²s')} = ${sig(i2t / i2tF * 100, 3)} %. Tekrarlı açma-kapamada sigortanın yorulmaması için %20–30 altı önerilir.`, `${eng(i2t, 'A²s')} / ${eng(i2tF, 'A²s')} = ${sig(i2t / i2tF * 100, 3)} %. Below 20–30 % is recommended so repeated power cycles do not fatigue the fuse.`)]);
+        if (imax > 0 && ipk > imax) { items.push([eng(V / imax - rs, 'Ω'), tt('Gereken toplam sınırlayıcı direnç', 'Required limiter resistance'), 'warn', `R_lim = V/I_max − R_s = ${eng(V, 'V')} / ${eng(imax, 'A')} − ${eng(rs, 'Ω')} = ${eng(V / imax - rs, 'Ω')}`], [eng(C * V / imax, 's'), tt('Veya gereken yükselme süresi t_r', 'Or the required rise time t_r'), 'warn', tt(`t_r = C·V/I_max = ${eng(C, 'F')} · ${eng(V, 'V')} / ${eng(imax, 'A')} = ${eng(C * V / imax, 's')} (hot-swap / soft-start denetleyicisiyle).`, `t_r = C·V/I_max = ${eng(C, 'F')} · ${eng(V, 'V')} / ${eng(imax, 'A')} = ${eng(C * V / imax, 's')} (with a hot-swap / soft-start controller).`)]); }
         return items;
       } },
     { id: 'rc', group: 'time', title: ['RC şarj / deşarj ve enerji', 'RC charge / discharge and energy'], sub: ['τ = R·C, E = ½·C·V²', 'τ = R·C, E = ½·C·V²'],
@@ -126,9 +135,12 @@ CMP.capacitor = {
       compute(G) {
         const R = G.v('r'), C = G.v('c'), V = G.v('v'), p = G.r('p');
         if (!(R > 0 && C > 0 && V > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        const tau = R * C, items = [[eng(tau, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C'), 'big']];
-        if (p > 0 && p < 100) items.push([eng(-tau * Math.log(1 - p / 100), 's'), tt(`%${p} şarj / %${100 - p} kalan süresi`, `Time to ${p} % charge / ${100 - p} % left`)]);
-        items.push([eng(5 * tau, 's'), tt('5τ (≈ %99,3)', '5τ (≈ 99.3 %)')], [eng(0.5 * C * V * V, 'J'), tt('Depolanan enerji ½CV²', 'Stored energy ½CV²')], [eng(C * V, 'C'), tt('Yük Q = C·V', 'Charge Q = C·V')], [eng(V / R, 'A'), tt('İlk akım (V/R)', 'Initial current (V/R)')]);
+        const tau = R * C, items = [[eng(tau, 's'), tt('Zaman sabiti τ = R·C', 'Time constant τ = R·C'), 'big', tt(`τ = R·C = ${eng(R, 'Ω')} · ${eng(C, 'F')} = ${eng(tau, 's')}. Şarjda 1τ sonunda gerilim son değerin %63,2\'sine ulaşır.`, `τ = R·C = ${eng(R, 'Ω')} · ${eng(C, 'F')} = ${eng(tau, 's')}. When charging, the voltage reaches 63.2 % of its final value after 1τ.`)]];
+        if (p > 0 && p < 100) items.push([eng(-tau * Math.log(1 - p / 100), 's'), tt(`%${p} şarj / %${100 - p} kalan süresi`, `Time to ${p} % charge / ${100 - p} % left`), '', `t = −τ·ln(1 − ${p}/100) = −${eng(tau, 's')} · ln(${sig(1 - p / 100, 4)}) = ${eng(-tau * Math.log(1 - p / 100), 's')}`]);
+        items.push([eng(5 * tau, 's'), tt('5τ (≈ %99,3)', '5τ (≈ 99.3 %)'), '', tt(`5 · ${eng(tau, 's')} = ${eng(5 * tau, 's')}; 1 − e⁻⁵ = %99,33. Pratikte "tam dolu" kabul edilir.`, `5 · ${eng(tau, 's')} = ${eng(5 * tau, 's')}; 1 − e⁻⁵ = 99.33 %. Taken as "fully charged" in practice.`)],
+          [eng(0.5 * C * V * V, 'J'), tt('Depolanan enerji ½CV²', 'Stored energy ½CV²'), '', `E = ½·C·V² = ½ · ${eng(C, 'F')} · (${eng(V, 'V')})² = ${eng(0.5 * C * V * V, 'J')}`],
+          [eng(C * V, 'C'), tt('Yük Q = C·V', 'Charge Q = C·V'), '', `Q = C·V = ${eng(C, 'F')} · ${eng(V, 'V')} = ${eng(C * V, 'C')}`],
+          [eng(V / R, 'A'), tt('İlk akım (V/R)', 'Initial current (V/R)'), '', tt(`I₀ = V/R = ${eng(V, 'V')} / ${eng(R, 'Ω')} = ${eng(V / R, 'A')}; sonra e^(−t/τ) ile azalır.`, `I₀ = V/R = ${eng(V, 'V')} / ${eng(R, 'Ω')} = ${eng(V / R, 'A')}; then decays as e^(−t/τ).`)]);
         return items;
       } },
     { id: 'dr', group: 'rate', title: ['Gerilim derating', 'Voltage derating'], sub: ['V_anma ≥ V_tepe / katsayı', 'V_rated ≥ V_peak / factor'],
@@ -141,7 +153,10 @@ CMP.capacitor = {
         const F = { c0g: 0.8, x7r: 0.6, al: 0.8, alp: 0.8, tam: 0.5, tap: 0.8, film: 0.7 }[G.s('t')], vdc = G.v('vdc'), vac = G.v('vac') || 0;
         if (!(vdc > 0)) return [['—', tt('Gerilim girin', 'Enter the voltage')]];
         const vp = vdc + vac, need = vp / F, std = [4, 6.3, 10, 16, 25, 35, 50, 63, 100, 160, 200, 250, 400, 450, 630, 1000, 1500, 2000, 3000].find((x) => x >= need);
-        return [[std ? eng(std, 'V') : tt('tablo dışı', 'off table'), tt('Seçilecek standart anma gerilimi', 'Standard rated voltage to choose'), 'big'], [eng(vp, 'V'), tt('Tepe gerilim (DC + AC)', 'Peak voltage (DC + AC)')], [eng(need, 'V'), tt('Gereken min. anma gerilimi', 'Required min. rated voltage')], [sig(F * 100, 3) + ' %', tt('Kullanım katsayısı (üst sınır)', 'Utilisation factor (upper limit)')]];
+        return [[std ? eng(std, 'V') : tt('tablo dışı', 'off table'), tt('Seçilecek standart anma gerilimi', 'Standard rated voltage to choose'), 'big', tt(`Standart seriden (4, 6,3, 10, 16, 25, 35, 50, 63, 100 V …) ${eng(need, 'V')} veya üstündeki ilk değer.`, `First value of the standard series (4, 6.3, 10, 16, 25, 35, 50, 63, 100 V …) at or above ${eng(need, 'V')}.`)],
+          [eng(vp, 'V'), tt('Tepe gerilim (DC + AC)', 'Peak voltage (DC + AC)'), '', `V_tepe = V_DC + V_AC = ${eng(vdc, 'V')} + ${eng(vac, 'V')} = ${eng(vp, 'V')}`],
+          [eng(need, 'V'), tt('Gereken min. anma gerilimi', 'Required min. rated voltage'), '', `V_anma ≥ V_tepe / k = ${eng(vp, 'V')} / ${F} = ${eng(need, 'V')}`],
+          [sig(F * 100, 3) + ' %', tt('Kullanım katsayısı (üst sınır)', 'Utilisation factor (upper limit)'), '', tt('Türe göre önerilen en büyük V_tepe/V_anma: C0G %80, X7R %60 (DC bias kapasiteyi düşürür), tantal MnO₂ %50, polimer tantal / elektrolitik %80, film %70.', 'Recommended maximum V_peak/V_rated by type: C0G 80 %, X7R 60 % (DC bias reduces capacitance), MnO₂ tantalum 50 %, polymer tantalum / electrolytic 80 %, film 70 %.')]];
       } },
     { id: 'rl', group: 'rate', title: ['Ripple akımı ve elektrolitik ömür', 'Ripple current and electrolytic life'], sub: ['L = L₀·2^((T₀ − T_çekirdek)/10)', 'L = L₀·2^((T₀ − T_core)/10)'],
       fields: [
@@ -155,8 +170,12 @@ CMP.capacitor = {
         const I = G.r('i'), esr = G.v('esr'), rth = G.r('rth') || 0, ta = G.r('ta'), l0 = G.r('l0'), t0 = G.r('t0'), ir = G.r('ir');
         if (!(I > 0 && esr > 0 && l0 > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         const P = I * I * esr, dT = P * rth, Tc = ta + dT, life = l0 * Math.pow(2, (t0 - Tc) / 10), yrs = life / 8760;
-        const items = [[sig(yrs, 3) + ' ' + tt('yıl', 'years'), tt('Tahmini ömür (7/24 çalışma)', 'Estimated life (24/7 operation)'), 'big ' + (yrs < 5 ? 'bad' : yrs < 10 ? 'warn' : 'good')], [sig(life, 4) + ' h', tt('Tahmini ömür (saat)', 'Estimated life (hours)')], [eng(P, 'W'), tt('Kayıp güç I²·ESR', 'Power loss I²·ESR')], [sig(dT, 3) + ' °C', tt('Kendi ısınması', 'Self-heating')], [sig(Tc, 3) + ' °C', tt('Çekirdek sıcaklığı', 'Core temperature'), Tc > t0 ? 'bad' : '']];
-        if (ir > 0) items.push([sig(I / ir * 100, 3) + ' %', tt('Anma ripple akımının oranı', 'Fraction of rated ripple'), I > ir ? 'bad' : '']);
+        const items = [[sig(yrs, 3) + ' ' + tt('yıl', 'years'), tt('Tahmini ömür (7/24 çalışma)', 'Estimated life (24/7 operation)'), 'big ' + (yrs < 5 ? 'bad' : yrs < 10 ? 'warn' : 'good'), tt(`${sig(life, 4)} h / 8760 h/yıl = ${sig(yrs, 3)} yıl. 10 °C kuralı (Arrhenius) yaklaşık bir tahmindir; üretici formülü varsa onu kullanın.`, `${sig(life, 4)} h / 8760 h/year = ${sig(yrs, 3)} years. The 10 °C rule (Arrhenius) is an approximation; use the maker\'s formula when available.`)],
+          [sig(life, 4) + ' h', tt('Tahmini ömür (saat)', 'Estimated life (hours)'), '', `L = L₀·2^((T₀ − T_c)/10) = ${l0} h · 2^((${t0} − ${sig(Tc, 3)})/10) = ${sig(life, 4)} h`],
+          [eng(P, 'W'), tt('Kayıp güç I²·ESR', 'Power loss I²·ESR'), '', `P = I²·ESR = (${I} A)² · ${eng(esr, 'Ω')} = ${eng(P, 'W')}`],
+          [sig(dT, 3) + ' °C', tt('Kendi ısınması', 'Self-heating'), '', `ΔT = P·R_th = ${eng(P, 'W')} · ${rth} K/W = ${sig(dT, 3)} °C`],
+          [sig(Tc, 3) + ' °C', tt('Çekirdek sıcaklığı', 'Core temperature'), Tc > t0 ? 'bad' : '', tt(`T_c = T_a + ΔT = ${ta} + ${sig(dT, 3)} = ${sig(Tc, 3)} °C${Tc > t0 ? '; anma sıcaklığını aşıyor' : ''}`, `T_c = T_a + ΔT = ${ta} + ${sig(dT, 3)} = ${sig(Tc, 3)} °C${Tc > t0 ? '; above the rated temperature' : ''}`)]];
+        if (ir > 0) items.push([sig(I / ir * 100, 3) + ' %', tt('Anma ripple akımının oranı', 'Fraction of rated ripple'), I > ir ? 'bad' : '', tt(`${I} A / ${ir} A = ${sig(I / ir * 100, 3)} %. Anma ripple akımı genelde 100/120 Hz veya 100 kHz\'de verilir; frekans katsayısıyla düzeltin.`, `${I} A / ${ir} A = ${sig(I / ir * 100, 3)} %. Rated ripple is usually given at 100/120 Hz or 100 kHz; correct with the frequency multiplier.`)]);
         return items;
       } },
     { id: 'hu', group: 'time', title: ['Hold-up kapasitesi', 'Hold-up capacitance'], sub: ['C = 2·P·t / (η·(V₁² − V₂²))', 'C = 2·P·t / (η·(V₁² − V₂²))'],
@@ -169,14 +188,19 @@ CMP.capacitor = {
         const P = G.v('p'), t = G.v('t'), v1 = G.v('v1'), v2 = G.v('v2'), eta = (G.r('e') || 100) / 100;
         if (!(P > 0 && t > 0 && v1 > v2 && v2 > 0)) return [['—', tt('Değerleri girin (V1 > V2)', 'Enter the values (V1 > V2)')]];
         const C = 2 * P * t / (eta * (v1 * v1 - v2 * v2));
-        return [[eng(C, 'F'), tt('Gereken kapasitans', 'Required capacitance'), 'big'], [eng(P * t / eta, 'J'), tt('Gereken enerji', 'Required energy')], [eng(0.5 * C * (v1 * v1 - v2 * v2), 'J'), tt('Kullanılabilir enerji', 'Usable energy')]];
+        return [[eng(C, 'F'), tt('Gereken kapasitans', 'Required capacitance'), 'big', tt(`C = 2·P·t / (η·(V₁² − V₂²)) = 2 · ${eng(P, 'W')} · ${eng(t, 's')} / (${sig(eta, 3)} · (${eng(v1, 'V')}² − ${eng(v2, 'V')}²)) = ${eng(C, 'F')}. Tolerans, yaşlanma ve ESR için %20–50 pay ekleyin.`, `C = 2·P·t / (η·(V₁² − V₂²)) = 2 · ${eng(P, 'W')} · ${eng(t, 's')} / (${sig(eta, 3)} · (${eng(v1, 'V')}² − ${eng(v2, 'V')}²)) = ${eng(C, 'F')}. Add 20–50 % margin for tolerance, ageing and ESR.`)],
+          [eng(P * t / eta, 'J'), tt('Gereken enerji', 'Required energy'), '', `E = P·t/η = ${eng(P, 'W')} · ${eng(t, 's')} / ${sig(eta, 3)} = ${eng(P * t / eta, 'J')}`],
+          [eng(0.5 * C * (v1 * v1 - v2 * v2), 'J'), tt('Kullanılabilir enerji', 'Usable energy'), '', tt(`½·C·(V₁² − V₂²): V₂\'nin altındaki enerji (½·C·V₂² = ${eng(0.5 * C * v2 * v2, 'J')}) kullanılamaz.`, `½·C·(V₁² − V₂²): the energy below V₂ (½·C·V₂² = ${eng(0.5 * C * v2 * v2, 'J')}) cannot be used.`)]];
       } },
     { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
       fields: [{ id: 'v', tr: 'Hesaplanan değer', en: 'Computed value', def: '4.2', u: 'C', ud: 2 }, { id: 's', tr: 'Seri', en: 'Series', def: 'E12', sel: SEL_E }],
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];
         const r = nearestE(v, s);
-        return [[eng(r.near, 'F'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big'], [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation')], [eng(r.lo, 'F') + ' / ' + eng(r.hi, 'F'), tt('Alt / üst komşu', 'Lower / upper neighbour')], [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series')]];
+        return [[eng(r.near, 'F'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big', tt(`${s} serisinin her dekadındaki değerler arasından ${eng(v, 'F')} değerine en yakın olanı.`, `The value of the ${s} series (in every decade) closest to ${eng(v, 'F')}.`)],
+          [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation'), '', `(${eng(r.near, 'F')} − ${eng(v, 'F')}) / ${eng(v, 'F')} = ${sig(r.err, 3)} %`],
+          [eng(r.lo, 'F') + ' / ' + eng(r.hi, 'F'), tt('Alt / üst komşu', 'Lower / upper neighbour'), '', tt('Hesaplanan değerin hemen altındaki ve üstündeki seri değerleri; güvenli tarafta kalmak için birini bilinçli seçin.', 'Series values just below and above the computed value; pick one deliberately to stay on the safe side.')],
+          [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series'), '', tt('Seri adımları toleransa göre seçilmiştir: E6 %20, E12 %10, E24 %5, E48 %2, E96 %1.', 'Series steps follow the tolerance: E6 20 %, E12 10 %, E24 5 %, E48 2 %, E96 1 %.')]];
       } },
   ],
 };

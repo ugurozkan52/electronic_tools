@@ -90,16 +90,23 @@ CMP.inductor = {
         if (!boost) { if (Vo >= Vin) return [['—', tt('Buck için Vout < Vin olmalı', 'Buck needs Vout < Vin'), 'bad']]; D = Vo / Vin; Iavg = Io; dI = r * Iavg; L = (Vin - Vo) * D / (f * dI); }
         else { if (Vo <= Vin) return [['—', tt('Boost için Vout > Vin olmalı', 'Boost needs Vout > Vin'), 'bad']]; D = 1 - Vin * eta / Vo; Iavg = Io * Vo / (Vin * eta); dI = r * Iavg; L = Vin * D / (f * dI); }
         const Ipk = Iavg + dI / 2, Irms = Math.sqrt(Iavg * Iavg + dI * dI / 12), e = nearestE(L, 'E12');
-        return [[eng(L, 'H'), tt('Gereken endüktans', 'Required inductance'), 'big'], [eng(e.near, 'H'), tt('En yakın E12 değeri', 'Nearest E12 value')], [sig(D * 100, 3) + ' %', tt('Görev oranı D', 'Duty cycle D')], [eng(dI, 'A'), tt('Ripple akımı ΔI (p-p)', 'Ripple current ΔI (p-p)')], [eng(Ipk, 'A'), tt('Tepe akım', 'Peak current')], [eng(Irms, 'A'), tt('RMS akım', 'RMS current')], [eng(Ipk * 1.3, 'A'), tt('Önerilen min. I_sat (×1,3)', 'Suggested min. I_sat (×1.3)')]];
+        const lHow = boost ? `L = Vin·D/(f·ΔI) = ${eng(Vin, 'V')} · ${sig(D, 3)} / (${eng(f, 'Hz')} · ${eng(dI, 'A')}) = ${eng(L, 'H')}` : `L = (Vin − Vout)·D/(f·ΔI) = (${eng(Vin, 'V')} − ${eng(Vo, 'V')}) · ${sig(D, 3)} / (${eng(f, 'Hz')} · ${eng(dI, 'A')}) = ${eng(L, 'H')}`;
+        return [[eng(L, 'H'), tt('Gereken endüktans', 'Required inductance'), 'big', tt(lHow + `. Ripple oranı %${sig(r * 100, 3)} seçildi (genelde %20–40).`, lHow + `. Ripple ratio ${sig(r * 100, 3)} % chosen (usually 20–40 %).`)],
+          [eng(e.near, 'H'), tt('En yakın E12 değeri', 'Nearest E12 value'), '', tt('Bobinler çoğunlukla E6/E12 değerlerinde üretilir. Daha küçük L ripple\'ı, daha büyük L boyutu ve DCR\'yi artırır.', 'Inductors are mostly made in E6/E12 values. Smaller L raises ripple, larger L raises size and DCR.')],
+          [sig(D * 100, 3) + ' %', tt('Görev oranı D', 'Duty cycle D'), '', boost ? `D = 1 − Vin·η/Vout = 1 − ${eng(Vin, 'V')} · ${sig(eta, 3)} / ${eng(Vo, 'V')} = ${sig(D * 100, 3)} %` : `D = Vout/Vin = ${eng(Vo, 'V')} / ${eng(Vin, 'V')} = ${sig(D * 100, 3)} %`],
+          [eng(dI, 'A'), tt('Ripple akımı ΔI (p-p)', 'Ripple current ΔI (p-p)'), '', `ΔI = r·I_L = ${sig(r, 3)} · ${eng(Iavg, 'A')} = ${eng(dI, 'A')}` + (boost ? tt(` (boost: I_L = Iout·Vout/(Vin·η) = ${eng(Iavg, 'A')})`, ` (boost: I_L = Iout·Vout/(Vin·η) = ${eng(Iavg, 'A')})`) : '')],
+          [eng(Ipk, 'A'), tt('Tepe akım', 'Peak current'), '', `I_pk = I_L + ΔI/2 = ${eng(Iavg, 'A')} + ${eng(dI / 2, 'A')} = ${eng(Ipk, 'A')}`],
+          [eng(Irms, 'A'), tt('RMS akım', 'RMS current'), '', tt(`I_rms = √(I_L² + ΔI²/12) = ${eng(Irms, 'A')}. Isınma (I_rms veya I_temp değeri) buna göre kontrol edilir.`, `I_rms = √(I_L² + ΔI²/12) = ${eng(Irms, 'A')}. Heating (I_rms or I_temp rating) is checked against it.`)],
+          [eng(Ipk * 1.3, 'A'), tt('Önerilen min. I_sat (×1,3)', 'Suggested min. I_sat (×1.3)'), '', tt(`I_sat ≥ 1,3·I_pk = ${eng(Ipk * 1.3, 'A')}. Pay, akım sınırı, yük geçişi ve sıcaklıkta azalan I_sat içindir; denetleyicinin akım limitini de aşmalıdır.`, `I_sat ≥ 1.3·I_pk = ${eng(Ipk * 1.3, 'A')}. The margin covers current limit, load steps and I_sat dropping with temperature; it should also exceed the controller current limit.`)]];
       } },
     { id: 'en', group: 'ac', title: ['Enerji, reaktans ve Q', 'Energy, reactance and Q'], sub: ['E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR', 'E = ½·L·I², X_L = 2π·f·L, Q = X_L/DCR'],
       fields: [{ id: 'l', tr: 'Endüktans', en: 'Inductance', def: '10', u: 'L', ud: 1 }, { id: 'i', tr: 'Akım', en: 'Current', def: '1', u: 'A', ud: 2 }, { id: 'f', tr: 'Frekans', en: 'Frequency', def: '100', u: 'F', ud: 1 }, { id: 'dcr', tr: 'DCR', en: 'DCR', def: '50', u: 'R', ud: 0 }],
       compute(G) {
         const L = G.v('l'), I = G.v('i'), f = G.v('f'), R = G.v('dcr');
         if (!(L > 0 && f > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        const X = 2 * Math.PI * f * L, items = [[eng(X, 'Ω'), 'X_L = 2π·f·L', 'big']];
-        if (I > 0) items.push([eng(0.5 * L * I * I, 'J'), tt('Depolanan enerji ½LI²', 'Stored energy ½LI²')]);
-        if (R > 0) { items.push([sig(X / R, 3), tt('Q = X_L / DCR', 'Q = X_L / DCR')], [eng(L / R, 's'), tt('Zaman sabiti τ = L/R', 'Time constant τ = L/R')]); if (I > 0) items.push([eng(I * I * R, 'W'), tt('Bakır kaybı I²·DCR', 'Copper loss I²·DCR')]); }
+        const X = 2 * Math.PI * f * L, items = [[eng(X, 'Ω'), 'X_L = 2π·f·L', 'big', `X_L = 2π·f·L = 2π · ${eng(f, 'Hz')} · ${eng(L, 'H')} = ${eng(X, 'Ω')}`]];
+        if (I > 0) items.push([eng(0.5 * L * I * I, 'J'), tt('Depolanan enerji ½LI²', 'Stored energy ½LI²'), '', tt(`E = ½·L·I² = ½ · ${eng(L, 'H')} · (${eng(I, 'A')})² = ${eng(0.5 * L * I * I, 'J')}. Akım aniden kesilirse bu enerji gerilim tepesi olarak açığa çıkar.`, `E = ½·L·I² = ½ · ${eng(L, 'H')} · (${eng(I, 'A')})² = ${eng(0.5 * L * I * I, 'J')}. If the current is interrupted this energy appears as a voltage spike.`)]);
+        if (R > 0) { items.push([sig(X / R, 3), tt('Q = X_L / DCR', 'Q = X_L / DCR'), '', tt(`Q = X_L/DCR = ${eng(X, 'Ω')} / ${eng(R, 'Ω')} = ${sig(X / R, 3)}. Yalnızca DC direnci içerir; yüksek frekansta deri etkisi ve çekirdek kaybı Q\'yu düşürür.`, `Q = X_L/DCR = ${eng(X, 'Ω')} / ${eng(R, 'Ω')} = ${sig(X / R, 3)}. DC resistance only; at high frequency skin effect and core loss lower Q.`)], [eng(L / R, 's'), tt('Zaman sabiti τ = L/R', 'Time constant τ = L/R'), '', `τ = L/R = ${eng(L, 'H')} / ${eng(R, 'Ω')} = ${eng(L / R, 's')}`]); if (I > 0) items.push([eng(I * I * R, 'W'), tt('Bakır kaybı I²·DCR', 'Copper loss I²·DCR'), '', `P = I²·DCR = (${eng(I, 'A')})² · ${eng(R, 'Ω')} = ${eng(I * I * R, 'W')}`]); }
         return items;
       } },
     { id: 'tr', group: 'smps', title: ['Isınma ve DCR (sıcaklığa bağlı)', 'Heating and DCR (temperature dependent)'], sub: ['DCR(T) = DCR₂₀·(1 + 0,00393·(T − 20))', 'DCR(T) = DCR₂₀·(1 + 0.00393·(T − 20))'],
@@ -109,7 +116,11 @@ CMP.inductor = {
         if (!(I > 0 && R20 > 0 && Rth > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
         let T = Ta, R = R20; for (let k = 0; k < 20; k++) { R = R20 * (1 + 0.00393 * (T - 20)); T = Ta + I * I * R * Rth; }
         const P = I * I * R;
-        return [[sig(T, 4) + ' °C', tt('Bobin sıcaklığı', 'Inductor temperature'), 'big ' + (T > Tm ? 'bad' : T > Tm - 15 ? 'warn' : 'good')], [eng(P, 'W'), tt('Bakır kaybı', 'Copper loss')], [eng(R, 'Ω'), tt('Sıcak DCR', 'Hot DCR')], [sig(T - Ta, 3) + ' °C', tt('Sıcaklık artışı', 'Temperature rise')], [Tm > 0 ? sig(Tm - T, 3) + ' °C' : '—', tt('Sınıra kalan pay', 'Margin to the limit')]];
+        return [[sig(T, 4) + ' °C', tt('Bobin sıcaklığı', 'Inductor temperature'), 'big ' + (T > Tm ? 'bad' : T > Tm - 15 ? 'warn' : 'good'), tt(`T = T_a + I²·DCR(T)·R_th = ${Ta} + (${eng(I, 'A')})² · ${eng(R, 'Ω')} · ${Rth} K/W = ${sig(T, 4)} °C. DCR sıcaklıkla arttığı için iteratif çözülür; çekirdek kaybı dahil değildir.`, `T = T_a + I²·DCR(T)·R_th = ${Ta} + (${eng(I, 'A')})² · ${eng(R, 'Ω')} · ${Rth} K/W = ${sig(T, 4)} °C. Solved iteratively since DCR rises with temperature; core loss is not included.`)],
+          [eng(P, 'W'), tt('Bakır kaybı', 'Copper loss'), '', `P = I²·DCR(T) = (${eng(I, 'A')})² · ${eng(R, 'Ω')} = ${eng(P, 'W')}`],
+          [eng(R, 'Ω'), tt('Sıcak DCR', 'Hot DCR'), '', `DCR(T) = DCR₂₀·(1 + 0,00393·(T − 20)) = ${eng(R20, 'Ω')} · (1 + 0,00393 · (${sig(T, 4)} − 20)) = ${eng(R, 'Ω')}`],
+          [sig(T - Ta, 3) + ' °C', tt('Sıcaklık artışı', 'Temperature rise'), '', tt(`ΔT = P·R_th = ${eng(P, 'W')} · ${Rth} K/W = ${sig(T - Ta, 3)} °C. Veri sayfasındaki I_temp genelde 40 °C artış içindir.`, `ΔT = P·R_th = ${eng(P, 'W')} · ${Rth} K/W = ${sig(T - Ta, 3)} °C. The datasheet I_temp is usually for a 40 °C rise.`)],
+          [Tm > 0 ? sig(Tm - T, 3) + ' °C' : '—', tt('Sınıra kalan pay', 'Margin to the limit'), '', `T_maks − T = ${Tm} − ${sig(T, 4)} = ${sig(Tm - T, 3)} °C`]];
       } },
     { id: 'al', group: 'design', title: ['AL ile sarım sayısı ve doyma', 'Turns from AL and saturation'], sub: ['L = AL·N², B = L·I/(N·Ae)', 'L = AL·N², B = L·I/(N·Ae)'],
       fields: [
@@ -119,8 +130,9 @@ CMP.inductor = {
       compute(G) {
         const AL = G.r('al') * 1e-9, L = G.v('l'), Ae = G.r('ae') * 1e-6, I = G.v('i'), Bs = G.r('bs');
         if (!(AL > 0 && L > 0)) return [['—', tt('AL ve L girin', 'Enter AL and L')]];
-        const N = Math.ceil(Math.sqrt(L / AL)), La = AL * N * N, items = [[N + ' ' + tt('sarım', 'turns'), tt('Gereken sarım sayısı', 'Required number of turns'), 'big'], [eng(La, 'H'), tt('Bu sarımla gerçek L', 'Actual L with this winding')]];
-        if (Ae > 0 && I > 0) { const B = La * I / (N * Ae), m = Bs > 0 ? B / Bs * 100 : NaN; items.push([sig(B * 1000, 3) + ' mT', tt('Tepe akı yoğunluğu', 'Peak flux density')], isFinite(m) ? [sig(m, 3) + ' %', tt('B_sat\'ın oranı', 'Fraction of B_sat'), m > 80 ? 'bad' : m > 60 ? 'warn' : 'good'] : ['—', '']); }
+        const N = Math.ceil(Math.sqrt(L / AL)), La = AL * N * N, items = [[N + ' ' + tt('sarım', 'turns'), tt('Gereken sarım sayısı', 'Required number of turns'), 'big', tt(`N = ⌈√(L/AL)⌉ = ⌈√(${eng(L, 'H')} / ${sig(AL * 1e9, 4)} nH)⌉ = ⌈${sig(Math.sqrt(L / AL), 4)}⌉ = ${N}`, `N = ⌈√(L/AL)⌉ = ⌈√(${eng(L, 'H')} / ${sig(AL * 1e9, 4)} nH)⌉ = ⌈${sig(Math.sqrt(L / AL), 4)}⌉ = ${N}`)],
+          [eng(La, 'H'), tt('Bu sarımla gerçek L', 'Actual L with this winding'), '', tt(`L = AL·N² = ${sig(AL * 1e9, 4)} nH · ${N}² = ${eng(La, 'H')}. AL toleransı (tipik ±%8–25) L\'ye doğrudan yansır.`, `L = AL·N² = ${sig(AL * 1e9, 4)} nH · ${N}² = ${eng(La, 'H')}. The AL tolerance (typ. ±8–25 %) goes straight into L.`)]];
+        if (Ae > 0 && I > 0) { const B = La * I / (N * Ae), m = Bs > 0 ? B / Bs * 100 : NaN; items.push([sig(B * 1000, 3) + ' mT', tt('Tepe akı yoğunluğu', 'Peak flux density'), '', `B = L·I/(N·Ae) = ${eng(La, 'H')} · ${eng(I, 'A')} / (${N} · ${sig(Ae * 1e6, 4)} mm²) = ${sig(B * 1000, 3)} mT`], isFinite(m) ? [sig(m, 3) + ' %', tt('B_sat\'ın oranı', 'Fraction of B_sat'), m > 80 ? 'bad' : m > 60 ? 'warn' : 'good', tt(`B / B_sat = ${sig(B * 1000, 3)} mT / ${Bs} mT = ${sig(m, 3)} %. Ferrit B_sat sıcaklıkla düşer (100 °C\'de ~%20–30 az); %60–70 altı önerilir.`, `B / B_sat = ${sig(B * 1000, 3)} mT / ${Bs} mT = ${sig(m, 3)} %. Ferrite B_sat drops with temperature (~20–30 % lower at 100 °C); keep below 60–70 %.`)] : ['—', tt('B_sat\'ın oranı', 'Fraction of B_sat'), '', tt('Çekirdeğin doyma akı yoğunluğunu (B_sat, mT) girerseniz oran hesaplanır.', 'Enter the core saturation flux density (B_sat, mT) to get the ratio.')]); }
         return items;
       } },
     { id: 'ac', group: 'design', title: ['Hava çekirdekli bobin (Wheeler)', 'Air-core coil (Wheeler)'], sub: ['L(µH) = r²N² / (9r + 10ℓ)  [inç]', 'L(µH) = r²N² / (9r + 10ℓ)  [inch]'],
@@ -129,20 +141,24 @@ CMP.inductor = {
       compute(G) {
         const r = G.r('d') / 2 / 25.4, l = G.r('len') / 25.4, N = G.r('n');
         if (!(r > 0 && l > 0 && N > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        return [[eng(r * r * N * N / (9 * r + 10 * l) * 1e-6, 'H'), tt('Endüktans', 'Inductance'), 'big']];
+        return [[eng(r * r * N * N / (9 * r + 10 * l) * 1e-6, 'H'), tt('Endüktans', 'Inductance'), 'big', tt(`Wheeler: L(µH) = r²·N²/(9r + 10ℓ), r ve ℓ inç = ${sig(r, 4)}² · ${N}² / (9 · ${sig(r, 4)} + 10 · ${sig(l, 4)}) = ${sig(r * r * N * N / (9 * r + 10 * l), 4)} µH. ℓ > 0,8·r olan tek katlı bobinlerde ~%1 doğrudur.`, `Wheeler: L(µH) = r²·N²/(9r + 10ℓ), r and ℓ in inches = ${sig(r, 4)}² · ${N}² / (9 · ${sig(r, 4)} + 10 · ${sig(l, 4)}) = ${sig(r * r * N * N / (9 * r + 10 * l), 4)} µH. About 1 % accurate for single-layer coils with ℓ > 0.8·r.`)]];
       } },
     { id: 'lc', group: 'ac', title: ['LC rezonans', 'LC resonance'], sub: ['f₀ = 1/(2π√(LC)), Z₀ = √(L/C)', 'f₀ = 1/(2π√(LC)), Z₀ = √(L/C)'],
       fields: [{ id: 'l', tr: 'Endüktans', en: 'Inductance', def: '10', u: 'L', ud: 1 }, { id: 'c', tr: 'Kapasitans', en: 'Capacitance', def: '100', u: 'C', ud: 1 }],
       compute(G) {
         const L = G.v('l'), C = G.v('c'); if (!(L > 0 && C > 0)) return [['—', tt('Değerleri girin', 'Enter the values')]];
-        return [[eng(1 / (2 * Math.PI * Math.sqrt(L * C)), 'Hz'), tt('Rezonans frekansı f₀', 'Resonant frequency f₀'), 'big'], [eng(Math.sqrt(L / C), 'Ω'), tt('Karakteristik empedans Z₀', 'Characteristic impedance Z₀')]];
+        return [[eng(1 / (2 * Math.PI * Math.sqrt(L * C)), 'Hz'), tt('Rezonans frekansı f₀', 'Resonant frequency f₀'), 'big', `f₀ = 1/(2π·√(L·C)) = 1 / (2π·√(${eng(L, 'H')} · ${eng(C, 'F')})) = ${eng(1 / (2 * Math.PI * Math.sqrt(L * C)), 'Hz')}`],
+          [eng(Math.sqrt(L / C), 'Ω'), tt('Karakteristik empedans Z₀', 'Characteristic impedance Z₀'), '', tt(`Z₀ = √(L/C) = √(${eng(L, 'H')} / ${eng(C, 'F')}) = ${eng(Math.sqrt(L / C), 'Ω')}. Rezonansta X_L = X_C = Z₀; LC filtre sönümleme direnci bu mertebede seçilir.`, `Z₀ = √(L/C) = √(${eng(L, 'H')} / ${eng(C, 'F')}) = ${eng(Math.sqrt(L / C), 'Ω')}. At resonance X_L = X_C = Z₀; an LC filter damping resistor is chosen around this value.`)]];
       } },
     { id: 'es', group: 'val', title: ['E-serisi en yakın değer', 'Nearest E-series value'], sub: ['E6 … E96', 'E6 … E96'],
       fields: [{ id: 'v', tr: 'Hesaplanan değer', en: 'Computed value', def: '4.2', u: 'L', ud: 1 }, { id: 's', tr: 'Seri', en: 'Series', def: 'E12', sel: SEL_E }],
       compute(G) {
         const v = G.v('v'), s = G.s('s'); if (!(v > 0)) return [['—', tt('Değer girin', 'Enter a value')]];
         const r = nearestE(v, s);
-        return [[eng(r.near, 'H'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big'], [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation')], [eng(r.lo, 'H') + ' / ' + eng(r.hi, 'H'), tt('Alt / üst komşu', 'Lower / upper neighbour')], [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series')]];
+        return [[eng(r.near, 'H'), tt('En yakın ' + s + ' değeri', 'Nearest ' + s + ' value'), 'big', tt(`${s} serisinin her dekadındaki değerler arasından ${eng(v, 'H')} değerine en yakın olanı.`, `The value of the ${s} series (in every decade) closest to ${eng(v, 'H')}.`)],
+          [sig(r.err, 3) + ' %', tt('Sapma', 'Deviation'), '', `(${eng(r.near, 'H')} − ${eng(v, 'H')}) / ${eng(v, 'H')} = ${sig(r.err, 3)} %`],
+          [eng(r.lo, 'H') + ' / ' + eng(r.hi, 'H'), tt('Alt / üst komşu', 'Lower / upper neighbour'), '', tt('Hesaplanan değerin hemen altındaki ve üstündeki seri değerleri; güvenli tarafta kalmak için birini bilinçli seçin.', 'Series values just below and above the computed value; pick one deliberately to stay on the safe side.')],
+          [ETOL[s], tt('Serinin tipik toleransı', 'Typical tolerance of the series'), '', tt('Seri adımları toleransa göre seçilmiştir: E6 %20, E12 %10, E24 %5, E48 %2, E96 %1.', 'Series steps follow the tolerance: E6 20 %, E12 10 %, E24 5 %, E48 2 %, E96 1 %.')]];
       } },
   ],
 };
