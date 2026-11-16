@@ -185,7 +185,21 @@ var TEST = (function () {
   // Every net of the board is listed; the technician / engineer ticks the nets to test and
   // gives each a role. The choice is saved per project (testConfig.selection + nets) and the
   // procedure is generated from it.
-  var ROLE_OPTS = [['power', 'Güç rayı'], ['ground', 'Toprak (GND)'], ['chassis', 'Şase'], ['signal', 'Sinyal (I/O)']];
+  // Roles in the net selection. 'io' and 'comm' are both stored as 'signal' in testConfig.nets (the plan
+  // tests them as signal lines); the split is kept in testConfig.kinds and decides which functions are offered.
+  var ROLE_OPTS = [['power', 'Power'], ['ground', 'Ground'], ['chassis', 'Şase'], ['io', 'I/O'], ['comm', 'Haberleşme']];
+  var COMM_FUNCS = ['uart', 'spi', 'i2c', 'rs232', 'rs485', 'can'];
+  var IO_FUNCS = ['adc', 'sens', 'pwm', 'timer', 'gpio'];
+  var isSig = function (r) { return r === 'io' || r === 'comm'; };
+  var baseFunc = function (f) { return f ? String(f).split(':')[0] : ''; };
+  // signal line → 'comm' when its (chosen or guessed) function is an interface, else 'io'
+  function sigKind(func, autoFunc, stored) {
+    if (stored === 'comm' || stored === 'io') return stored;
+    var f = baseFunc(func) || autoFunc || '';
+    return COMM_FUNCS.indexOf(f) >= 0 ? 'comm' : 'io';
+  }
+  // stored role / suggestion → role shown in the list
+  function uiRole(r, n, func, stored) { return r === 'signal' ? sigKind(func, n.func, stored) : r || ''; }
   function showView(v) {
     S.view = v;
     S.previewNet = null;
@@ -204,11 +218,11 @@ var TEST = (function () {
     var cfg = testConfig(), d = {};
     (S.plan.nets || []).forEach(function (n) {
       if (cfg.selection) {
-        var r = cfg.nets && cfg.nets[n.net];
-        d[n.net] = { on: !!r && r !== 'none', role: r && r !== 'none' ? r : (n.suggest || ''), nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: cfg.funcs && cfg.funcs[n.net] || '' };
+        var r = cfg.nets && cfg.nets[n.net], fn = cfg.funcs && cfg.funcs[n.net] || '';
+        d[n.net] = { on: !!r && r !== 'none', role: uiRole(r && r !== 'none' ? r : (n.suggest || ''), n, fn, cfg.kinds && cfg.kinds[n.net]), nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: fn };
       } else {
-        var role = n.cls && n.cls !== 'signal' ? n.cls : n.suggest || '';
-        d[n.net] = { on: !!n.cls || (!!n.suggest && n.suggest !== 'signal'), role: role, nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: cfg.funcs && cfg.funcs[n.net] || '' };
+        var role = n.cls && n.cls !== 'signal' ? n.cls : n.suggest || '', fn2 = cfg.funcs && cfg.funcs[n.net] || '';
+        d[n.net] = { on: !!n.cls || (!!n.suggest && n.suggest !== 'signal'), role: uiRole(role, n, fn2, cfg.kinds && cfg.kinds[n.net]), nominal: cfg.rails && cfg.rails[n.net] && cfg.rails[n.net].nominal, func: fn2 };
       }
     });
     return d;
@@ -231,8 +245,8 @@ var TEST = (function () {
     var byRole = function (r) { return Object.keys(D).filter(function (k) { return D[k].on && D[k].role === r; }).length; };
     var updSum = function () {
       var e = el('ns-sum');
-      if (e) e.textContent = T('{n} net · {s} seçili ({p} güç, {g} toprak, {c} şase, {i} sinyal)', { n: nets.length, s: Object.keys(D).filter(function (k) { return D[k].on; }).length,
-        p: byRole('power'), g: byRole('ground'), c: byRole('chassis'), i: byRole('signal') });
+      if (e) e.textContent = T('{n} net · {s} seçili ({p} power, {g} ground, {c} şase, {i} I/O, {m} haberleşme)', { n: nets.length, s: Object.keys(D).filter(function (k) { return D[k].on; }).length,
+        p: byRole('power'), g: byRole('ground'), c: byRole('chassis'), i: byRole('io'), m: byRole('comm') });
     };
     var head = asmEl('div', { class: 'tp-head' }, [
       asmEl('div', { class: 'tp-titles' }, [
@@ -245,11 +259,11 @@ var TEST = (function () {
       ]),
     ]);
     root.appendChild(head);
-    root.appendChild(asmEl('p', { class: 'ns-help', text: 'Test edilecek netleri işaretleyin ve rolünü seçin. Sinyal hatlarında İşlev sütunundan hattın ne iş yaptığını (UART, SPI, I²C, PWM, GPIO …) seçebilirsiniz; "Otomatik" ad kalıbından tahmin eder. Öneriler net adından ve kart yapısından gelir. Bir nete tıklayınca kartta gösterilir. Seçim bu projenin tüm kartları için kaydedilir.' }));
+    root.appendChild(asmEl('p', { class: 'ns-help', text: 'Test edilecek netleri işaretleyin ve rolünü seçin. İşlev listesi role göre değişir: Haberleşme hatlarında arayüz ve pin (UART, SPI, I²C, RS-232, RS-485/422, CAN), I/O hatlarında ADC, sensör, PWM, timer, GPIO; "Otomatik" ad kalıbından tahmin eder. Öneriler net adından ve kart yapısından gelir. Bir nete tıklayınca kartta gösterilir. Seçim bu projenin tüm kartları için kaydedilir.' }));
     var search = asmEl('input', { id: 'ns-q', class: 'asm-input', type: 'search', placeholder: 'Net ara…', 'aria-label': 'Net ara', value: S.netQuery || '' });
     search.addEventListener('input', function () { S.netQuery = search.value; renderTable(); });
     var fsel = asmEl('select', { id: 'ns-f', class: 'asm-select', 'aria-label': T('Filtre') });
-    [['all', 'Tümü'], ['on', 'Seçili'], ['suggest', 'Önerilen'], ['power', 'Güç'], ['ground', 'Toprak / şase'], ['signal', 'Sinyal'], ['none', 'Rolü yok']].forEach(function (o) {
+    [['all', 'Tümü'], ['on', 'Seçili'], ['suggest', 'Önerilen'], ['power', 'Power'], ['ground', 'Ground / şase'], ['io', 'I/O'], ['comm', 'Haberleşme'], ['none', 'Rolü yok']].forEach(function (o) {
       var op = asmEl('option', { value: o[0], text: o[1] }); if (o[0] === flt) op.selected = true; fsel.appendChild(op);
     });
     fsel.onchange = function () { S.netFilter = fsel.value; renderTable(); };
@@ -259,7 +273,7 @@ var TEST = (function () {
         renderNets();
       } }),
       asmEl('button', { class: 'asm-btn', text: 'Sinyalleri de seç', title: 'Önerilen sinyal hatlarını da seç', onclick: function () {
-        nets.forEach(function (n) { if (n.suggest === 'signal' && n.pads) { D[n.net].on = true; D[n.net].role = 'signal'; } });
+        nets.forEach(function (n) { if (n.suggest === 'signal' && n.pads) { D[n.net].on = true; if (!isSig(D[n.net].role)) D[n.net].role = sigKind(D[n.net].func, n.func); } });
         renderNets();
       } }),
       asmEl('button', { class: 'asm-btn', text: 'Seçimi temizle', onclick: function () { Object.keys(D).forEach(function (k) { D[k].on = false; }); renderNets(); } }),
@@ -276,7 +290,7 @@ var TEST = (function () {
         if (flt === 'suggest') return !!n.suggest;
         if (flt === 'power') return d.role === 'power';
         if (flt === 'ground') return d.role === 'ground' || d.role === 'chassis';
-        if (flt === 'signal') return d.role === 'signal';
+        if (flt === 'io' || flt === 'comm') return d.role === flt;
         if (flt === 'none') return !d.role;
         return true;
       });
@@ -286,12 +300,18 @@ var TEST = (function () {
         var cb = asmEl('input', { type: 'checkbox', class: 'ns-on', 'aria-label': T('{net} test edilsin', { net: n.net }) });
         cb.checked = d.on; cb.disabled = !n.pads;
         var tr;
-        var sync = function () { tr.classList.toggle('on', d.on); cb.checked = d.on; rs.value = d.role || ''; fs.disabled = !n.pads || d.role !== 'signal'; fs.value = d.func || ''; nom.hidden = d.role !== 'power'; updSum(); };
-        cb.onchange = function () { d.on = cb.checked; if (d.on && !d.role) d.role = n.suggest || 'signal'; sync(); };
+        var sync = function () { tr.classList.toggle('on', d.on); cb.checked = d.on; rs.value = d.role || ''; fillFuncs(); nom.hidden = d.role !== 'power'; updSum(); };
+        cb.onchange = function () { d.on = cb.checked; if (d.on && !d.role) d.role = uiRole(n.suggest || 'signal', n, d.func); sync(); };
         var rs = asmEl('select', { class: 'asm-select ns-role', 'aria-label': T('{net} rolü', { net: n.net }) });
         [['', '—']].concat(ROLE_OPTS).forEach(function (o) { var op = asmEl('option', { value: o[0], text: o[1] }); if (o[0] === (d.role || '')) op.selected = true; rs.appendChild(op); });
         rs.disabled = !n.pads;
-        rs.onchange = function () { d.role = rs.value; d.on = !!rs.value; sync(); };
+        rs.onchange = function () {
+          d.role = rs.value; d.on = !!rs.value;
+          // a function of the other group does not fit the new role
+          var b = baseFunc(d.func), grp = d.role === 'comm' ? COMM_FUNCS : d.role === 'io' ? IO_FUNCS : [];
+          if (d.func && (d.func === 'none' ? d.role !== 'io' : grp.indexOf(b) < 0)) d.func = '';
+          sync();
+        };
         // what the pin / line does: drives the test steps (UART, SPI, I²C, PWM …); "Otomatik" = guessed from the name
         var fs = asmEl('select', { class: 'asm-select ns-func', 'aria-label': T('{net} işlevi', { net: n.net }), title: T('Hattın ne iş yaptığı: test adımlarını belirler') });
         // UART / SPI / I²C also offer their pins ("UART TX", "SPI MOSI" …): the pin sets the line's role in the logic-analyzer step
@@ -304,25 +324,38 @@ var TEST = (function () {
         };
         var autoF = n.func ? TESTPLAN.FUNCS.filter(function (f) { return f.id === n.func; })[0] : null, autoP = n.func ? TESTPLAN.pinOf(n.net) : '';
         var auto = autoF ? (autoP && pinLabel(n.func, autoP)) || funcLabel(autoF) : '';
-        fs.appendChild(asmEl('option', { value: '', text: auto ? T('Otomatik: {f}', { f: auto }) : T('Otomatik (ad tanınmadı)'), raw: 1 }));
-        TESTPLAN.FUNCS.forEach(function (f) {
-          var pins = TESTPLAN.PINS[f.id];
-          if (!pins) { fs.appendChild(asmEl('option', { value: f.id, text: funcLabel(f), raw: 1 })); return; }
-          var og = document.createElement('optgroup'); og.label = f.label;
-          og.appendChild(asmEl('option', { value: f.id, text: T('{f} (pin otomatik)', { f: f.label }), raw: 1 }));
-          pins.forEach(function (pn) { og.appendChild(asmEl('option', { value: f.id + ':' + pn[0], text: pinLabel(f.id, pn[0]), raw: 1 })); });
-          fs.appendChild(og);
-        });
-        fs.appendChild(asmEl('option', { value: 'none', text: T('Yok (genel I/O)'), raw: 1 }));
-        fs.value = d.func || '';
-        fs.disabled = !n.pads || d.role !== 'signal';
-        fs.onchange = function () { d.func = fs.value; if (d.func && d.func !== 'none' && d.role !== 'signal') { d.role = 'signal'; } if (d.func) d.on = true; sync(); };
+        // options depend on the role: Haberleşme → interfaces (with pins), I/O → ADC / sensor / PWM / timer / GPIO
+        var fillFuncs = function () {
+          fs.innerHTML = '';
+          if (!isSig(d.role)) {
+            fs.appendChild(asmEl('option', { value: '', text: '—', raw: 1 }));
+            fs.disabled = true; fs.value = ''; return;
+          }
+          var ids = d.role === 'comm' ? COMM_FUNCS : IO_FUNCS;
+          var autoFits = autoF && ids.indexOf(autoF.id) >= 0;
+          fs.appendChild(asmEl('option', { value: '', text: autoFits ? T('Otomatik: {f}', { f: auto }) : d.role === 'comm' ? T('Otomatik (arayüz tanınmadı)') : T('Otomatik (ad tanınmadı)'), raw: 1 }));
+          TESTPLAN.FUNCS.forEach(function (f) {
+            if (ids.indexOf(f.id) < 0) return;
+            var pins = TESTPLAN.PINS[f.id];
+            if (!pins) { fs.appendChild(asmEl('option', { value: f.id, text: funcLabel(f), raw: 1 })); return; }
+            var og = document.createElement('optgroup'); og.label = f.label;
+            og.appendChild(asmEl('option', { value: f.id, text: T('{f} (pin otomatik)', { f: f.label }), raw: 1 }));
+            pins.forEach(function (pn) { og.appendChild(asmEl('option', { value: f.id + ':' + pn[0], text: pinLabel(f.id, pn[0]), raw: 1 })); });
+            fs.appendChild(og);
+          });
+          if (d.role === 'io') fs.appendChild(asmEl('option', { value: 'none', text: T('Yok (genel I/O)'), raw: 1 }));
+          fs.disabled = !n.pads;
+          fs.value = d.func || '';
+          if (fs.value !== (d.func || '')) fs.value = '';
+        };
+        fillFuncs();
+        fs.onchange = function () { d.func = fs.value; if (d.func) d.on = true; sync(); };
         var nom = asmEl('input', { class: 'asm-input ns-nom', type: 'text', inputmode: 'decimal', placeholder: n.nominal != null ? String(n.nominal) : 'V', value: d.nominal != null ? String(d.nominal) : '',
           'aria-label': T('{net} nominal gerilim (V)', { net: n.net }) });
         nom.hidden = d.role !== 'power';
         nom.onchange = function () { var v = TESTPLAN.parseVolts(nom.value); d.nominal = nom.value.trim() && v != null ? v : null; };
         var nameBtn = asmEl('button', { class: 'ns-name', raw: 1, text: n.net, title: n.net + ' — ' + T('Kartta göster'), onclick: function () { previewNet(S.previewNet === n.net ? null : n.net); } });
-        var sug = n.suggest ? T(({ power: 'Güç rayı', ground: 'Toprak (GND)', chassis: 'Şase', signal: 'Sinyal (I/O)' })[n.suggest]) : '';
+        var sug = n.suggest ? T(({ power: 'Power', ground: 'Ground', chassis: 'Şase', io: 'I/O', comm: 'Haberleşme' })[uiRole(n.suggest, n, '')]) : '';
         tb.appendChild(tr = asmEl('tr', { class: 'ns-row' + (d.on ? ' on' : '') + (S.previewNet === n.net ? ' preview' : ''), 'data-net': n.net }, [
           asmEl('td', {}, [cb]),
           asmEl('td', { class: 'ns-ncell' }, [nameBtn, sug ? asmEl('div', { class: 'ns-why', raw: 1, text: n.suggest === 'signal' || !n.why ? sug + (n.why ? ' · ' + n.why : '') : n.why, title: n.why || null }) : null]),
@@ -351,10 +384,19 @@ var TEST = (function () {
     cfg.selection = true;
     cfg.nets = {};
     cfg.funcs = {};
+    cfg.kinds = {};
     cfg.rails = cfg.rails || {};
     sel.forEach(function (k) {
-      cfg.nets[k] = D[k].role;
-      if (D[k].role === 'signal' && D[k].func) cfg.funcs[k] = D[k].func;
+      cfg.nets[k] = isSig(D[k].role) ? 'signal' : D[k].role;
+      if (isSig(D[k].role)) {
+        cfg.kinds[k] = D[k].role;
+        if (D[k].func) cfg.funcs[k] = D[k].func;
+        else if (D[k].role === 'io') {
+          // I/O line whose name looks like an interface (TX, CS …): keep it a general I/O line
+          var pn = (S.plan.nets || []).filter(function (x) { return x.net === k; })[0];
+          if (pn && COMM_FUNCS.indexOf(pn.func) >= 0) cfg.funcs[k] = 'none';
+        }
+      }
       if (D[k].role === 'power') cfg.rails[k] = Object.assign({}, cfg.rails[k], D[k].nominal != null ? { nominal: D[k].nominal, include: true } : { include: true });
     });
     writeStorage('testConfig', JSON.stringify(cfg));
