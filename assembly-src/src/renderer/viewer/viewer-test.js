@@ -96,32 +96,59 @@ var TEST = (function () {
   setPalette(paletteKey(), false);
   var N = function (n) { return TESTPLAN.normNet(n); };
   // nets touched by the probes: + net red, COM net cyan (one colour when both are the same net)
+  // At most MAX_POINTS places of a probed net are drawn on the board: the chosen probe
+  // point(s) first, then the best-scoring alternatives. Every place of the net stays
+  // selectable in the step card list.
+  var MAX_POINTS = 3;
+  function ptKey(fi, pin) { return fi + '|' + pin; }
+  function shownPoints(net, pinned) {
+    var keys = new Set();
+    pinned.forEach(function (q) { if (q && keys.size < MAX_POINTS) keys.add(ptKey(q.fp, q.pin)); });
+    if (keys.size < MAX_POINTS) {
+      TESTPLAN.candidates(pcbdata, net, MAX_POINTS + pinned.length).some(function (c) {
+        keys.add(ptKey(c.fp, c.pin));
+        return keys.size >= MAX_POINTS;
+      });
+    }
+    return keys;
+  }
+  // selectable probe places of a net (one per ref.pin; a pin may have several pads)
+  function pointCount(net) { return TESTPLAN.candidates(pcbdata, net, TESTPLAN.netSize(pcbdata, net) + 1).length; }
   function probeNets(p) {
     if (!p) return [];
-    if (N(p.neg.net) === N(p.pos.net)) return [{ net: N(p.pos.net), color: NET_COLORS.same, which: 'both' }];
-    return [{ net: N(p.pos.net), color: NET_COLORS.pos, which: 'pos' }, { net: N(p.neg.net), color: NET_COLORS.neg, which: 'neg' }];
+    if (N(p.neg.net) === N(p.pos.net)) return [{ net: N(p.pos.net), color: NET_COLORS.same, which: 'both', pts: shownPoints(p.pos.net, [p.pos, p.neg]) }];
+    return [{ net: N(p.pos.net), color: NET_COLORS.pos, which: 'pos', pts: shownPoints(p.pos.net, [p.pos]) },
+      { net: N(p.neg.net), color: NET_COLORS.neg, which: 'neg', pts: shownPoints(p.neg.net, [p.neg]) }];
   }
   function netColor(p, which) { return N(p.neg.net) === N(p.pos.net) ? NET_COLORS.same : NET_COLORS[which]; }
   function altRow(st, which) {
     var pr = probesOf(st)[which];
     var other = probesOf(st)[which === 'pos' ? 'neg' : 'pos'];
     var open = !!(S.altOpen && S.altOpen[st.id + which]);
-    var cands = TESTPLAN.candidates(pcbdata, pr.net, open ? 24 : 6).filter(function (c) { return !(st.kind === 'continuity' && c.fp === other.fp && c.pad === other.pad); });
-    var total = TESTPLAN.netSize(pcbdata, pr.net);
-    var shown = cands.slice(0, open ? 24 : 5);
-    // the best few probe places as buttons; every place of the net is ringed on the board anyway
-    var more = total - 1 - shown.length;
+    var cands = TESTPLAN.candidates(pcbdata, pr.net, TESTPLAN.netSize(pcbdata, pr.net) + 1).filter(function (c) { return !(st.kind === 'continuity' && c.fp === other.fp && c.pad === other.pad); });
+    // collapsed: the best few as buttons; expanded: every place of the net (the board shows at most MAX_POINTS)
+    var shown = open ? cands : cands.slice(0, 5);
+    var more = cands.length - shown.length;
     var row = asmEl('div', { class: 'tp-alts', role: 'group', 'aria-label': T('{net} netindeki alternatif noktalar', { net: pr.net }) }, [
-      asmEl('span', { class: 'tp-alts-k', raw: 1, text: T('Alternatif ({n} nokta):', { n: total }) }),
+      asmEl('span', { class: 'tp-alts-k', raw: 1, text: T('Alternatif ({n} nokta):', { n: pointCount(pr.net) }) }),
     ].concat(shown.map(function (c) {
       var cur = c.ref === pr.ref && c.pin === pr.pin;
       return asmEl('button', { class: 'tp-alt ' + which + (cur ? ' on' : ''), 'aria-pressed': cur ? 'true' : 'false', raw: 1, text: c.ref + '.' + c.pin,
         title: T('{ref} pin {pin}', { ref: c.ref, pin: c.pin }) + ' · ' + T(c.side === 'F' ? 'Üst yüz' : 'Alt yüz'),
-        onclick: function () { setOverride(st, which, c); } });
+        onclick: function () { hoverAlt(null); setOverride(st, which, c); },
+        onmouseenter: function () { hoverAlt({ which: which, c: c }); }, onmouseleave: function () { hoverAlt(null); },
+        onfocus: function () { hoverAlt({ which: which, c: c }); }, onblur: function () { hoverAlt(null); } });
     })).concat(more > 0 || open ? [asmEl('button', { class: 'tp-alt more', raw: 1, 'aria-expanded': open ? 'true' : 'false',
       text: open ? T('Daha az') : T('+{n} nokta', { n: more }),
       onclick: function () { S.altOpen = S.altOpen || {}; S.altOpen[st.id + which] = !open; render(); } })] : []));
     return row;
+  }
+  // preview of a list entry on the board while the pointer / focus is on it
+  function hoverAlt(h) {
+    var a = S.hoverAlt, same = a && h && a.which === h.which && a.c.fp === h.c.fp && a.c.pin === h.c.pin;
+    if (same || (!a && !h)) return;
+    S.hoverAlt = h;
+    drawHighlights();
   }
   function probeLabel(p) { return p ? T('{ref} pin {pin}', { ref: p.ref, pin: p.pin }) : '—'; }
 
@@ -419,7 +446,7 @@ var TEST = (function () {
         ]);
       };
       box.appendChild(asmEl('div', { class: 'tp-probes' }, [st.kind === 'bus' ? pcard('pos', 'CH1', 'Kanal 1 (sinyal)') : pcard('pos', '+', 'Kırmızı prob (+)'), st.kind === 'bus' ? pcard('neg', 'GND', 'GND klipsi') : pcard('neg', 'COM', 'Siyah prob (COM)')]));
-      box.appendChild(asmEl('p', { class: 'tp-hint', text: 'Kartta probların değdiği netlerin tüm pad\'leri halkayla işaretlenir; aynı nete bağlı herhangi bir pad ölçüm için kullanılabilir.' }));
+      box.appendChild(asmEl('p', { class: 'tp-hint', text: 'Kartta her prob neti için en uygun 3 nokta işaretlenir. Netin diğer noktaları listede; üzerine gelince kartta gösterilir, tıklayınca prob noktası olur.' }));
     }
     box.appendChild(asmEl('div', { class: 'tp-expect' }, [asmEl('span', { text: 'Beklenen:' }), asmEl('b', { text: st.expectText, raw: 1 })]));
     if (st.debug && st.debug.length) {
@@ -503,6 +530,7 @@ var TEST = (function () {
     S.idx = Math.max(0, Math.min(S.steps.length - 1, i));
     var st = S.steps[S.idx];
     S.probes = probesOf(st) || null;
+    S.hoverAlt = null;
     render();
     showProbes();
     var cur = document.querySelector('.tp-item.current');
@@ -704,20 +732,21 @@ var TEST = (function () {
   // ----------------------------------------------------- 2D probe markers
   // Measured nets are drawn boldly (like a net highlight): solid pours with an outline,
   // traces at least a few pixels wide with a dark halo, every pad filled and ringed.
-  function drawNet2d(ctx, L, net, color) {
+  function drawNet2d(ctx, L, net, color, pts) {
     var m = ctx.getTransform(), sc = Math.hypot(m.a, m.b) || 1, px = 1 / sc;
     var halo = 'rgba(0,0,0,0.6)';
     ctx.save();
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     // only the pads of the net (copper pours and traces would cover the whole board)
-    pcbdata.footprints.forEach(function (fp) {
-      fp.pads.forEach(function (pad) {
+    pcbdata.footprints.forEach(function (fp, fi) {
+      fp.pads.forEach(function (pad, pi) {
         if (N(pad.net) !== net || pad.layers.indexOf(L) < 0) return;
+        if (pts && !pts.has(ptKey(fi, pad.pin != null ? String(pad.pin) : String(pi + 1)))) return;
         var r = Math.max(pad.size[0], pad.size[1]) / 2 + Math.max(0.3, 4 * px);
         ctx.lineWidth = 5 * px; ctx.strokeStyle = halo;
         ctx.beginPath(); ctx.arc(pad.pos[0], pad.pos[1], r, 0, 2 * Math.PI); ctx.stroke();
         try { drawPad(ctx, pad, color, false); } catch (e) { /* skip */ }
-        // ring around every point of the net: alternative probe places stand out
+        // ring around each shown point: alternative probe places stand out
         ctx.lineWidth = 2.5 * px; ctx.strokeStyle = color;
         ctx.beginPath(); ctx.arc(pad.pos[0], pad.pos[1], r, 0, 2 * Math.PI); ctx.stroke();
       });
@@ -737,7 +766,7 @@ var TEST = (function () {
       lg.appendChild(asmEl('div', { class: 'nl-row' }, [
         asmEl('i', { class: 'nl-sw', style: 'background:' + n.color, 'aria-hidden': 'true' }),
         asmEl('b', { text: n.net, raw: 1 }),
-        asmEl('span', { raw: 1, text: who + ' · ' + T('{n} nokta', { n: TESTPLAN.netSize(pcbdata, n.net) }) }),
+        asmEl('span', { raw: 1, text: who + ' · ' + T('{k} / {n} nokta gösteriliyor', { k: n.pts ? n.pts.size : 0, n: pointCount(n.net) }) }),
       ]));
     });
     lg.appendChild(asmEl('label', { class: 'nl-row nl-palrow' }, [asmEl('span', { text: 'Renkler' }), paletteSelect('nl-pal')]));
@@ -809,8 +838,25 @@ var TEST = (function () {
     if (!S.on || S.view === 'nets' || !S.probes || !cd) return;
     var L = cd.layer;
     var ctx = cd.highlight.getContext('2d');
-    probeNets(S.probes).forEach(function (n) { drawNet2d(ctx, L, n.net, n.color); });
+    probeNets(S.probes).forEach(function (n) { drawNet2d(ctx, L, n.net, n.color, n.pts); });
     var m = ctx.getTransform(), sc = Math.hypot(m.a, m.b) || 1;
+    // list entry under the pointer: dashed ring on that place (it may be outside the shown points)
+    var h = S.hoverAlt;
+    if (h) {
+      var hfp = pcbdata.footprints[h.c.fp];
+      if (hfp) hfp.pads.forEach(function (pad, pi) {
+        if ((pad.pin != null ? String(pad.pin) : String(pi + 1)) !== h.c.pin || (!h.c.th && pad.layers.indexOf(L) < 0)) return;
+        var r = Math.max(pad.size[0], pad.size[1]) / 2 + Math.max(0.5, 12 / sc);
+        ctx.save();
+        try { drawPad(ctx, pad, h.which === 'pos' ? '#e5172f' : '#111111', false); } catch (e) { /* skip */ }
+        ctx.setLineDash([6 / sc, 4 / sc]);
+        ctx.lineWidth = 7 / sc; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.beginPath(); ctx.arc(pad.pos[0], pad.pos[1], r, 0, 2 * Math.PI); ctx.stroke();
+        ctx.lineWidth = 3.5 / sc; ctx.strokeStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(pad.pos[0], pad.pos[1], r, 0, 2 * Math.PI); ctx.stroke();
+        ctx.restore();
+      });
+    }
     var tips = {};
     ['pos', 'neg'].forEach(function (k) {
       var p = S.probes[k];
